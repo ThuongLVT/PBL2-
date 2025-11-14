@@ -345,130 +345,148 @@ D:\\QT_PBL2\build\bin\FootballFieldManager.exe
 
 ### **TUẦN 2: BOOKING MANAGEMENT** (Ngày 7-12)
 
-**Mục tiêu:** Timeline booking + CRUD operations
+**Mục tiêu:** Timeline booking + Table view với CRUD operations
 
-#### **Ngày 7: Booking List View**
+#### **Ngày 7-8: Booking Page - Tab 1: Timeline View**
 
-- [ ] `UI/Pages/Booking/BookingListPage.h/cpp/ui`
-- [ ] QTableWidget hiển thị danh sách đặt sân
-- [ ] Columns: ID | Sân | Khách hàng | Thời gian | Trạng thái | Actions
-- [ ] Status badges (Confirmed/Pending/Cancelled)
-- [ ] Filters: Theo ngày, theo trạng thái, theo sân
-- [ ] Search box
-- [ ] New Booking button
+- [ ] `UI/Pages/Booking/BookingPage.h/cpp/ui` với QTabWidget
+- [ ] **Tab 1: Timeline View (Đặt sân)** - Giống ảnh tham khảo
+  - [ ] Calendar widget để chọn ngày (top left)
+  - [ ] Timeline grid với:
+    - [ ] Columns: Time Slot | Field 5-1 | Field 5-2 | ... | Field 5-14
+    - [ ] Rows: 06:00, 07:00, 08:00, ..., 23:00
+    - [ ] Blue blocks hiển thị booking slots
+    - [ ] Click empty slot để tạo booking mới
+    - [ ] Click booking block để xem/edit details
+  - [ ] Booking form (top right):
+    - [ ] Phone search (tìm khách hàng)
+    - [ ] Name display
+    - [ ] Field dropdown
+    - [ ] Price display
+    - [ ] Status dropdown (Active/Inactive)
+    - [ ] Type dropdown (5 a side/7 a side)
+    - [ ] Date picker + From/To time
+    - [ ] Duration display (e.g., "0h30m")
+    - [ ] Note textarea
+    - [ ] Buttons: Save, Delete, Checkin/Match
+  - [ ] Color coding: Blue (#3b82f6) cho booked slots
 
 **Core API:**
 
 ```cpp
 HeThongQuanLy *sys = HeThongQuanLy::getInstance();
-const MangDong<DatSan*>& bookings = sys->layDanhSachDatSan();
 
+// Load timeline data for selected date
+const MangDong<DatSan*>& bookings = sys->layDanhSachDatSan();
 for (int i = 0; i < bookings.size(); i++) {
     DatSan *booking = bookings[i];
-    // Populate table row
+    // Draw booking block in timeline grid
 }
-```
 
-**Deliverables:**
-
-- Booking list table với data từ Core
-- Filters working
-- Table styling
-
----
-
-#### **Ngày 8-9: Booking Creation Dialog (Part 1 & 2)**
-
-- [ ] `UI/Dialogs/BookingDialog.h/cpp/ui`
-- [ ] **Step 1: Select Field**
-  - [ ] List các sân available (QListWidget)
-  - [ ] Hiển thị loại sân, giá thuê
-  - [ ] Filter theo loại (5/7 người)
-- [ ] **Step 2: Select Date & Time**
-  - [ ] QCalendarWidget để chọn ngày
-  - [ ] Time slot picker (khung giờ available)
-  - [ ] Kiểm tra trùng lịch real-time
-- [ ] **Step 3: Select Customer**
-  - [ ] Search customer by phone/name
-  - [ ] Dropdown existing customers
-  - [ ] "Add New Customer" button inline
-
-**Core API:**
-
-```cpp
 // Check available slots
-HeThongQuanLy *sys = HeThongQuanLy::getInstance();
 bool available = sys->kiemTraSanTrong(san, ngayGio, khungGio);
 
-// Get available fields
-MangDong<San*> fields = sys->timSanTrong(ngayGio, khungGio);
+// Create booking from timeline
+DatSan *booking = sys->taoDatSan(customer, field, ngayGio, khungGio);
 ```
 
 **Deliverables:**
 
-- Booking dialog với 3 steps
-- Field selection working
-- Date/Time picker working
-- Customer selection working
+- Timeline view với calendar + grid layout (giống ảnh)
+- Booking form panel
+- Click-to-create booking workflow
+- Real-time availability check
+- Visual feedback (blue blocks)
 
 ---
 
-#### **Ngày 10: Booking Creation Dialog (Part 3)**
+#### **Ngày 9-10: Booking Page - Tab 2: Table View**
 
-- [ ] **Step 4: Add Services (Optional)**
-  - [ ] List dịch vụ available (DoUong + ThietBi)
-  - [ ] Checkboxes hoặc quantity spinners
-  - [ ] Tính tổng tiền real-time
-- [ ] **Step 5: Confirmation**
-  - [ ] Summary: Sân, Thời gian, Khách hàng, Dịch vụ, Tổng tiền
-  - [ ] Ghi chú field
-  - [ ] "Xác nhận đặt sân" button
+- [ ] **Tab 2: Table View (Quản lý đặt sân)**
+  - [ ] QTableWidget hiển thị danh sách đặt sân
+  - [ ] Columns: Mã đặt | Sân | Khách hàng | SĐT | Thời gian | Trạng thái | Tổng tiền | Actions
+  - [ ] Status badges (Confirmed/Pending/Cancelled/Completed)
+  - [ ] Filters:
+    - [ ] Date range picker
+    - [ ] Field filter (dropdown)
+    - [ ] Status filter (dropdown)
+    - [ ] Search box (by customer name/phone)
+  - [ ] Action buttons per row:
+    - [ ] **Chỉnh sửa** (Edit booking details)
+    - [ ] **Hủy** (Cancel booking - với confirmation)
+    - [ ] **Thanh toán** (Open payment dialog)
+    - [ ] **Đặt thêm dịch vụ** (Add services dialog)
+  - [ ] Double-click row → Open BookingDetailsDialog
 
 **Core API:**
 
 ```cpp
-// Create booking
-DatSan *booking = sys->taoDatSan(customer, field, ngayGio, khungGio);
+// List all bookings
+const MangDong<DatSan*>& bookings = sys->layDanhSachDatSan();
 
-// Add services
-for (each selected service) {
-    DichVuDat dvDat(service, quantity);
-    booking->themDichVu(dvDat);
-}
+// Filter bookings
+MangDong<DatSan*> filtered = sys->timDatSanTheoNgay(fromDate, toDate);
 
+// Update booking
+sys->capNhatDatSan(bookingId, updatedBooking);
+
+// Cancel booking
+sys->huyDatSan(bookingId);
+
+// Add services to booking
+DatSan *booking = sys->timDatSan(bookingId);
+DichVuDat dvDat(service, quantity);
+booking->themDichVu(dvDat);
 booking->tinhTongTien();
 ```
 
 **Deliverables:**
 
-- Service selection working
-- Booking confirmation working
-- Data saves to Core
+- Table view với full booking list
+- Filters working (date, field, status, search)
+- Edit/Cancel/Payment/Add Services actions
+- BookingDetailsDialog
+- Status update workflow
 
 ---
 
-#### **Ngày 11-12: Booking Details & Actions**
+#### **Ngày 11-12: Booking Dialogs & Actions**
 
 - [ ] `UI/Dialogs/BookingDetailsDialog.h/cpp/ui`
-- [ ] View full booking details (read-only)
-- [ ] Actions: Hủy đặt sân, Xác nhận, Hoàn thành
-- [ ] Status update với confirmation
-- [ ] Refresh booking list sau khi update
+  - [ ] View full booking details (read-only mode by default)
+  - [ ] Sections: Booking info, Customer info, Field info, Services, Payment status
+  - [ ] Edit mode toggle
+  - [ ] Actions: Save changes, Cancel booking, Complete booking
+- [ ] `UI/Dialogs/AddServiceDialog.h/cpp/ui`
+  - [ ] Select services (DoUong + ThietBi)
+  - [ ] Quantity spinners
+  - [ ] Price calculation real-time
+  - [ ] Add to booking button
+- [ ] `UI/Dialogs/PaymentDialog.h/cpp/ui` (moved from Day 16)
+  - [ ] Display booking total
+  - [ ] Payment method selection (Cash/Card/Transfer)
+  - [ ] Cash: Input amount, calculate change
+  - [ ] Card/Transfer: Input transaction details
+  - [ ] Confirm payment button
+  - [ ] Generate invoice/receipt
 
 **Core API:**
 
 ```cpp
-// Cancel booking
-sys->huyDatSan(bookingId);
+// Payment processing
+ThanhToan *payment = sys->taoThanhToan(booking, phuongThuc);
+payment->xacNhanThanhToan();
 
-// Update status
-sys->capNhatTrangThaiDatSan(bookingId, TrangThaiDatSan::DA_XAC_NHAN);
+// Complete booking
+sys->capNhatTrangThaiDatSan(bookingId, TrangThaiDatSan::HOAN_THANH);
 ```
 
 **Deliverables:**
 
-- Booking details dialog
-- Cancel/Confirm/Complete actions working
+- BookingDetailsDialog complete
+- AddServiceDialog working
+- PaymentDialog integrated
+- All actions functional
 
 ---
 
@@ -476,33 +494,48 @@ sys->capNhatTrangThaiDatSan(bookingId, TrangThaiDatSan::DA_XAC_NHAN);
 
 **Mục tiêu:** Complete all CRUD operations + Statistics
 
-#### **Ngày 13: Payment Management**
+#### **Ngày 13: Payment Management (Invoice History)**
 
-- [ ] `UI/Pages/Payment/PaymentListPage.h/cpp/ui`
-- [ ] QTableWidget: All payments
-- [ ] Columns: Mã | Đặt sân | Khách hàng | Số tiền | Phương thức | Ngày
-- [ ] Filter by date range
-- [ ] Filter by payment method
-- [ ] `UI/Dialogs/PaymentDialog.h/cpp/ui`
-  - [ ] Select booking to pay
-  - [ ] Payment method (Cash/Card/Transfer)
-  - [ ] Amount input
-  - [ ] Confirmation
+- [ ] `UI/Pages/Payment/PaymentHistoryPage.h/cpp/ui` (renamed from PaymentListPage)
+- [ ] **Quản lý hóa đơn** - Hiển thị tất cả thanh toán đã hoàn tất
+- [ ] QTableWidget: All completed payments/invoices
+- [ ] Columns: Mã HĐ | Loại (Đặt sân/Dịch vụ) | Khách hàng | SĐT | Số tiền | Phương thức | Ngày thanh toán | Actions
+- [ ] Filters:
+  - [ ] Date range picker (from/to)
+  - [ ] Payment method filter (All/Cash/Card/Transfer)
+  - [ ] Type filter (All/Booking/Service)
+  - [ ] Search by customer name/phone/invoice ID
+- [ ] Actions per row:
+  - [ ] **Xem chi tiết** (View invoice details)
+  - [ ] **In hóa đơn** (Print invoice - optional)
+  - [ ] **Xuất PDF** (Export to PDF - optional)
+- [ ] Summary panel (top):
+  - [ ] Total revenue (selected period)
+  - [ ] Total invoices count
+  - [ ] Revenue by payment method (Cash/Card/Transfer)
 
 **Core API:**
 
 ```cpp
-// Create payment
-ThanhToan *payment = sys->taoThanhToan(booking, phuongThuc);
-
-// List payments
+// List all completed payments (from Booking + Service)
+HeThongQuanLy *sys = HeThongQuanLy::getInstance();
 const MangDong<ThanhToan*>& payments = sys->layDanhSachThanhToan();
+
+// Filter by date range
+MangDong<ThanhToan*> filtered = sys->timThanhToanTheoNgay(fromDate, toDate);
+
+// Get payment details
+ThanhToan *payment = sys->timThanhToan(invoiceId);
+DatSan *booking = payment->layDatSan(); // If from booking
+HoaDonDichVu *serviceInvoice = payment->layHoaDonDichVu(); // If from service
 ```
 
 **Deliverables:**
 
-- Payment list + creation
-- Payment dialog working
+- Payment history page với invoice list
+- Filters working (date, method, type, search)
+- View invoice details dialog
+- Summary statistics panel
 
 ---
 
@@ -628,37 +661,91 @@ void KhachHang::capNhatHang(); // Auto-update tier based on spending
 
 #### **Ngày 16: Service Management**
 
-- [ ] `UI/Dialogs/PaymentDialog.h/cpp/ui`
-- [ ] Trigger từ Booking details ("Thanh toán")
-- [ ] Display: Booking info, Total amount
-- [ ] Payment method radio buttons:
-  - [ ] Tiền mặt (cash) - input tiền khách đưa
-  - [ ] Thẻ (card) - input số thẻ, loại thẻ
-  - [ ] Chuyển khoản (transfer) - input STK, ngân hàng
-- [ ] Tính tiền thừa cho cash
-- [ ] "Xác nhận thanh toán" button
+- [ ] `UI/Pages/Service/ServicePage.h/cpp/ui` với QTabWidget
+- [ ] **Tab 1: Đặt dịch vụ** (Service Ordering)
+  - [ ] **Dành cho khách đặt dịch vụ riêng** (không đá bóng)
+  - [ ] Customer selection:
+    - [ ] Phone search (existing customer)
+    - [ ] "Add New Customer" button
+    - [ ] Display: Name, Phone, Member tier
+  - [ ] Service selection:
+    - [ ] QTableWidget: Available services (DoUong + ThietBi)
+    - [ ] Columns: Tên DV | Loại | Giá | Tồn kho | Số lượng (spinner)
+    - [ ] Add to cart button
+  - [ ] Cart panel (right side):
+    - [ ] Selected services list
+    - [ ] Quantity adjustment (+/-)
+    - [ ] Remove from cart button
+    - [ ] Subtotal calculation
+    - [ ] Discount (if member tier applies)
+    - [ ] Total amount display
+  - [ ] Payment section:
+    - [ ] Payment method: Cash/Card/Transfer
+    - [ ] Cash: Input amount, show change
+    - [ ] "Xác nhận & Thanh toán" button
+  - [ ] Create service-only invoice (HoaDonDichVu)
+- [ ] **Tab 2: Quản lý dịch vụ** (Service Management)
+  - [ ] QTableWidget: All services list
+  - [ ] Columns: Mã DV | Tên | Loại | Giá | Tồn kho | Trạng thái | Actions
+  - [ ] Service types: Đồ uống (DoUong) + Thiết bị (ThietBi)
+  - [ ] Filters:
+    - [ ] Type filter (All/DoUong/ThietBi)
+    - [ ] Status filter (Available/Out of stock)
+    - [ ] Search by name
+  - [ ] Actions:
+    - [ ] **Thêm dịch vụ** (Add new service)
+    - [ ] **Chỉnh sửa** (Edit service details)
+    - [ ] **Xóa** (Delete service)
+    - [ ] **Cập nhật tồn kho** (Update stock quantity)
 
 **Core API:**
 
 ```cpp
-// Create payment
-ThanhToan *payment = sys->taoThanhToan(
-    booking,
-    PhuongThucThanhToan::TIEN_MAT
-);
+// Tab 1: Service Ordering
+HeThongQuanLy *sys = HeThongQuanLy::getInstance();
 
-// For cash payment
-ThanhToanTienMat *cashPayment = dynamic_cast<ThanhToanTienMat*>(payment);
-cashPayment->setTienKhachDua(amount);
-cashPayment->tinhTienThua();
-cashPayment->xacNhanThanhToan();
+// Search customer
+KhachHang *customer = sys->timKhachHang(phone);
+
+// Get available services
+const MangDong<DichVu*>& services = sys->layDanhSachDichVu();
+
+// Create service-only invoice
+HoaDonDichVu *invoice = sys->taoHoaDonDichVu(customer);
+for (each selected service) {
+    DichVuDat dvDat(service, quantity);
+    invoice->themDichVu(dvDat);
+}
+invoice->tinhTongTien();
+invoice->apDungGiamGia(customer->layHang());
+
+// Payment for service-only
+ThanhToan *payment = sys->taoThanhToanDichVu(invoice, phuongThuc);
+payment->xacNhanThanhToan();
+
+// Tab 2: Service Management CRUD
+// Add service
+DichVu *service = new DoUong(ma, ten, gia, kichCo);
+sys->themDichVu(service);
+
+// Update service
+sys->capNhatDichVu(ma, serviceMoi);
+
+// Delete service
+sys->xoaDichVu(ma);
+
+// Update stock
+service->capNhatTonKho(quantity);
 ```
 
 **Deliverables:**
 
-- Payment dialog với 3 methods
-- Payment creation working
-- Invoice preview (optional)
+- Service page với 2 tabs
+- Tab 1: Service ordering workflow complete (customer → services → payment)
+- Tab 2: Service CRUD operations (add/edit/delete)
+- Stock management working
+- Invoice generation for service-only orders
+- Payment integration
 
 ---
 
@@ -751,19 +838,28 @@ bookStats->tinhToan();
 
 ### **Week 2: Booking Management (Ngày 7-12)**
 
-- [ ] Booking list displays real Core data
-- [ ] Create booking workflow complete (5 steps)
-- [ ] Timeline view với time slots (tham khảo React design)
-- [ ] Service selection working
-- [ ] Booking actions (cancel, confirm, complete)
+- [ ] **Tab 1: Timeline View** - Calendar + Grid layout với booking blocks
+- [ ] Click-to-create booking từ timeline (giống ảnh tham khảo)
+- [ ] Booking form panel (phone search, field, time, save/delete)
+- [ ] Real-time availability check
+- [ ] Visual feedback (blue booking blocks)
+- [ ] **Tab 2: Table View** - Full booking list với filters
+- [ ] CRUD operations: Edit, Cancel, Payment, Add Services
+- [ ] BookingDetailsDialog
+- [ ] AddServiceDialog
+- [ ] PaymentDialog (Cash/Card/Transfer)
 - [ ] Data persists to Core
 
 ### **Week 3: All Features Complete (Ngày 13-18)**
 
-- [ ] Payment management complete
+- [ ] **Payment History** - Invoice list (from Booking + Service)
+- [ ] Filters: date range, payment method, type (booking/service)
+- [ ] View invoice details, export/print (optional)
 - [ ] Field management CRUD complete
-- [ ] Customer management CRUD complete
-- [ ] Service management CRUD complete
+- [ ] Customer management CRUD complete ✅
+- [ ] **Service Page** - 2 tabs complete:
+  - [ ] Tab 1: Service ordering workflow (customer → services → payment)
+  - [ ] Tab 2: Service CRUD (add/edit/delete, stock management)
 - [ ] Staff management (Admin only)
 - [ ] Statistics page (Admin only)
 - [ ] All forms validated
@@ -821,29 +917,30 @@ UI/
 │   └── Header.h/cpp/ui
 │
 ├── Components/
-│   └── Sidebar.h/cpp/ui           Week 1 Day 3-4 (Nút ba gạch + Menu + Admin icon)
+│   ├── Sidebar.h/cpp/ui           Week 1 Day 3-4
+│   └── TimelineGrid.h/cpp         Week 2 Day 7-8 (Custom widget for timeline)
 │
 ├── Pages/
 │   ├── Login/                      Week 1 Day 2
 │   │   └── LoginDialog.h/cpp/ui
 │   │
-│   ├── Account/                    Week 1 Day 5-6 ✅ NEW!
-│   │   └── AccountPage.h/cpp/ui    (Thông tin, Đổi mật khẩu, Đăng xuất)
+│   ├── Account/                    Week 1 Day 5-6 ✅
+│   │   └── AccountPage.h/cpp/ui
 │   │
-│   ├── Booking/                    Week 2 Days 7-12
-│   │   └── BookingListPage.h/cpp/ui
+│   ├── Booking/                    Week 2 Days 7-12 ⚡ UPDATED
+│   │   └── BookingPage.h/cpp/ui   (2 tabs: Timeline + Table View)
 │   │
-│   ├── Payment/                    Week 3 Day 13
-│   │   └── PaymentListPage.h/cpp/ui
+│   ├── Payment/                    Week 3 Day 13 ⚡ UPDATED
+│   │   └── PaymentHistoryPage.h/cpp/ui (Invoice history)
 │   │
 │   ├── Field/                      Week 3 Day 14
 │   │   └── FieldManagementPage.h/cpp/ui
 │   │
-│   ├── Customer/                   Week 3 Day 15
+│   ├── Customer/                   Week 3 Day 15 ✅
 │   │   └── CustomerManagementPage.h/cpp/ui
 │   │
-│   ├── Service/                    Week 3 Day 16
-│   │   └── ServiceManagementPage.h/cpp/ui
+│   ├── Service/                    Week 3 Day 16 ⚡ UPDATED
+│   │   └── ServicePage.h/cpp/ui   (2 tabs: Service Ordering + Management)
 │   │
 │   ├── Staff/                      Week 3 Day 17 (Admin only)
 │   │   └── StaffManagementPage.h/cpp/ui
@@ -852,25 +949,25 @@ UI/
 │       └── StatisticsPage.h/cpp/ui
 │
 ├── Dialogs/                        Week 1-3
-│   ├── BookingDialog.h/cpp/ui             (Days 8-10)
 │   ├── BookingDetailsDialog.h/cpp/ui      (Day 11-12)
-│   ├── FieldDialog.h/cpp/ui               (Day 13)
-│   ├── CustomerDialog.h/cpp/ui            (Day 14)
-│   ├── ServiceDialog.h/cpp/ui             (Day 15)
-│   ├── PaymentDialog.h/cpp/ui             (Day 16)
+│   ├── AddServiceDialog.h/cpp/ui          (Day 11-12)
+│   ├── PaymentDialog.h/cpp/ui             (Day 11-12 - moved from Day 16)
+│   ├── FieldDialog.h/cpp/ui               (Day 14)
+│   ├── InvoiceDetailsDialog.h/cpp/ui      (Day 13 - view invoice details)
+│   ├── ServiceDialog.h/cpp/ui             (Day 16 - add/edit service)
 │   └── StaffDialog.h/cpp/ui               (Day 17)
 │
 └── Resources/                      Week 1 Day 1
     ├── icons/
     │   ├── menu.svg               (Nút ba gạch)
     │   ├── booking.svg            (Đặt sân)
-    │   ├── payment.svg            (Thanh toán)
+    │   ├── payment.svg            (Thanh toán/Hóa đơn)
     │   ├── field.svg              (Sân bóng)
     │   ├── customer.svg           (Khách hàng)
     │   ├── service.svg            (Dịch vụ)
     │   ├── staff.svg              (Nhân viên - Admin)
     │   ├── statistics.svg         (Thống kê - Admin)
-    │   ├── account.svg            (Tài khoản) ✅ NEW!
+    │   ├── account.svg            (Tài khoản) ✅
     │   └── logout.svg             (Đăng xuất)
     ├── styles/
     │   └── app.qss                 (Simple QSS)
@@ -879,16 +976,25 @@ UI/
 
 **Menu Order:**
 
-1. Đặt Sân → BookingListPage
-2. Thanh Toán → PaymentListPage
+1. Đặt Sân → BookingPage (2 tabs: Timeline View + Table View)
+2. Thanh Toán → PaymentHistoryPage (Invoice history)
 3. Sân Bóng → FieldManagementPage
 4. Khách Hàng → CustomerManagementPage
-5. Dịch Vụ → ServiceManagementPage
+5. Dịch Vụ → ServicePage (2 tabs: Service Ordering + Service Management)
 6. Nhân Viên → StaffManagementPage (Admin only)
 7. Thống Kê → StatisticsPage (Admin only)
-8. **Tài Khoản → AccountPage** ✅ **NEW!** (All users)
+8. **Tài Khoản → AccountPage** ✅ (All users)
 
-**Total Files to Create:** ~43 files (giảm 2 dialogs: AdminInfoDialog, ChangePasswordDialog)
+**Key Changes:**
+
+- **Booking:** BookingListPage → BookingPage (2 tabs: Timeline + Table)
+- **Payment:** PaymentListPage → PaymentHistoryPage (Invoice history only)
+- **Service:** ServiceManagementPage → ServicePage (2 tabs: Ordering + Management)
+- **New Components:** TimelineGrid custom widget
+- **New Dialogs:** InvoiceDetailsDialog, AddServiceDialog
+- **Removed:** Separate BookingDialog (integrated into Timeline form)
+
+**Total Files to Create:** ~45 files
 
 ---
 

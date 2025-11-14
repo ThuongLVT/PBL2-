@@ -147,11 +147,15 @@ set(CORE_UTILS_HEADERS
 
 # Week 1 Day 2: Login Dialog
 # Week 1 Day 3-4: MainWindow, Sidebar, Header, Placeholder Pages
+# Week 2 Day 7-8: BookingPage, TimelineTab, TimelineGridWidget
 set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Pages/Login/LoginDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/MainWindow/MainWindow.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/Sidebar.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/Header.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Components/TimelineGridWidget.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/TimelineTab.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingListPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/PaymentListPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.cpp
@@ -171,6 +175,9 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/MainWindow/MainWindow.h
     ${CMAKE_SOURCE_DIR}/UI/Components/Sidebar.h
     ${CMAKE_SOURCE_DIR}/UI/Components/Header.h
+    ${CMAKE_SOURCE_DIR}/UI/Components/TimelineGridWidget.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/TimelineTab.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingListPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/PaymentListPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.h

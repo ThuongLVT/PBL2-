@@ -77,7 +77,7 @@ void MainWindow::setupUI()
     m_contentStack->setObjectName("ContentStack");
 
     // Create pages
-    m_bookingPage = new BookingListPage(this);
+    m_bookingPage = new BookingPage(this);
     m_paymentPage = new PaymentListPage(this);
     m_fieldPage = new FieldManagementPage(this);
     m_customerPage = new CustomerManagementPage(this);

@@ -6,7 +6,7 @@
 #include <QSplitter>
 #include "UI/Components/Sidebar.h"
 #include "UI/Components/Header.h"
-#include "UI/Pages/Booking/BookingListPage.h"
+#include "UI/Pages/Booking/BookingPage.h"
 #include "UI/Pages/Payment/PaymentListPage.h"
 #include "UI/Pages/Field/FieldManagementPage.h"
 #include "UI/Pages/Customer/CustomerManagementPage.h"
@@ -45,7 +45,7 @@ private:
     QStackedWidget *m_contentStack;
 
     // Pages
-    BookingListPage *m_bookingPage;
+    BookingPage *m_bookingPage;
     PaymentListPage *m_paymentPage;
     FieldManagementPage *m_fieldPage;
     CustomerManagementPage *m_customerPage;

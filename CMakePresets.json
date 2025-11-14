@@ -1,0 +1,80 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "mingw-debug",
+      "displayName": "MinGW Debug",
+      "description": "Debug build using MinGW",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/build/mingw-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "mingw-release",
+      "displayName": "MinGW Release",
+      "description": "Release build using MinGW",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/build/mingw-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "msvc-debug",
+      "displayName": "MSVC Debug",
+      "description": "Debug build using MSVC",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/msvc-debug",
+      "architecture": "x64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "msvc-release",
+      "displayName": "MSVC Release",
+      "description": "Release build using MSVC",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/msvc-release",
+      "architecture": "x64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "mingw-debug",
+      "configurePreset": "mingw-debug",
+      "displayName": "Build MinGW Debug",
+      "jobs": 4
+    },
+    {
+      "name": "mingw-release",
+      "configurePreset": "mingw-release",
+      "displayName": "Build MinGW Release",
+      "jobs": 4
+    },
+    {
+      "name": "msvc-debug",
+      "configurePreset": "msvc-debug",
+      "displayName": "Build MSVC Debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc-release",
+      "configurePreset": "msvc-release",
+      "displayName": "Build MSVC Release",
+      "configuration": "Release"
+    }
+  ]
+}

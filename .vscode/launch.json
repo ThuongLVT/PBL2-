@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "(gdb) Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/FootballFieldManager.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/mingw64/bin/gdb.exe",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "CMake: Build",
+      "visualizerFile": "c:\\Users\\ADMIN\\AppData\\Roaming\\Code\\User\\workspaceStorage\\31b7778df26ad407cb4a6d81dbca1b8e\\tonka3000.qtvsctools\\qt.natvis.xml"
+    }
+  ]
+}

@@ -3,11 +3,14 @@
 ## Setup Đã Hoàn Thành ✅
 
 ### Bạn (ThuongLVT) - Làm Đặt Sân
+
 - ✅ Đã tạo branch `feature/booking`
 - ✅ Đang ở branch `feature/booking`
 
 ### khninh22 - Làm Dịch Vụ
+
 Chạy lệnh sau trong terminal:
+
 ```bash
 cd D:\QT_PBL2  # hoặc đường dẫn nơi clone về
 git checkout -b feature/service
@@ -20,6 +23,7 @@ git checkout -b feature/service
 ### 🎯 Bạn (ThuongLVT) - Module Đặt Sân
 
 **Files BẠN ĐƯỢC phép sửa:**
+
 ```
 UI/Pages/Booking/
 ├── BookingListPage.cpp
@@ -38,11 +42,13 @@ Core/Models/
 ```
 
 **Files KHÔNG được sửa:**
+
 - ❌ `UI/Pages/Service/*` (của khninh22)
 - ❌ `Core/QuanLy/QuanLyDichVu.*` (của khninh22)
 - ❌ `Core/Models/DichVu.*` (của khninh22)
 
 **Files CẦN THẢO LUẬN trước khi sửa:**
+
 - ⚠️ `UI/MainWindow/MainWindow.cpp` (chỉ thêm kết nối UI)
 - ⚠️ `Core/QuanLy/HeThongQuanLy.cpp/h` (nếu cần thêm method)
 - ⚠️ `CMakeLists.txt` (khi thêm file mới)
@@ -52,6 +58,7 @@ Core/Models/
 ### 🎯 khninh22 - Module Dịch Vụ
 
 **Files khninh22 ĐƯỢC phép sửa:**
+
 ```
 UI/Pages/Service/
 ├── ServiceManagementPage.cpp
@@ -70,6 +77,7 @@ Core/Models/
 ```
 
 **Files khninh22 KHÔNG được sửa:**
+
 - ❌ `UI/Pages/Booking/*` (của ThuongLVT)
 - ❌ `Core/QuanLy/QuanLyDatSan.*` (của ThuongLVT)
 - ❌ `Core/Models/DatSan.*` (của ThuongLVT)
@@ -79,6 +87,7 @@ Core/Models/
 ## 🔄 Quy Trình Làm Việc Hàng Ngày
 
 ### Sáng (Trước Khi Code)
+
 ```bash
 # 1. Kiểm tra branch hiện tại
 git branch
@@ -97,6 +106,7 @@ git merge main
 ```
 
 ### Trong Ngày (Sau Mỗi Tính Năng Nhỏ)
+
 ```bash
 # 1. Xem thay đổi
 git status
@@ -118,6 +128,7 @@ git push origin feature/service      # khninh22
 ```
 
 ### Tối (Trước Khi Kết Thúc)
+
 ```bash
 # Push tất cả thay đổi lên GitHub
 git status
@@ -131,6 +142,7 @@ git push origin feature/booking
 ## 🔥 Commit Message Format
 
 ### Template:
+
 ```
 <type>(<module>): <description>
 
@@ -138,6 +150,7 @@ git push origin feature/booking
 ```
 
 ### Types:
+
 - `feat` - Tính năng mới
 - `fix` - Sửa lỗi
 - `refactor` - Cải thiện code
@@ -146,6 +159,7 @@ git push origin feature/booking
 - `test` - Thêm test
 
 ### Ví dụ:
+
 ```bash
 git commit -m "feat(booking): add booking creation dialog"
 git commit -m "fix(service): correct price calculation in service form"
@@ -158,6 +172,7 @@ git commit -m "style(booking): update booking card UI design"
 ## 🎯 Ví Dụ Workflow Thực Tế
 
 ### Ngày 1 - Bạn (Booking)
+
 ```bash
 # Sáng
 git checkout main
@@ -180,6 +195,7 @@ git push origin feature/booking
 ```
 
 ### Ngày 1 - khninh22 (Service)
+
 ```bash
 # Sáng
 git checkout main
@@ -208,6 +224,7 @@ git push origin feature/service
 ### Cách 1: Pull Request trên GitHub (Khuyên Dùng)
 
 #### Bạn:
+
 1. Vào https://github.com/ThuongLVT/PBL2-/pulls
 2. Click "New Pull Request"
 3. Chọn: `base: main` ← `compare: feature/booking`
@@ -216,6 +233,7 @@ git push origin feature/service
 6. Chờ review và approve
 
 #### khninh22:
+
 1. Review code của bạn trên GitHub
 2. Comment nếu có vấn đề
 3. Approve nếu OK
@@ -251,6 +269,7 @@ git push origin main
 ## 🚨 Xử Lý Conflicts
 
 ### Khi có conflict:
+
 ```bash
 # Git sẽ báo file nào bị conflict
 git status
@@ -274,17 +293,23 @@ git push origin feature/booking
 ## 📞 Communication
 
 ### Trước khi code file chung:
+
 💬 **Nhắn tin group trước:**
+
 > "Mình cần sửa MainWindow.cpp để thêm button Đặt Sân, OK không?"
 
 ### Mỗi ngày:
+
 📅 **Daily standup (có thể chat):**
+
 1. Hôm qua làm gì?
 2. Hôm nay làm gì?
 3. Có vấn đề gì không?
 
 ### Khi push code lớn:
+
 📢 **Thông báo:**
+
 > "Mình vừa push booking module lên feature/booking, mọi người pull về nhé!"
 
 ---

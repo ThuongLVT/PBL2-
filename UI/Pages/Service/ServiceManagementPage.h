@@ -2,6 +2,11 @@
 #define SERVICEMANAGEMENTPAGE_H
 
 #include <QWidget>
+#include <QTabWidget>
+#include <QVBoxLayout>
+#include "ServiceOrderWidget.h"
+
+class ServiceManagementWidget;
 
 class ServiceManagementPage : public QWidget
 {
@@ -13,6 +18,12 @@ public:
 
 private:
     void setupUI();
+    void applyStyles();
+
+    QVBoxLayout *mainLayout;
+    QTabWidget *tabWidget;
+    ServiceOrderWidget *orderWidget;
+    ServiceManagementWidget *managementWidget;
 };
 
 #endif // SERVICEMANAGEMENTPAGE_H

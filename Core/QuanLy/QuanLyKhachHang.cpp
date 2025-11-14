@@ -247,9 +247,6 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
 
     vector<vector<string>> rows;
 
-    // First row: maxCustomerId metadata
-    rows.push_back({to_string(maxCustomerId), "", "", "", "", ""});
-
     // Customer data rows
     for (int i = 0; i < danhSachKhachHang.size(); i++)
     {
@@ -319,14 +316,9 @@ bool QuanLyKhachHang::docCSV(const string &filename)
 
     xoaTatCa();
 
-    // First row contains maxCustomerId
-    if (!rows[0].empty() && !rows[0][0].empty())
-    {
-        maxCustomerId = stoi(rows[0][0]);
-        cout << "Loaded maxCustomerId: " << maxCustomerId << endl;
-    }
-
-    // Read customer data (skip first metadata row)
+    // Skip header row, read customer data starting from row 1
+    maxCustomerId = 0;
+    
     for (size_t i = 1; i < rows.size(); i++)
     {
         const auto &row = rows[i];
@@ -358,6 +350,17 @@ bool QuanLyKhachHang::docCSV(const string &filename)
             kh->datTongChiTieu(tongChiTieu);
 
             danhSachKhachHang.push_back(kh);
+            
+            // Update maxCustomerId from KH### format
+            if (maKH.length() > 2 && maKH.substr(0, 2) == "KH")
+            {
+                try {
+                    int id = stoi(maKH.substr(2));
+                    if (id > maxCustomerId) maxCustomerId = id;
+                } catch (...) {
+                    // Ignore invalid ID format
+                }
+            }
         }
         catch (const exception &e)
         {

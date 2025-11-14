@@ -1,0 +1,27 @@
+MaDichVu,TenDichVu,LoaiDichVu,DonGia,DonVi,SoLuongBan,TrangThai,HinhAnh,MoTa
+DV001,Coca Cola 330ml,DO_UONG,15000,Lon,145,1,images/product.jpg,Nước ngọt có ga Coca Cola lon 330ml
+DV002,Pepsi 330ml,DO_UONG,15000,Lon,132,1,images/product.jpg,Nước ngọt có ga Pepsi lon 330ml
+DV003,Nước suối Aquafina,DO_UONG,10000,Chai,287,1,images/product.jpg,Nước khoáng Aquafina 500ml
+DV004,Sting dâu,DO_UONG,12000,Lon,98,1,images/product.jpg,Nước tăng lực Sting hương dâu 330ml
+DV005,Number 1 chanh muối,DO_UONG,12000,Chai,76,1,images/product.jpg,Nước ion Number 1 chanh muối 455ml
+DV006,Red Bull,DO_UONG,18000,Lon,54,1,images/product.jpg,Nước tăng lực Red Bull 250ml
+DV007,Trà xanh 0 độ,DO_UONG,10000,Chai,165,1,images/product.jpg,Trà xanh không độ 450ml
+DV008,C2 hương đào,DO_UONG,10000,Chai,123,1,images/product.jpg,Trà xanh C2 hương đào 230ml
+DV009,Café đen,DO_UONG,15000,Ly,89,1,images/product.jpg,Cà phê đen nóng/đá
+DV010,Café sữa,DO_UONG,18000,Ly,112,1,images/product.jpg,Cà phê sữa nóng/đá
+DV011,Nước cam ép,DO_UONG,25000,Ly,67,1,images/product.jpg,Nước cam tươi ép
+DV012,Soda chanh,DO_UONG,20000,Ly,45,1,images/product.jpg,Soda chanh tươi
+DV013,Bóng đá Size 5,THIET_BI,250000,Cái,15,1,images/product.jpg,Bóng đá chuẩn thi đấu Size 5
+DV014,Bóng đá Size 4,THIET_BI,200000,Cái,8,1,images/product.jpg,Bóng đá Size 4 cho thiếu nhi
+DV015,Găng tay thủ môn,THIET_BI,150000,Đôi,12,1,images/product.jpg,Găng tay thủ môn chuyên nghiệp
+DV016,Bảo vệ ống đồng,THIET_BI,80000,Đôi,23,1,images/product.jpg,Bảo vệ ống đồng cho cầu thủ
+DV017,Áo đấu màu đỏ,THIET_BI,120000,Bộ,18,1,images/product.jpg,Bộ áo đấu đỏ (áo + quần)
+DV018,Áo đấu màu xanh,THIET_BI,120000,Bộ,16,1,images/product.jpg,Bộ áo đấu xanh (áo + quần)
+DV019,Giày đá banh Nike,THIET_BI,450000,Đôi,7,1,images/product.jpg,Giày đá banh Nike Mercurial
+DV020,Giày đá banh Adidas,THIET_BI,480000,Đôi,5,1,images/product.jpg,Giày đá banh Adidas Predator
+DV021,Băng cuốn bảo vệ,KHAC,30000,Cuộn,34,1,images/product.jpg,Băng cuốn bảo vệ cổ chân
+DV022,Túi đựng đồ,KHAC,180000,Cái,9,1,images/product.jpg,Túi đựng đồ thể thao
+DV023,Khăn lạnh,KHAC,15000,Cái,56,1,images/product.jpg,Khăn lạnh thể thao
+DV024,Nước súc miệng,KHAC,8000,Chai,41,1,images/product.jpg,Nước súc miệng cỡ nhỏ
+DV025,Dầu gió,KHAC,12000,Chai,28,1,images/product.jpg,Dầu gió xanh con ó 10ml
+DV026,Jack,KHAC,5e+06,Người,0,1,images/product.jpg,Jack 5 củ

@@ -54,6 +54,20 @@ public:
     bool ghiFile(std::ofstream &file) const;
     bool docFile(std::ifstream &file);
     void xoaTatCa();
+
+    /**
+     * @brief Tải dịch vụ từ file CSV
+     * @param filePath Đường dẫn file CSV
+     * @return true nếu tải thành công
+     */
+    bool taiDuLieuTuCSV(const std::string &filePath);
+
+    /**
+     * @brief Lưu dịch vụ ra file CSV
+     * @param filePath Đường dẫn file CSV
+     * @return true nếu lưu thành công
+     */
+    bool luuDuLieuRaCSV(const std::string &filePath) const;
 };
 
 #endif // QUANLYDICHVU_H

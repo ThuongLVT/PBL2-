@@ -46,6 +46,9 @@ protected:
     LoaiDichVu loaiDichVu; ///< Loại dịch vụ
     std::string moTa;        ///< Mô tả chi tiết
     bool conHang;          ///< Trạng thái còn hàng
+    std::string donVi;       ///< Đơn vị (Lon, Chai, Cái, Đôi, Bộ...)
+    int soLuongBan;        ///< Số lượng đã bán
+    std::string hinhAnh;     ///< Đường dẫn file hình ảnh
 
 public:
     // ========== CONSTRUCTORS ==========
@@ -120,6 +123,24 @@ public:
      */
     std::string layTenLoaiDichVu() const;
 
+    /**
+     * @brief Lấy đơn vị
+     * @return Đơn vị
+     */
+    std::string layDonVi() const;
+
+    /**
+     * @brief Lấy số lượng đã bán
+     * @return Số lượng đã bán
+     */
+    int laySoLuongBan() const;
+
+    /**
+     * @brief Lấy đường dẫn hình ảnh
+     * @return Đường dẫn hình ảnh
+     */
+    std::string layHinhAnh() const;
+
     // ========== SETTERS ==========
 
     /**
@@ -145,6 +166,24 @@ public:
      * @param ch Trạng thái còn hàng
      */
     void datConHang(bool ch);
+
+    /**
+     * @brief Đặt đơn vị
+     * @param dv Đơn vị mới
+     */
+    void datDonVi(const std::string &dv);
+
+    /**
+     * @brief Đặt số lượng đã bán
+     * @param sl Số lượng đã bán
+     */
+    void datSoLuongBan(int sl);
+
+    /**
+     * @brief Đặt đường dẫn hình ảnh
+     * @param ha Đường dẫn hình ảnh
+     */
+    void datHinhAnh(const std::string &ha);
 
     // ========== METHODS ==========
 

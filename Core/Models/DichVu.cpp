@@ -12,21 +12,25 @@ using namespace std;
 
 DichVu::DichVu()
     : maDichVu(""), tenDichVu(""), donGia(0.0),
-      loaiDichVu(LoaiDichVu::KHAC), moTa(""), conHang(true)
+      loaiDichVu(LoaiDichVu::KHAC), moTa(""), conHang(true),
+      donVi(""), soLuongBan(0), hinhAnh("")
 {
 }
 
 DichVu::DichVu(const std::string &maDV, const std::string &tenDV,
                double gia, LoaiDichVu loai)
     : maDichVu(maDV), tenDichVu(tenDV), donGia(gia),
-      loaiDichVu(loai), moTa(""), conHang(true)
+      loaiDichVu(loai), moTa(""), conHang(true),
+      donVi(""), soLuongBan(0), hinhAnh("")
 {
 }
 
 DichVu::DichVu(const DichVu &other)
     : maDichVu(other.maDichVu), tenDichVu(other.tenDichVu),
       donGia(other.donGia), loaiDichVu(other.loaiDichVu),
-      moTa(other.moTa), conHang(other.conHang)
+      moTa(other.moTa), conHang(other.conHang),
+      donVi(other.donVi), soLuongBan(other.soLuongBan),
+      hinhAnh(other.hinhAnh)
 {
 }
 
@@ -84,6 +88,21 @@ std::string DichVu::layTenLoaiDichVu() const
     }
 }
 
+std::string DichVu::layDonVi() const
+{
+    return donVi;
+}
+
+int DichVu::laySoLuongBan() const
+{
+    return soLuongBan;
+}
+
+std::string DichVu::layHinhAnh() const
+{
+    return hinhAnh;
+}
+
 // ========== SETTERS ==========
 
 void DichVu::datTenDichVu(const std::string &ten)
@@ -107,6 +126,21 @@ void DichVu::datMoTa(const std::string &mt)
 void DichVu::datConHang(bool ch)
 {
     conHang = ch;
+}
+
+void DichVu::datDonVi(const std::string &dv)
+{
+    donVi = dv;
+}
+
+void DichVu::datSoLuongBan(int sl)
+{
+    soLuongBan = sl;
+}
+
+void DichVu::datHinhAnh(const std::string &ha)
+{
+    hinhAnh = ha;
 }
 
 // ========== METHODS ==========

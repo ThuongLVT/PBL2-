@@ -15,6 +15,7 @@
 #include "QuanLySan.h"
 #include "QuanLyKhachHang.h"
 #include "QuanLyDichVu.h"
+#include "QuanLyDonHangDichVu.h"
 #include "QuanLyDatSan.h"
 #include "QuanLyThanhToan.h"
 #include "BackupManager.h"
@@ -35,6 +36,7 @@ private:
     QuanLySan *quanLySan;
     QuanLyKhachHang *quanLyKhachHang;
     QuanLyDichVu *quanLyDichVu;
+    QuanLyDonHangDichVu *quanLyDonHangDichVu;
     QuanLyDatSan *quanLyDatSan;
     QuanLyThanhToan *quanLyThanhToan;
     BackupManager *backupManager;
@@ -60,6 +62,7 @@ public:
     QuanLySan *layQuanLySan() const { return quanLySan; }
     QuanLyKhachHang *layQuanLyKhachHang() const { return quanLyKhachHang; }
     QuanLyDichVu *layQuanLyDichVu() const { return quanLyDichVu; }
+    QuanLyDonHangDichVu *layQuanLyDonHangDichVu() const { return quanLyDonHangDichVu; }
     QuanLyDatSan *layQuanLyDatSan() const { return quanLyDatSan; }
     QuanLyThanhToan *layQuanLyThanhToan() const { return quanLyThanhToan; }
     BackupManager *layBackupManager() const { return backupManager; }
@@ -103,6 +106,15 @@ public:
     DichVu *timDichVu(const std::string &ma);
     const MangDong<DichVu *> &layDanhSachDichVu() const;
     void hienThiDanhSachDichVu() const;
+
+    // ===== ĐƠN HÀNG DỊCH VỤ (Delegate to QuanLyDonHangDichVu) =====
+    DonHangDichVu *taoDonHangDichVu(KhachHang *kh);
+    bool huyDonHangDichVu(const std::string &maDH);
+    bool capNhatTrangThaiDonHang(const std::string &maDH, TrangThaiDonHang trangThai);
+    DonHangDichVu *timDonHangDichVu(const std::string &maDH);
+    const MangDong<DonHangDichVu *> &layDanhSachDonHangDichVu() const;
+    void hienThiDanhSachDonHangDichVu() const;
+    double tongDoanhThuDichVu() const;
 
     // ===== ĐẶT SÂN (Delegate to QuanLyDatSan) =====
     DatSan *taoDatSan(KhachHang *kh, San *san, const NgayGio &thoiGian, const KhungGio &khung);
@@ -153,6 +165,7 @@ public:
     int tongSoNhanVien() const;
     int tongSoSan() const;
     int tongSoDichVu() const;
+    int tongSoDonHangDichVu() const;
     int tongSoDatSan() const;
     int tongSoThanhToan() const;
 };

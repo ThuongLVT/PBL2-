@@ -59,6 +59,7 @@ set(CORE_MODELS_SOURCES
     Core/Models/DichVu.cpp
     Core/Models/DichVuDat.cpp
     Core/Models/DatSan.cpp
+    Core/Models/DonHangDichVu.cpp
     Core/Models/ThanhToan.cpp
     Core/Models/ThanhToanTienMat.cpp
     Core/Models/ThanhToanThe.cpp
@@ -76,6 +77,7 @@ set(CORE_MODELS_HEADERS
     Core/Models/DichVu.h
     Core/Models/DichVuDat.h
     Core/Models/DatSan.h
+    Core/Models/DonHangDichVu.h
     Core/Models/ThanhToan.h
     Core/Models/ThanhToanTienMat.h
     Core/Models/ThanhToanThe.h
@@ -90,6 +92,7 @@ set(CORE_QUANLY_SOURCES
     Core/QuanLy/QuanLySan.cpp
     Core/QuanLy/QuanLyKhachHang.cpp
     Core/QuanLy/QuanLyDichVu.cpp
+    Core/QuanLy/QuanLyDonHangDichVu.cpp
     Core/QuanLy/QuanLyDatSan.cpp
     Core/QuanLy/QuanLyThanhToan.cpp
 )
@@ -101,6 +104,7 @@ set(CORE_QUANLY_HEADERS
     Core/QuanLy/QuanLySan.h
     Core/QuanLy/QuanLyKhachHang.h
     Core/QuanLy/QuanLyDichVu.h
+    Core/QuanLy/QuanLyDonHangDichVu.h
     Core/QuanLy/QuanLyDatSan.h
     Core/QuanLy/QuanLyThanhToan.h
 )
@@ -157,6 +161,8 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementPage.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceOrderWidget.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementWidget.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Staff/StaffManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/StatisticsPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Account/AccountPage.cpp
@@ -164,6 +170,7 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/ChangePasswordDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/FieldDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/MaintenanceDialog.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Dialogs/AddCustomerDialog.cpp
 )
 
 set(UI_HEADERS
@@ -176,6 +183,8 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementPage.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceOrderWidget.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementWidget.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Staff/StaffManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/StatisticsPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Account/AccountPage.h
@@ -183,6 +192,7 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/ChangePasswordDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/FieldDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/MaintenanceDialog.h
+    ${CMAKE_SOURCE_DIR}/UI/Dialogs/AddCustomerDialog.h
 )
 
 # Resources (Week 1 Day 1)

@@ -23,9 +23,13 @@ HeThongQuanLy::HeThongQuanLy()
     quanLySan = new QuanLySan();
     quanLyKhachHang = new QuanLyKhachHang();
     quanLyDichVu = new QuanLyDichVu();
+    quanLyDonHangDichVu = new QuanLyDonHangDichVu();
     quanLyDatSan = new QuanLyDatSan();
     quanLyThanhToan = new QuanLyThanhToan();
     backupManager = new BackupManager();
+
+    // Tải dữ liệu dịch vụ từ CSV (path tuyệt đối)
+    quanLyDichVu->taiDuLieuTuCSV("D:/QT_PBL2/Data/dichvu.csv");
 }
 
 // Destructor
@@ -37,6 +41,7 @@ HeThongQuanLy::~HeThongQuanLy()
     delete quanLySan;
     delete quanLyKhachHang;
     delete quanLyDichVu;
+    delete quanLyDonHangDichVu;
     delete quanLyDatSan;
     delete quanLyThanhToan;
     delete backupManager;
@@ -240,6 +245,42 @@ const MangDong<DichVu *> &HeThongQuanLy::layDanhSachDichVu() const
 void HeThongQuanLy::hienThiDanhSachDichVu() const
 {
     quanLyDichVu->hienThiDanhSachDichVu();
+}
+
+// ===== ĐƠN HÀNG DỊCH VỤ (Delegate to QuanLyDonHangDichVu) =====
+DonHangDichVu *HeThongQuanLy::taoDonHangDichVu(KhachHang *kh)
+{
+    return quanLyDonHangDichVu->taoDonHang(kh);
+}
+
+bool HeThongQuanLy::huyDonHangDichVu(const string &maDH)
+{
+    return quanLyDonHangDichVu->huyDonHang(maDH);
+}
+
+bool HeThongQuanLy::capNhatTrangThaiDonHang(const string &maDH, TrangThaiDonHang trangThai)
+{
+    return quanLyDonHangDichVu->capNhatTrangThai(maDH, trangThai);
+}
+
+DonHangDichVu *HeThongQuanLy::timDonHangDichVu(const string &maDH)
+{
+    return quanLyDonHangDichVu->timDonHang(maDH);
+}
+
+const MangDong<DonHangDichVu *> &HeThongQuanLy::layDanhSachDonHangDichVu() const
+{
+    return quanLyDonHangDichVu->layDanhSachDonHang();
+}
+
+void HeThongQuanLy::hienThiDanhSachDonHangDichVu() const
+{
+    quanLyDonHangDichVu->hienThiDanhSachDonHang();
+}
+
+double HeThongQuanLy::tongDoanhThuDichVu() const
+{
+    return quanLyDonHangDichVu->tongDoanhThu();
 }
 
 // ===== ĐẶT SÂN (Delegate to QuanLyDatSan) =====
@@ -483,6 +524,9 @@ void HeThongQuanLy::xoaTatCaDuLieu()
     if (quanLyDichVu != nullptr)
         quanLyDichVu->xoaTatCa();
 
+    if (quanLyDonHangDichVu != nullptr)
+        quanLyDonHangDichVu->xoaTatCa();
+
     if (quanLyDatSan != nullptr)
         quanLyDatSan->xoaTatCa();
 
@@ -536,6 +580,11 @@ int HeThongQuanLy::tongSoDichVu() const
     return quanLyDichVu->tongSoDichVu();
 }
 
+int HeThongQuanLy::tongSoDonHangDichVu() const
+{
+    return quanLyDonHangDichVu->tongSoDonHang();
+}
+
 int HeThongQuanLy::tongSoDatSan() const
 {
     return quanLyDatSan->tongSoDatSan();
@@ -562,8 +611,15 @@ bool HeThongQuanLy::luuCSV(const string &dataDir)
         success = false;
     }
 
-    // TODO: Add other entities (San, DichVu, DatSan, ThanhToan, NhanVien, QuanTriVien)
-    // For now, only KhachHang is implemented
+    // Save services
+    string dichvuFile = dataDir + "/dichvu.csv";
+    if (!quanLyDichVu->luuDuLieuRaCSV(dichvuFile))
+    {
+        cerr << "Failed to save services to CSV" << endl;
+        success = false;
+    }
+
+    // TODO: Add other entities (San, DatSan, ThanhToan, NhanVien, QuanTriVien)
 
     if (success)
     {

@@ -1,20 +1,23 @@
 # Hướng Dẫn Cho khninh22 - Module Dịch Vụ
 
-## ⚡ Quick Start
+## ⚡ Quick Start (Cực Đơn Giản!)
 
-### 1. Tạo Branch của Bạn
+### ✅ Branch đã được tạo sẵn! Bạn chỉ cần:
 
 ```bash
 cd D:\QT_PBL2
-git checkout -b feature/service
+git fetch origin
+git checkout feature/service
 ```
 
-### 2. Kiểm Tra
+### Kiểm Tra
 
 ```bash
 git branch
 # Phải thấy: * feature/service
 ```
+
+**Xong! Giờ có thể code ngay! 🚀**
 
 ---
 

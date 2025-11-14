@@ -8,15 +8,19 @@
 #include <QMouseEvent>
 #include <QScrollBar>
 #include <QDebug>
+#include <QMenu>
+#include <QMessageBox>
+#include <QContextMenuEvent>
 #include <cmath>
 
 TimelineGridWidget::TimelineGridWidget(QWidget *parent)
-    : QWidget(parent), system(nullptr), currentDate(QDate::currentDate()), isDragging(false), dragFieldIndex(-1), dragStartHour(0), dragStartMinute(0), totalWidth(0), totalHeight(0), fieldWidth(MIN_FIELD_WIDTH), numFields(0), numHours(END_HOUR - START_HOUR + 1)
+    : QWidget(parent), system(nullptr), currentDate(QDate::currentDate()), isDragging(false), dragFieldIndex(-1), dragStartHour(0), dragStartMinute(0), hasPendingSelection(false), pendingFieldIndex(-1), pendingStartHour(0), pendingStartMinute(0), pendingDurationMinutes(0), currentFieldFilter(-1), currentStatusFilter(0), currentTimeFilter(0), totalWidth(0), totalHeight(0), fieldWidth(MIN_FIELD_WIDTH), numFields(0), numHours(END_HOUR - START_HOUR + 1)
 {
     system = HeThongQuanLy::getInstance();
 
     setMouseTracking(true);
     setMinimumHeight(numHours * HOUR_HEIGHT + HEADER_HEIGHT);
+    setContextMenuPolicy(Qt::DefaultContextMenu);
 
     // Load fields
     QuanLySan *quanLySan = system->layQuanLySan();
@@ -113,10 +117,59 @@ void TimelineGridWidget::loadBookings()
 
         // Create booking block
         BookingBlock *block = new BookingBlock(booking, fieldIndex, startHour, startMinute, durationMinutes);
+        
+        // ===== SET COLOR BASED ON STATUS =====
+        block->color = getBookingColor(booking);
+        block->isPaid = isBookingPaid(booking);
+        
         bookingBlocks.append(block);
     }
 
     update();
+}
+
+QColor TimelineGridWidget::getBookingColor(DatSan *booking) const
+{
+    if (!booking) return QColor("#3b82f6"); // Default blue
+    
+    // TODO: Check booking status from Core
+    // For now, return colors based on simple logic
+    
+    NgayGio ngayGio = booking->getThoiGianDat();
+    QDateTime bookingTime(
+        QDate(ngayGio.getNam(), ngayGio.getThang(), ngayGio.getNgay()),
+        QTime(ngayGio.getGio(), ngayGio.getPhut())
+    );
+    QDateTime now = QDateTime::currentDateTime();
+    
+    // Red: Overdue (past time, not checked in)
+    if (bookingTime < now && bookingTime.addSecs(2 * 3600) < now) {
+        return QColor("#ef4444"); // Red
+    }
+    
+    // Yellow: Coming soon (within 30 minutes)
+    if (bookingTime > now && bookingTime.addSecs(-30 * 60) < now) {
+        return QColor("#f59e0b"); // Yellow/Orange
+    }
+    
+    // Blue: Checked-in (playing)
+    // TODO: Check if booking has check-in status
+    // For now, blue for active bookings
+    
+    // Green: Confirmed
+    return QColor("#16a34a"); // Green (confirmed)
+    
+    // Gray: Pending confirmation
+    // return QColor("#9ca3af");
+}
+
+bool TimelineGridWidget::isBookingPaid(DatSan *booking) const
+{
+    if (!booking) return false;
+    
+    // TODO: Check payment status from Core
+    // For now, assume not paid
+    return false;
 }
 
 void TimelineGridWidget::calculateGeometry()
@@ -147,6 +200,35 @@ void TimelineGridWidget::paintEvent(QPaintEvent *event)
     drawTimeLabels(painter);
     drawFieldHeaders(painter);
     drawBookingBlocks(painter);
+    
+    // Draw pending selection (if exists)
+    if (hasPendingSelection)
+    {
+        int x = pendingFieldIndex * fieldWidth;
+        int startY = HEADER_HEIGHT + (pendingStartHour - START_HOUR) * HOUR_HEIGHT + (pendingStartMinute * HOUR_HEIGHT / 60);
+        int height = pendingDurationMinutes * HOUR_HEIGHT / 60;
+        
+        QRect selectionRect(x + 2, startY, fieldWidth - 4, height);
+        
+        // Orange semi-transparent fill
+        QColor fillColor(249, 115, 22, 120); // #f97316 with alpha 120
+        painter.fillRect(selectionRect, fillColor);
+        
+        // Solid orange border
+        painter.setPen(QPen(QColor(249, 115, 22), 3, Qt::SolidLine));
+        painter.drawRect(selectionRect);
+        
+        // Label: "Nhấn Lưu để xác nhận"
+        painter.setPen(QColor(255, 255, 255));
+        QFont font = painter.font();
+        font.setPointSize(9);
+        font.setBold(true);
+        painter.setFont(font);
+        
+        QString labelText = "Nhấn Lưu để xác nhận";
+        QRect textRect = selectionRect.adjusted(4, 4, -4, -4);
+        painter.drawText(textRect, Qt::AlignCenter | Qt::TextWordWrap, labelText);
+    }
 
     if (isDragging)
     {
@@ -236,12 +318,37 @@ void TimelineGridWidget::drawBookingBlocks(QPainter &painter)
         // Store rect for click detection
         block->rect = QRect(x + 2, y + 2, fieldWidth - 4, height - 4);
 
-        // Draw booking block
-        painter.fillRect(block->rect, QColor(59, 130, 246, 180)); // #3b82f6 with alpha
+        // ===== DRAW WITH STATUS COLOR =====
+        QColor blockColor = block->color;
+        blockColor.setAlpha(180); // Semi-transparent
+        painter.fillRect(block->rect, blockColor);
 
         // Border
-        painter.setPen(QPen(QColor(59, 130, 246), 2));
+        painter.setPen(QPen(blockColor, 2));
         painter.drawRect(block->rect);
+        
+        // ===== PAYMENT STATUS BADGE =====
+        if (block->isPaid) {
+            // Green "Paid" badge at top-right
+            QRect badgeRect(block->rect.right() - 35, block->rect.top() + 3, 30, 14);
+            painter.fillRect(badgeRect, QColor("#10b981"));
+            painter.setPen(QColor(255, 255, 255));
+            QFont badgeFont = painter.font();
+            badgeFont.setPointSize(6);
+            badgeFont.setBold(true);
+            painter.setFont(badgeFont);
+            painter.drawText(badgeRect, Qt::AlignCenter, "✓ Paid");
+        } else {
+            // Yellow "Unpaid" badge
+            QRect badgeRect(block->rect.right() - 40, block->rect.top() + 3, 35, 14);
+            painter.fillRect(badgeRect, QColor("#f59e0b"));
+            painter.setPen(QColor(255, 255, 255));
+            QFont badgeFont = painter.font();
+            badgeFont.setPointSize(6);
+            badgeFont.setBold(true);
+            painter.setFont(badgeFont);
+            painter.drawText(badgeRect, Qt::AlignCenter, "⏳ Unpaid");
+        }
 
         // Text info
         painter.setPen(QColor(255, 255, 255));
@@ -255,7 +362,7 @@ void TimelineGridWidget::drawBookingBlocks(QPainter &painter)
         if (customer)
         {
             QString customerName = QString::fromStdString(customer->layHoTen());
-            QRect textRect = block->rect.adjusted(4, 4, -4, -4);
+            QRect textRect = block->rect.adjusted(4, 20, -4, -4);
             painter.drawText(textRect, Qt::AlignTop | Qt::AlignHCenter, customerName);
         }
 
@@ -270,7 +377,7 @@ void TimelineGridWidget::drawBookingBlocks(QPainter &painter)
 
 void TimelineGridWidget::drawDragSelection(QPainter &painter)
 {
-    if (dragFieldIndex < 0 || dragFieldIndex >= numFields)
+    if (!isDragging || dragFieldIndex < 0 || dragFieldIndex >= numFields)
     {
         return;
     }
@@ -285,16 +392,41 @@ void TimelineGridWidget::drawDragSelection(QPainter &painter)
 
     // Snap to 30-minute intervals
     int snappedY = ((y - HEADER_HEIGHT) / (HOUR_HEIGHT / 2)) * (HOUR_HEIGHT / 2) + HEADER_HEIGHT;
-    int snappedHeight = std::max(HOUR_HEIGHT / 2, ((height) / (HOUR_HEIGHT / 2)) * (HOUR_HEIGHT / 2));
-
-    QRect selectionRect(x + 2, snappedY + 2, fieldWidth - 4, snappedHeight - 4);
-
-    // Draw semi-transparent green overlay
-    painter.fillRect(selectionRect, QColor(22, 163, 74, 100)); // #16a34a with alpha
-
-    // Border
-    painter.setPen(QPen(QColor(22, 163, 74), 2, Qt::DashLine));
+    int snappedHeight = ((height) / (HOUR_HEIGHT / 2)) * (HOUR_HEIGHT / 2);
+    
+    if (snappedHeight < HOUR_HEIGHT / 2) {
+        snappedHeight = HOUR_HEIGHT / 2; // Minimum 30 minutes
+    }
+    
+    // Draw semi-transparent green rectangle
+    QRect selectionRect(x + 2, snappedY, fieldWidth - 4, snappedHeight);
+    
+    // Fill with green alpha
+    QColor fillColor(22, 163, 74, 100); // #16a34a with alpha 100
+    painter.fillRect(selectionRect, fillColor);
+    
+    // Draw green border
+    painter.setPen(QPen(QColor(22, 163, 74), 2, Qt::DashLine)); // Dashed border
     painter.drawRect(selectionRect);
+    
+    // Draw time label
+    int hour, minute;
+    getTimeSlotAtY(snappedY, hour, minute);
+    int durationMins = snappedHeight * 60 / HOUR_HEIGHT;
+    
+    QString timeText = QString("%1:%2 (%3 phút)")
+        .arg(hour, 2, 10, QChar('0'))
+        .arg(minute, 2, 10, QChar('0'))
+        .arg(durationMins);
+    
+    painter.setPen(QColor(255, 255, 255));
+    QFont font = painter.font();
+    font.setPointSize(9);
+    font.setBold(true);
+    painter.setFont(font);
+    
+    QRect textRect = selectionRect.adjusted(4, 4, -4, -4);
+    painter.drawText(textRect, Qt::AlignCenter, timeText);
 }
 
 void TimelineGridWidget::mousePressEvent(QMouseEvent *event)
@@ -384,10 +516,84 @@ void TimelineGridWidget::mouseReleaseEvent(QMouseEvent *event)
         durationMinutes = MIN_DURATION_MINUTES;
     }
 
+    // Save as pending selection (persistent until user saves/cancels)
+    hasPendingSelection = true;
+    pendingFieldIndex = dragFieldIndex;
+    pendingStartHour = startHour;
+    pendingStartMinute = startMinute;
+    pendingDurationMinutes = durationMinutes;
+    
     // Emit signal
     emit slotSelected(dragFieldIndex, startHour, startMinute, durationMinutes);
 
     update();
+}
+
+void TimelineGridWidget::clearPendingSelection()
+{
+    hasPendingSelection = false;
+    pendingFieldIndex = -1;
+    pendingStartHour = 0;
+    pendingStartMinute = 0;
+    pendingDurationMinutes = 0;
+    update();
+}
+
+void TimelineGridWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    // Check if right-click on booking block
+    BookingBlock *block = getBookingBlockAt(event->pos());
+    if (block && block->booking)
+    {
+        showBookingContextMenu(event->globalPos(), block);
+    }
+}
+
+void TimelineGridWidget::showBookingContextMenu(const QPoint &pos, BookingBlock *block)
+{
+    QMenu menu(this);
+    
+    QAction *viewAction = menu.addAction("📋 Xem chi tiết");
+    QAction *checkinAction = menu.addAction("✓ Check-in nhanh");
+    QAction *paymentAction = menu.addAction("💳 Thanh toán");
+    QAction *serviceAction = menu.addAction("🍺 Đặt thêm dịch vụ");
+    menu.addSeparator();
+    QAction *cancelAction = menu.addAction("🗑️ Hủy đặt sân");
+    
+    // Style menu
+    menu.setStyleSheet(
+        "QMenu { background-color: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px; } "
+        "QMenu::item { padding: 6px 20px; font-size: 12px; } "
+        "QMenu::item:selected { background-color: #f0fdf4; color: #16a34a; } "
+        "QMenu::separator { height: 1px; background: #e5e7eb; margin: 4px 0; }"
+    );
+    
+    QAction *selected = menu.exec(pos);
+    
+    if (selected == viewAction) {
+        emit bookingClicked(block->booking);
+    }
+    else if (selected == checkinAction) {
+        QMessageBox::information(this, "Check-in", "Chức năng check-in nhanh sẽ được triển khai sau!");
+    }
+    else if (selected == paymentAction) {
+        QMessageBox::information(this, "Thanh toán", "Chức năng thanh toán sẽ được triển khai ở Tab Table View!");
+    }
+    else if (selected == serviceAction) {
+        QMessageBox::information(this, "Dịch vụ", "Chức năng đặt thêm dịch vụ sẽ được triển khai sau!");
+    }
+    else if (selected == cancelAction) {
+        emit bookingClicked(block->booking);
+    }
+}
+
+void TimelineGridWidget::applyFilters(int fieldIndex, int statusFilter, int timeFilter)
+{
+    currentFieldFilter = fieldIndex;
+    currentStatusFilter = statusFilter;
+    currentTimeFilter = timeFilter;
+    
+    loadBookings();
 }
 
 int TimelineGridWidget::getFieldIndexAtX(int x) const

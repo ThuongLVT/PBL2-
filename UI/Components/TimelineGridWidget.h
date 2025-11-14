@@ -35,9 +35,12 @@ struct BookingBlock
     int startMinute;
     int durationMinutes;
     QRect rect; // Rendered rectangle
+    QColor color; // Status-based color
+    bool isPaid; // Payment status
 
     BookingBlock(DatSan *b, int fi, int sh, int sm, int dm)
-        : booking(b), fieldIndex(fi), startHour(sh), startMinute(sm), durationMinutes(dm) {}
+        : booking(b), fieldIndex(fi), startHour(sh), startMinute(sm), durationMinutes(dm), 
+          color(QColor("#3b82f6")), isPaid(false) {}
 };
 
 /**
@@ -61,6 +64,16 @@ public:
      * @brief Load bookings for current date
      */
     void loadBookings();
+    
+    /**
+     * @brief Apply filters to timeline
+     */
+    void applyFilters(int fieldIndex, int statusFilter, int timeFilter);
+    
+    /**
+     * @brief Clear pending selection (when user cancels)
+     */
+    void clearPendingSelection();
 
 signals:
     /**
@@ -83,6 +96,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -96,6 +110,9 @@ private:
     int getFieldIndexAtX(int x) const;
     int getTimeSlotAtY(int y, int &outHour, int &outMinute) const;
     BookingBlock *getBookingBlockAt(const QPoint &pos);
+    QColor getBookingColor(DatSan *booking) const;
+    bool isBookingPaid(DatSan *booking) const;
+    void showBookingContextMenu(const QPoint &pos, BookingBlock *block);
 
     void calculateGeometry();
 
@@ -122,6 +139,18 @@ private:
     int dragFieldIndex;
     int dragStartHour;
     int dragStartMinute;
+    
+    // ===== PENDING SELECTION =====
+    bool hasPendingSelection;
+    int pendingFieldIndex;
+    int pendingStartHour;
+    int pendingStartMinute;
+    int pendingDurationMinutes;
+    
+    // ===== FILTER STATE =====
+    int currentFieldFilter; // -1 = All
+    int currentStatusFilter; // 0 = All, 1 = Empty, 2 = Booked
+    int currentTimeFilter; // 0 = All, 1 = Morning, 2 = Afternoon, 3 = Evening
 
     // ===== GEOMETRY =====
     int totalWidth;

@@ -26,6 +26,7 @@
 #include <QLabel>
 #include <QFrame>
 #include <QDate>
+#include <QListWidget>
 #include "../../Core/QuanLy/HeThongQuanLy.h"
 #include "../../Core/Models/DatSan.h"
 #include "../../Core/Models/KhachHang.h"
@@ -81,6 +82,11 @@ private slots:
      * @brief Checkin/Match action
      */
     void onCheckinClicked();
+    
+    /**
+     * @brief Cancel selection (clear pending selection)
+     */
+    void onCancelSelectionClicked();
 
     /**
      * @brief Timeline slot selected (drag-to-create)
@@ -91,6 +97,32 @@ private slots:
      * @brief Existing booking clicked
      */
     void onBookingBlockClicked(DatSan *booking);
+    
+    /**
+     * @brief Quick add customer button clicked
+     */
+    void onAddCustomerClicked();
+    
+    /**
+     * @brief Duration quick select (30/60/90/120 min)
+     */
+    void onDuration30Clicked();
+    void onDuration60Clicked();
+    void onDuration90Clicked();
+    void onDuration120Clicked();
+    
+    /**
+     * @brief Timeline filters changed
+     */
+    void onFieldFilterChanged(int index);
+    void onStatusFilterChanged(int index);
+    void onTimeFilterChanged(int index);
+
+signals:
+    /**
+     * @brief Emitted when booking data changes (create/update/delete)
+     */
+    void bookingDataChanged();
 
 private:
     void setupUI();
@@ -102,7 +134,19 @@ private:
     void clearForm();
     void populateForm(DatSan *booking);
     void updateDuration();
+    /**
+     * @brief Format currency for display
+     */
     QString formatCurrency(double amount);
+    
+    /**
+     * @brief Update calendar to highlight dates with bookings
+     */
+    void updateCalendarDates();
+    void setupFilters();
+    bool checkBookingConflict(San *san, const NgayGio &ngayGio, const KhungGio &khungGio);
+    void applyTimelineFilters();
+    void setDuration(int minutes);
 
 private:
     // ===== MAIN LAYOUT =====
@@ -125,6 +169,7 @@ private:
 
     // Form fields
     QLineEdit *phoneEdit;
+    QPushButton *addCustomerBtn; // Quick add customer
     QLabel *nameLabel;
     QComboBox *fieldCombo;
     QLabel *priceLabel;
@@ -134,7 +179,17 @@ private:
     QTimeEdit *fromTimeEdit;
     QTimeEdit *toTimeEdit;
     QLabel *durationLabel;
+    // Duration quick select
+    QPushButton *duration30Btn;
+    QPushButton *duration60Btn;
+    QPushButton *duration90Btn;
+    QPushButton *duration120Btn;
     QTextEdit *noteEdit;
+    
+    // Timeline filters
+    QComboBox *fieldFilterCombo;
+    QComboBox *statusFilterCombo;
+    QComboBox *timeFilterCombo;
 
     // Action buttons
     QPushButton *saveBtn;

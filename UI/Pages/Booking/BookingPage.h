@@ -15,6 +15,13 @@
 #include <QWidget>
 #include <QTabWidget>
 #include <QVBoxLayout>
+#include <QTableWidget>
+#include <QDateEdit>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QGridLayout>
+#include <QHeaderView>
 
 // Forward declarations
 class TimelineTab;
@@ -37,9 +44,22 @@ public:
      */
     void refreshData();
 
+private slots:
+    void applyTableFilters();
+    void loadTableData();
+    void onViewBooking(int row);
+    void onEditBooking(int row);
+    void onCancelBooking(int row);
+    void onPaymentBooking(int row);
+    void onAddServices(int row);
+    void onTableRowDoubleClicked(int row, int column);
+
 private:
     void setupUI();
     void setupConnections();
+    void loadFieldsToFilter();
+    QString getStatusText(int status) const;
+    QColor getStatusColor(int status) const;
 
 private:
     QVBoxLayout *mainLayout;
@@ -48,8 +68,14 @@ private:
     // Tab 1: Timeline View
     TimelineTab *timelineTab;
 
-    // Tab 2: Table View (placeholder for now)
+    // Tab 2: Table View
     QWidget *tableTab;
+    QTableWidget *bookingTable;
+    QDateEdit *startDateEdit;
+    QDateEdit *endDateEdit;
+    QComboBox *fieldFilterCombo;
+    QComboBox *statusFilterCombo;
+    QLineEdit *searchBox;
 };
 
 #endif // BOOKINGPAGE_H

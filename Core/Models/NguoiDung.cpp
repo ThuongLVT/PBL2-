@@ -10,21 +10,23 @@
 
 NguoiDung::NguoiDung()
     : ConNguoi(), tenDangNhap(""), matKhau(""),
-      vaiTro(VaiTro::NHAN_VIEN), hoatDong(true)
+      vaiTro(VaiTro::NHAN_VIEN), hoatDong(true),
+      gioiTinh("Nam"), ngaySinh("01/01/2000")
 {
 }
 
 NguoiDung::NguoiDung(const std::string &ht, const std::string &sdt, const std::string &dc,
                      const std::string &tdn, const std::string &mk, VaiTro vt)
     : ConNguoi(ht, sdt, dc), tenDangNhap(tdn), matKhau(mk),
-      vaiTro(vt), hoatDong(true)
+      vaiTro(vt), hoatDong(true), gioiTinh("Nam"), ngaySinh("01/01/2000")
 {
 }
 
 NguoiDung::NguoiDung(const NguoiDung &other)
     : ConNguoi(other), tenDangNhap(other.tenDangNhap),
       matKhau(other.matKhau), vaiTro(other.vaiTro),
-      hoatDong(other.hoatDong)
+      hoatDong(other.hoatDong), gioiTinh(other.gioiTinh),
+      ngaySinh(other.ngaySinh)
 {
 }
 
@@ -68,6 +70,16 @@ std::string NguoiDung::layMatKhau() const
     return matKhau;
 }
 
+std::string NguoiDung::layGioiTinh() const
+{
+    return gioiTinh;
+}
+
+std::string NguoiDung::layNgaySinh() const
+{
+    return ngaySinh;
+}
+
 // ========== SETTERS ==========
 
 void NguoiDung::datTenDangNhap(const std::string &tdn)
@@ -83,6 +95,16 @@ void NguoiDung::datVaiTro(VaiTro vt)
 void NguoiDung::datHoatDong(bool hd)
 {
     hoatDong = hd;
+}
+
+void NguoiDung::datGioiTinh(const std::string &gt)
+{
+    gioiTinh = gt;
+}
+
+void NguoiDung::datNgaySinh(const std::string &ns)
+{
+    ngaySinh = ns;
 }
 
 // ========== METHODS ==========

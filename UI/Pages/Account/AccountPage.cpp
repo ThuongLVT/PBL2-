@@ -9,9 +9,7 @@
 
 AccountPage::AccountPage(QWidget *parent)
     : QWidget(parent),
-      m_currentUser(nullptr),
-      m_currentGender("Nam"),
-      m_currentDOB(QDate::currentDate().toString("dd/MM/yyyy"))
+      m_currentUser(nullptr)
 {
     setupUI();
     setupConnections();
@@ -198,7 +196,7 @@ void AccountPage::setupConnections()
         } });
 }
 
-void AccountPage::setCurrentUser(QuanTriVien *user)
+void AccountPage::setCurrentUser(NguoiDung *user)
 {
     m_currentUser = user;
     loadUserData();
@@ -211,13 +209,20 @@ void AccountPage::loadUserData()
 
     m_nameEdit->setText(QString::fromStdString(m_currentUser->layHoTen()));
     m_phoneEdit->setText(QString::fromStdString(m_currentUser->laySoDienThoai()));
-    m_genderEdit->setText(m_currentGender);
-    m_dobEdit->setText(m_currentDOB);
+    
+    // Load gender and DOB from model
+    m_genderEdit->setText(QString::fromStdString(m_currentUser->layGioiTinh()));
+    m_dobEdit->setText(QString::fromStdString(m_currentUser->layNgaySinh()));
+    
     m_usernameEdit->setText(QString::fromStdString(m_currentUser->layTenDangNhap()));
     m_passwordEdit->setText(QString::fromStdString(m_currentUser->layMatKhau()));
 
     // Set role based on user type
-    m_roleEdit->setText("Quản Trị Viên");
+    if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN) {
+        m_roleEdit->setText("Quản Trị Viên");
+    } else {
+        m_roleEdit->setText("Nhân Viên");
+    }
 }
 
 void AccountPage::onEditPersonalInfoClicked()
@@ -227,11 +232,11 @@ void AccountPage::onEditPersonalInfoClicked()
 
     EditPersonalInfoDialog dialog(this);
 
-    // Set current values
+    // Set current values from model
     dialog.setName(QString::fromStdString(m_currentUser->layHoTen()));
     dialog.setPhone(QString::fromStdString(m_currentUser->laySoDienThoai()));
-    dialog.setGender(m_currentGender);
-    dialog.setDateOfBirth(m_currentDOB);
+    dialog.setGender(QString::fromStdString(m_currentUser->layGioiTinh()));
+    dialog.setDateOfBirth(QString::fromStdString(m_currentUser->layNgaySinh()));
 
     if (dialog.exec() == QDialog::Accepted)
     {
@@ -241,16 +246,25 @@ void AccountPage::onEditPersonalInfoClicked()
         QString gender = dialog.getGender();
         QString dob = dialog.getDateOfBirth();
 
-        // Update user object (only name and phone are in ConNguoi model)
+        // Update user object (now includes gender and DOB in NguoiDung model)
         m_currentUser->datHoTen(name.toStdString());
         m_currentUser->datSoDienThoai(phone.toStdString());
+        m_currentUser->datGioiTinh(gender.toStdString());
+        m_currentUser->datNgaySinh(dob.toStdString());
 
-        // Store gender and DOB locally
-        m_currentGender = gender;
-        m_currentDOB = dob;
-
-        // Save to file
+        // Save to CSV (admin to admin.csv, staff to nhanvien.csv)
         HeThongQuanLy *hethong = HeThongQuanLy::getInstance();
+        QuanLyNhanVien *staffMgr = hethong->layQuanLyNhanVien();
+        
+        if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN) {
+            // Save admin to admin.csv
+            staffMgr->luuAdminCSV("admin.csv");
+        } else {
+            // Save staff to nhanvien.csv
+            hethong->luuNhanVienCSV("nhanvien.csv");
+        }
+        
+        // Save to binary file
         if (hethong->luuHeThong("D:/QT_PBL2/Data/data.bin"))
         {
             QMessageBox::information(this, "Thành công", "Đã cập nhật thông tin cá nhân!");

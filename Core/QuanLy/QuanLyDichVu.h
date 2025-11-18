@@ -27,6 +27,7 @@ class QuanLyDichVu
 {
 private:
     MangDong<DichVu *> danhSachDichVu; ///< Danh sách dịch vụ
+    int maxServiceId; ///< ID dịch vụ lớn nhất (để tự động tăng)
 
 public:
     // ========== CONSTRUCTORS ==========
@@ -35,6 +36,7 @@ public:
 
     // ========== CRUD OPERATIONS ==========
     bool themDichVu(DichVu *dv);
+    std::string taoMaDichVuMoi(); // Tạo mã dịch vụ tự động
     bool xoaDichVu(const std::string &maDV);
     bool capNhatDichVu(const std::string &maDV, const DichVu &dvMoi);
     DichVu *timDichVu(const std::string &maDV);

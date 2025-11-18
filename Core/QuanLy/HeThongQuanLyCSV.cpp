@@ -42,6 +42,17 @@ bool HeThongQuanLy::docDichVuCSV(const string &filename)
     return quanLyDichVu->taiDuLieuTuCSV(filename);
 }
 
+// ========== STAFF CSV ==========
+bool HeThongQuanLy::luuNhanVienCSV(const string &filename)
+{
+    return quanLyNhanVien->luuCSV(filename);
+}
+
+bool HeThongQuanLy::docNhanVienCSV(const string &filename)
+{
+    return quanLyNhanVien->docCSV(filename);
+}
+
 // ========== BOOKINGS CSV ==========
 bool HeThongQuanLy::luuDatSanCSV(const string &filename)
 {

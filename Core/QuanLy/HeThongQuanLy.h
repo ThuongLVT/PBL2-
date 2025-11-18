@@ -14,6 +14,7 @@
 // Import các lớp quản lý
 #include "QuanLySan.h"
 #include "QuanLyKhachHang.h"
+#include "QuanLyNhanVien.h"
 #include "QuanLyDichVu.h"
 #include "QuanLyDonHangDichVu.h"
 #include "QuanLyDatSan.h"
@@ -35,6 +36,7 @@ private:
     // ===== CÁC LỚP QUẢN LÝ (MANAGERS) =====
     QuanLySan *quanLySan;
     QuanLyKhachHang *quanLyKhachHang;
+    QuanLyNhanVien *quanLyNhanVien;
     QuanLyDichVu *quanLyDichVu;
     QuanLyDonHangDichVu *quanLyDonHangDichVu;
     QuanLyDatSan *quanLyDatSan;
@@ -61,6 +63,7 @@ public:
     // ===== GETTERS CHO CÁC MANAGER =====
     QuanLySan *layQuanLySan() const { return quanLySan; }
     QuanLyKhachHang *layQuanLyKhachHang() const { return quanLyKhachHang; }
+    QuanLyNhanVien *layQuanLyNhanVien() const { return quanLyNhanVien; }
     QuanLyDichVu *layQuanLyDichVu() const { return quanLyDichVu; }
     QuanLyDonHangDichVu *layQuanLyDonHangDichVu() const { return quanLyDonHangDichVu; }
     QuanLyDatSan *layQuanLyDatSan() const { return quanLyDatSan; }
@@ -154,6 +157,8 @@ public:
     // ===== CSV I/O (NEW) =====
     bool luuKhachHangCSV(const std::string &filename);
     bool docKhachHangCSV(const std::string &filename);
+    bool luuNhanVienCSV(const std::string &filename);
+    bool docNhanVienCSV(const std::string &filename);
     bool luuSanCSV(const std::string &filename);
     bool docSanCSV(const std::string &filename);
     bool luuDichVuCSV(const std::string &filename);

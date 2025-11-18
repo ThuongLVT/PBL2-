@@ -167,8 +167,16 @@ void ServiceOrderWidget::setupRightPanel()
     rightLayout->setSpacing(15);
     rightLayout->setContentsMargins(0, 0, 0, 0);
 
+    // ===== SCROLL AREA FOR CUSTOMER & PAYMENT INFORMATION =====
+    QScrollArea *customerScrollArea = new QScrollArea(this);
+    customerScrollArea->setWidgetResizable(true);
+    customerScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    customerScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    customerScrollArea->setFrameShape(QFrame::NoFrame);
+    customerScrollArea->setStyleSheet("QScrollArea { background-color: transparent; border: none; }");
+
     // ===== COMBINED CUSTOMER & PAYMENT INFORMATION =====
-    customerFrame = new QFrame(this);
+    customerFrame = new QFrame();
     customerFrame->setObjectName("formFrame");
     customerLayout = new QVBoxLayout(customerFrame);
     customerLayout->setSpacing(8);
@@ -332,7 +340,9 @@ void ServiceOrderWidget::setupRightPanel()
     finalAmountLabel->setFont(finalFont);
     customerLayout->addWidget(finalAmountLabel);
 
-    rightLayout->addWidget(customerFrame);
+    // Set customerFrame as scroll area widget
+    customerScrollArea->setWidget(customerFrame);
+    rightLayout->addWidget(customerScrollArea, 1); // Take available space with stretch
 
     // ===== ACTION BUTTONS =====
     actionFrame = new QFrame(this);
@@ -355,8 +365,7 @@ void ServiceOrderWidget::setupRightPanel()
     exportBtn->setMinimumHeight(45);
     actionLayout->addWidget(exportBtn);
 
-    rightLayout->addWidget(actionFrame);
-    rightLayout->addStretch();
+    rightLayout->addWidget(actionFrame, 0); // Fixed height, no stretch
 
     mainLayout->addWidget(rightWidget, 4); // 40% of main layout
 }
@@ -805,6 +814,13 @@ void ServiceOrderWidget::addToCart(DichVu *service)
 
     cartItems.append(item);
     updateCart();
+    
+    // Show quick notification
+    QMessageBox::information(this, "Thêm vào giỏ",
+        QString("✅ Đã thêm %1 x %2\n💰 Giá: %3 đ")
+        .arg(item.soLuong)
+        .arg(item.tenDichVu)
+        .arg(QString::number(item.thanhTien, 'f', 0)));
 }
 
 void ServiceOrderWidget::updateCart()
@@ -1118,14 +1134,22 @@ void ServiceOrderWidget::onPaymentClicked()
         order->setGhiChu(noteTextEdit->toPlainText().toStdString());
     }
 
+    // Save immediately after creating order (critical data)
+    system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+
     // Confirm payment
     QString msg = QString(
-                      "Xác nhận thanh toán?\n\n"
-                      "Mã đơn: %1\n"
-                      "Tổng tiền: %2 đ\n"
-                      "Giảm giá: %3 đ\n"
-                      "Thành tiền: %4 đ")
+                      "💳 XÁC NHẬN THANH TOÁN\n\n"
+                      "📋 Mã đơn: %1\n"
+                      "👤 Khách hàng: %2\n"
+                      "📦 Số sản phẩm: %3\n"
+                      "💰 Tổng tiền: %4 đ\n"
+                      "🎁 Giảm giá: %5 đ\n"
+                      "💳 Thành tiền: %6 đ\n\n"
+                      "Xác nhận thanh toán?")
                       .arg(QString::fromStdString(order->getMaDonHang()))
+                      .arg(QString::fromStdString(order->getKhachHang() ? order->getKhachHang()->layHoTen() : "Khách vãng lai"))
+                      .arg(order->getDanhSachDichVu().size())
                       .arg(QString::number(order->getTongTien(), 'f', 0))
                       .arg(QString::number(order->getGiamGia(), 'f', 0))
                       .arg(QString::number(order->getThanhTien(), 'f', 0));
@@ -1136,9 +1160,29 @@ void ServiceOrderWidget::onPaymentClicked()
     {
         order->setTrangThai(TrangThaiDonHang::HOAN_THANH);
 
-        QMessageBox::information(this, "Thành công",
-                                 QString("Đã thanh toán đơn hàng %1")
-                                     .arg(QString::fromStdString(order->getMaDonHang())));
+        // Save immediately (critical data)
+        system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+
+        // Detailed success message
+        QString successMsg = QString(
+            "✅ THANH TOÁN THÀNH CÔNG\n\n"
+            "📋 Mã đơn hàng: %1\n"
+            "👤 Khách hàng: %2\n"
+            "📦 Số lượng sản phẩm: %3\n"
+            "💰 Tổng tiền: %4 đ\n"
+            "🎁 Giảm giá: %5 đ\n"
+            "💳 Thanh toán: %6 đ\n\n"
+            "📅 Thời gian: %7\n\n"
+            "Cảm ơn quý khách đã sử dụng dịch vụ!")
+            .arg(QString::fromStdString(order->getMaDonHang()))
+            .arg(QString::fromStdString(order->getKhachHang() ? order->getKhachHang()->layHoTen() : "Khách vãng lai"))
+            .arg(order->getDanhSachDichVu().size())
+            .arg(QString::number(order->getTongTien(), 'f', 0))
+            .arg(QString::number(order->getGiamGia(), 'f', 0))
+            .arg(QString::number(order->getThanhTien(), 'f', 0))
+            .arg(QString::fromStdString(order->getNgayTao().toString()));
+        
+        QMessageBox::information(this, "✅ Thanh toán thành công", successMsg);
 
         emit orderCreated(QString::fromStdString(order->getMaDonHang()));
 

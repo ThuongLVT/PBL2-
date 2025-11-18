@@ -9,16 +9,24 @@
 #include "QuanLyDichVu.h"
 #include "../Utils/CSVManager.h"
 #include <iostream>
-#include <fstream>
 #include <sstream>
+#include <iomanip>
 
 using namespace std;
 
-QuanLyDichVu::QuanLyDichVu() {}
+QuanLyDichVu::QuanLyDichVu() : maxServiceId(0) {}
 
 QuanLyDichVu::~QuanLyDichVu()
 {
     xoaTatCa();
+}
+
+string QuanLyDichVu::taoMaDichVuMoi()
+{
+    maxServiceId++;
+    ostringstream oss;
+    oss << "DV" << setfill('0') << setw(3) << maxServiceId;
+    return oss.str();
 }
 
 bool QuanLyDichVu::themDichVu(DichVu *dv)
@@ -28,6 +36,19 @@ bool QuanLyDichVu::themDichVu(DichVu *dv)
         return false;
     }
     danhSachDichVu.push_back(dv);
+    
+    // Update maxServiceId if needed
+    string maDV = dv->layMaDichVu();
+    if (maDV.length() >= 3 && maDV.substr(0, 2) == "DV") {
+        try {
+            int id = stoi(maDV.substr(2));
+            if (id > maxServiceId) {
+                maxServiceId = id;
+            }
+        } catch (...) {
+            // Ignore invalid ID format
+        }
+    }
 
     // Auto-save to CSV
     luuDuLieuRaCSV("dichvu.csv");
@@ -130,6 +151,9 @@ bool QuanLyDichVu::ghiFile(ofstream &file) const
     if (!file.is_open())
         return false;
 
+    // Save maxServiceId first
+    file.write(reinterpret_cast<const char *>(&maxServiceId), sizeof(maxServiceId));
+    
     int soLuong = danhSachDichVu.size();
     file.write(reinterpret_cast<const char *>(&soLuong), sizeof(soLuong));
 
@@ -148,6 +172,9 @@ bool QuanLyDichVu::docFile(ifstream &file)
 
     xoaTatCa();
 
+    // Load maxServiceId first
+    file.read(reinterpret_cast<char *>(&maxServiceId), sizeof(maxServiceId));
+    
     int soLuong;
     file.read(reinterpret_cast<char *>(&soLuong), sizeof(soLuong));
 
@@ -171,6 +198,7 @@ void QuanLyDichVu::xoaTatCa()
         delete danhSachDichVu[i];
     }
     danhSachDichVu = MangDong<DichVu *>();
+    maxServiceId = 0;
 }
 
 bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)

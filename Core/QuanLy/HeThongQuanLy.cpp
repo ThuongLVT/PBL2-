@@ -24,6 +24,7 @@ HeThongQuanLy::HeThongQuanLy()
     // Khởi tạo các Manager
     quanLySan = new QuanLySan();
     quanLyKhachHang = new QuanLyKhachHang();
+    quanLyNhanVien = new QuanLyNhanVien();
     quanLyDichVu = new QuanLyDichVu();
     quanLyDonHangDichVu = new QuanLyDonHangDichVu();
     quanLyDatSan = new QuanLyDatSan();
@@ -42,6 +43,7 @@ HeThongQuanLy::~HeThongQuanLy()
     // Xóa các Manager
     delete quanLySan;
     delete quanLyKhachHang;
+    delete quanLyNhanVien;
     delete quanLyDichVu;
     delete quanLyDonHangDichVu;
     delete quanLyDatSan;
@@ -377,6 +379,7 @@ bool HeThongQuanLy::luuHeThong(const string &tenFile)
     success &= luuSanCSV("san.csv");
     success &= luuDichVuCSV("dichvu.csv");
     success &= luuDatSanCSV("datsan.csv");
+    success &= quanLyDonHangDichVu->luuCSV("donhangdichvu.csv");
 
     if (success)
     {

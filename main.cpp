@@ -87,15 +87,32 @@ int main(int argc, char *argv[])
           cout << "✅ Sample data created and saved to " << DATA_FILE << endl;
      }
 
-     // Create default admin if no admin exists
-     if (heThong->layDanhSachQuanTriVien().isEmpty())
+     // Load staff data from CSV (nhanvien.csv)
+     cout << "Loading staff data from nhanvien.csv..." << endl;
+     bool staffLoaded = heThong->docNhanVienCSV("nhanvien.csv");
+     if (staffLoaded)
      {
-          cout << "Creating default admin account..." << endl;
-          QuanTriVien *admin = new QuanTriVien("Administrator", "0000000000", "System", "admin", "admin123");
-          heThong->themQuanTriVien(admin);
-          cout << "⚠️  Default admin created - Username: admin, Password: admin123" << endl;
-          cout << "⚠️  PLEASE CHANGE PASSWORD AFTER FIRST LOGIN!" << endl;
+          cout << "✅ Loaded staff data from nhanvien.csv" << endl;
+          cout << "  - Total staff: " << heThong->layQuanLyNhanVien()->tongSoNhanVien() << endl;
+          cout << "  - Admins: " << heThong->layQuanLyNhanVien()->demSoAdmin() << endl;
+          cout << "  - Staff: " << heThong->layQuanLyNhanVien()->demSoStaff() << endl;
      }
+     else
+     {
+          cout << "⚠️  Could not load nhanvien.csv - staff list empty" << endl;
+     }
+
+    // Load admin data from CSV (admin.csv)
+    cout << "Loading admin data from admin.csv..." << endl;
+    bool adminLoaded = heThong->layQuanLyNhanVien()->docAdminCSV("admin.csv");
+    if (adminLoaded)
+    {
+        cout << "✅ Loaded admin accounts from admin.csv" << endl;
+    }
+    else
+    {
+        cout << "⚠️  Could not load admin.csv - using default admin" << endl;
+    }
 
      cout << "System initialized with:" << endl;
      cout << "  - Customers: " << heThong->tongSoKhachHang() << endl;
@@ -134,8 +151,18 @@ int main(int argc, char *argv[])
           // Week 1 Day 3-4: Show MainWindow after successful login
           cout << "Week 1 Day 3-4: Showing MainWindow..." << endl;
 
-          // Get current user
-          QuanTriVien *currentUser = heThong->timQuanTriVien(loginDialog.getLoggedInUsername().toStdString());
+          // Get current user (admin from QuanLyNhanVien, staff from system)
+          NguoiDung *currentUser = nullptr;
+          QString username = loginDialog.getLoggedInUsername();
+          
+          if (loginDialog.isAdmin()) {
+               // Get admin from QuanLyNhanVien
+               currentUser = heThong->layQuanLyNhanVien()->timQuanTriVienTheoUsername(username.toStdString());
+          } else {
+               // Get staff from QuanLyNhanVien
+               currentUser = heThong->layQuanLyNhanVien()->timNhanVienTheoUsername(username.toStdString());
+          }
+          
           if (!currentUser)
           {
                cout << "❌ Error: Could not retrieve current user!" << endl;

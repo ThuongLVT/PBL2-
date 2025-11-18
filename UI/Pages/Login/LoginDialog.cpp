@@ -287,24 +287,18 @@ void LoginDialog::onCloseClicked()
 bool LoginDialog::authenticate(const QString &username, const QString &password)
 {
     HeThongQuanLy *sys = HeThongQuanLy::getInstance();
+    QuanLyNhanVien *staffMgr = sys->layQuanLyNhanVien();
 
-    // Check admin login
-    if (username == "admin" && password == "1")
-    {
-        m_isAdmin = true;
-        return true;
-    }
-
-    // Check if admin exists in system
-    QuanTriVien *admin = sys->timQuanTriVien(username.toStdString());
+    // Check admin login from CSV
+    QuanTriVien *admin = staffMgr->timQuanTriVienTheoUsername(username.toStdString());
     if (admin && admin->dangNhap(password.toStdString()))
     {
         m_isAdmin = true;
         return true;
     }
 
-    // Check staff login
-    NhanVien *staff = sys->timNhanVien(username.toStdString());
+    // Check staff login from CSV
+    NhanVien *staff = staffMgr->timNhanVienTheoUsername(username.toStdString());
     if (staff && staff->dangNhap(password.toStdString()))
     {
         m_isAdmin = false;

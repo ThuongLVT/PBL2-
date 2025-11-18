@@ -4,13 +4,19 @@
  */
 
 #include "QuanLyDonHangDichVu.h"
+#include "../Utils/CSVManager.h"
 #include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
+#include <vector>
 
 using namespace std;
 
 // ========== CONSTRUCTORS ==========
 
 QuanLyDonHangDichVu::QuanLyDonHangDichVu()
+    : maxOrderId(0)
 {
 }
 
@@ -21,10 +27,18 @@ QuanLyDonHangDichVu::~QuanLyDonHangDichVu()
 
 // ========== CRUD OPERATIONS ==========
 
+string QuanLyDonHangDichVu::taoMaDonHangMoi()
+{
+    maxOrderId++;
+    ostringstream oss;
+    oss << "DHD" << setw(3) << setfill('0') << maxOrderId;
+    return oss.str();
+}
+
 DonHangDichVu *QuanLyDonHangDichVu::taoDonHang(KhachHang *kh)
 {
     // Tạo mã đơn hàng tự động
-    string maDH = DonHangDichVu::taoMaDonHang();
+    string maDH = taoMaDonHangMoi();
 
     // Tạo đơn hàng mới
     DonHangDichVu *donHang = new DonHangDichVu(maDH, kh);
@@ -198,6 +212,9 @@ bool QuanLyDonHangDichVu::ghiFile(std::ofstream &file) const
         return false;
     }
 
+    // Ghi maxOrderId
+    file.write(reinterpret_cast<const char *>(&maxOrderId), sizeof(int));
+
     // Ghi số lượng đơn hàng
     int soLuong = danhSachDonHang.size();
     file.write(reinterpret_cast<const char *>(&soLuong), sizeof(int));
@@ -225,6 +242,9 @@ bool QuanLyDonHangDichVu::docFile(std::ifstream &file)
     // Xóa dữ liệu cũ
     xoaTatCa();
 
+    // Đọc maxOrderId
+    file.read(reinterpret_cast<char *>(&maxOrderId), sizeof(int));
+
     // Đọc số lượng đơn hàng
     int soLuong;
     file.read(reinterpret_cast<char *>(&soLuong), sizeof(int));
@@ -250,4 +270,54 @@ void QuanLyDonHangDichVu::xoaTatCa()
         delete danhSachDonHang[i];
     }
     danhSachDonHang.clear();
+    maxOrderId = 0;
+}
+
+// ========== CSV I/O ==========
+
+bool QuanLyDonHangDichVu::luuCSV(const string &filePath) const
+{
+    vector<string> headers = {"MaDonHang", "MaDichVu", "TenDichVu", "SoLuong", "DonGia", "ThanhTien", "NgayTao", "MaKhachHang", "TrangThai"};
+    vector<vector<string>> rows;
+    
+    // Data - mỗi dịch vụ trong đơn hàng là 1 dòng
+    for (int i = 0; i < danhSachDonHang.size(); i++)
+    {
+        DonHangDichVu *dh = danhSachDonHang[i];
+        if (!dh) continue;
+        
+        const MangDong<DichVuDat> &dsDichVu = dh->getDanhSachDichVu();
+        
+        for (int j = 0; j < dsDichVu.size(); j++)
+        {
+            const DichVuDat &dvDat = dsDichVu[j];
+            DichVu *dv = dvDat.getDichVu();
+            if (!dv) continue;
+            
+            vector<string> row;
+            row.push_back(dh->getMaDonHang());
+            row.push_back(dv->layMaDichVu());
+            row.push_back(dv->layTenDichVu());
+            row.push_back(to_string(dvDat.getSoLuong()));
+            row.push_back(to_string(dv->layDonGia()));
+            row.push_back(to_string(dvDat.getThanhTien()));
+            row.push_back(dh->getNgayTao().toString());
+            row.push_back(dh->getMaKhachHang());
+            row.push_back(dh->getTrangThaiText());
+            
+            rows.push_back(row);
+        }
+    }
+    
+    return CSVManager::writeCSV(filePath, headers, rows);
+}
+
+bool QuanLyDonHangDichVu::docCSV(const string &filePath)
+{
+    // Note: Đọc CSV phức tạp vì 1 đơn hàng có nhiều dịch vụ (nhiều dòng)
+    // Cần group theo MaDonHang
+    // Tạm thời chỉ implement lưu, đọc sẽ implement sau nếu cần
+    // Vì dữ liệu chính vẫn lưu trong file binary
+    cout << "Doc CSV don hang dich vu: Chua implement (dung file binary)" << endl;
+    return true;
 }

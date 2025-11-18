@@ -33,9 +33,9 @@ public:
 
     /**
      * @brief Đặt người dùng hiện tại để hiển thị thông tin
-     * @param user Pointer tới QuanTriVien hoặc NhanVien
+     * @param user Pointer tới NguoiDung (QuanTriVien hoặc NhanVien)
      */
-    void setCurrentUser(QuanTriVien *user);
+    void setCurrentUser(NguoiDung *user);
 
 private slots:
     void onEditPersonalInfoClicked();
@@ -46,12 +46,8 @@ private:
     void setupConnections();
     void loadUserData();
 
-    // Current user
-    QuanTriVien *m_currentUser;
-
-    // Local storage for gender and DOB (not in ConNguoi model)
-    QString m_currentGender;
-    QString m_currentDOB;
+    // Current user (can be QuanTriVien or NhanVien)
+    NguoiDung *m_currentUser;
 
     // Main layout
     QVBoxLayout *m_mainLayout;

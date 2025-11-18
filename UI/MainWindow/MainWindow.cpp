@@ -7,11 +7,12 @@
 #include <QStatusBar>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QTimer>
 #include <iostream>
 
 using namespace std;
 
-MainWindow::MainWindow(QuanTriVien *currentUser, QWidget *parent)
+MainWindow::MainWindow(NguoiDung *currentUser, QWidget *parent)
     : QMainWindow(parent), m_currentUser(currentUser), m_mainSplitter(nullptr), m_sidebar(nullptr), m_rightPanel(nullptr), m_header(nullptr), m_contentStack(nullptr), m_bookingPage(nullptr), m_paymentPage(nullptr), m_fieldPage(nullptr), m_customerPage(nullptr), m_servicePage(nullptr), m_staffPage(nullptr), m_statisticsPage(nullptr), m_accountPage(nullptr)
 {
     // Setup page titles
@@ -88,9 +89,7 @@ void MainWindow::setupUI()
     m_sidebar = new Sidebar(this);
 
     // Check user role and set sidebar permissions
-    // For now, assume all users are admin
-    // TODO: Implement proper role checking
-    bool isAdmin = true; // m_currentUser->layLoai() == "Admin" or similar
+    bool isAdmin = (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN);
     m_sidebar->setUserRole(isAdmin);
 
     // Create right panel
@@ -118,8 +117,16 @@ void MainWindow::setupUI()
     m_statisticsPage = new StatisticsPage(this);
     m_accountPage = new AccountPage(this);
 
-    // Set current user for account page
+    // Set current user for account page and staff page
     m_accountPage->setCurrentUser(m_currentUser);
+    
+    // Staff page needs admin access - cast if user is admin
+    if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN) {
+        QuanTriVien *admin = dynamic_cast<QuanTriVien*>(m_currentUser);
+        if (admin) {
+            m_staffPage->setCurrentAdmin(admin);
+        }
+    }
 
     // Add pages to stack
     m_contentStack->addWidget(m_bookingPage);    // Index 0
@@ -155,6 +162,15 @@ void MainWindow::setupConnections()
 
 void MainWindow::onMenuItemClicked(int index)
 {
+    // Prevent staff from accessing admin-only pages
+    bool isAdmin = (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN);
+    
+    // Index 5 = Staff Management, Index 6 = Statistics (admin only)
+    if (!isAdmin && (index == 5 || index == 6)) {
+        QMessageBox::warning(this, "Không có quyền", "Bạn không có quyền truy cập trang này!");
+        return;
+    }
+    
     // Switch to the corresponding page
     if (index >= 0 && index < m_contentStack->count())
     {
@@ -191,29 +207,25 @@ void MainWindow::onLogoutClicked()
 
     if (reply == QMessageBox::Yes)
     {
-        // Close main window - this will return to login dialog in main.cpp
-        close();
-
-        // Show login dialog again
-        LoginDialog loginDialog;
-        if (loginDialog.exec() == QDialog::Accepted)
+        // Save system data before logout
+        HeThongQuanLy *heThong = HeThongQuanLy::getInstance();
+        if (heThong)
         {
-            // Get HeThongQuanLy instance
-            HeThongQuanLy *heThong = HeThongQuanLy::getInstance();
-
-            // Get new logged in user
-            QuanTriVien *currentUser = heThong->timQuanTriVien(loginDialog.getLoggedInUsername().toStdString());
-            if (currentUser)
-            {
-                // Create and show new MainWindow with new user
-                MainWindow *newMainWindow = new MainWindow(currentUser);
-                newMainWindow->showMaximized();
+            cout << "\n=== SAVING DATA ON LOGOUT ===" << endl;
+            heThong->luuHeThong("D:/QT_PBL2/Data/data.bin");
+            
+            // Save admin and staff CSV
+            QuanLyNhanVien *staffMgr = heThong->layQuanLyNhanVien();
+            if (staffMgr) {
+                staffMgr->luuAdminCSV("admin.csv");
+                heThong->luuNhanVienCSV("nhanvien.csv");
             }
+            
+            cout << "✅ Data saved successfully on logout!" << endl;
+            cout << "==============================\n" << endl;
         }
-        else
-        {
-            // User cancelled login, exit application
-            qApp->quit();
-        }
+        
+        // Close application
+        QApplication::quit();
     }
 }

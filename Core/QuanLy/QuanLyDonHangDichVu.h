@@ -30,6 +30,7 @@ class QuanLyDonHangDichVu
 {
 private:
     MangDong<DonHangDichVu *> danhSachDonHang; ///< Danh sách đơn hàng
+    int maxOrderId; ///< ID đơn hàng lớn nhất (auto-increment)
 
 public:
     // ========== CONSTRUCTORS ==========
@@ -45,6 +46,12 @@ public:
     ~QuanLyDonHangDichVu();
 
     // ========== CRUD OPERATIONS ==========
+    
+    /**
+     * @brief Tạo mã đơn hàng mới (DHD001, DHD002...)
+     * @return Mã đơn hàng mới
+     */
+    std::string taoMaDonHangMoi();
     
     /**
      * @brief Tạo đơn hàng mới
@@ -147,6 +154,20 @@ public:
      * @return true nếu đọc thành công
      */
     bool docFile(std::ifstream &file);
+    
+    /**
+     * @brief Lưu đơn hàng dịch vụ ra file CSV
+     * @param filePath Đường dẫn file CSV
+     * @return true nếu lưu thành công
+     */
+    bool luuCSV(const std::string &filePath) const;
+    
+    /**
+     * @brief Đọc đơn hàng dịch vụ từ file CSV
+     * @param filePath Đường dẫn file CSV
+     * @return true nếu đọc thành công
+     */
+    bool docCSV(const std::string &filePath);
     
     /**
      * @brief Xóa tất cả đơn hàng

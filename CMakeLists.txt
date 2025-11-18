@@ -92,6 +92,7 @@ set(CORE_QUANLY_SOURCES
     Core/QuanLy/BackupManager.cpp
     Core/QuanLy/QuanLySan.cpp
     Core/QuanLy/QuanLyKhachHang.cpp
+    Core/QuanLy/QuanLyNhanVien.cpp
     Core/QuanLy/QuanLyDichVu.cpp
     Core/QuanLy/QuanLyDonHangDichVu.cpp
     Core/QuanLy/QuanLyDatSan.cpp
@@ -105,6 +106,7 @@ set(CORE_QUANLY_HEADERS
     Core/QuanLy/BackupManager.h
     Core/QuanLy/QuanLySan.h
     Core/QuanLy/QuanLyKhachHang.h
+    Core/QuanLy/QuanLyNhanVien.h
     Core/QuanLy/QuanLyDichVu.h
     Core/QuanLy/QuanLyDonHangDichVu.h
     Core/QuanLy/QuanLyDatSan.h

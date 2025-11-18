@@ -41,6 +41,8 @@ protected:
     std::string matKhau;     ///< Mật khẩu (nên mã hóa trong thực tế)
     VaiTro vaiTro;           ///< Vai trò trong hệ thống
     bool hoatDong;           ///< Trạng thái tài khoản (true = hoạt động)
+    std::string gioiTinh;    ///< Giới tính ("Nam", "Nữ", "Khác")
+    std::string ngaySinh;    ///< Ngày sinh (format: DD/MM/YYYY)
 
 public:
     // ========== CONSTRUCTORS ==========
@@ -106,6 +108,18 @@ public:
      */
     std::string layMatKhau() const;
 
+    /**
+     * @brief Lấy giới tính
+     * @return Giới tính
+     */
+    std::string layGioiTinh() const;
+
+    /**
+     * @brief Lấy ngày sinh
+     * @return Ngày sinh (DD/MM/YYYY)
+     */
+    std::string layNgaySinh() const;
+
     // ========== SETTERS ==========
 
     /**
@@ -125,6 +139,18 @@ public:
      * @param hd Trạng thái hoạt động
      */
     void datHoatDong(bool hd);
+
+    /**
+     * @brief Đặt giới tính
+     * @param gt Giới tính
+     */
+    void datGioiTinh(const std::string &gt);
+
+    /**
+     * @brief Đặt ngày sinh
+     * @param ns Ngày sinh (DD/MM/YYYY)
+     */
+    void datNgaySinh(const std::string &ns);
 
     // ========== METHODS ==========
 

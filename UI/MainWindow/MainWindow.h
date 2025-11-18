@@ -14,6 +14,7 @@
 #include "UI/Pages/Staff/StaffManagementPage.h"
 #include "UI/Pages/Statistics/StatisticsPage.h"
 #include "UI/Pages/Account/AccountPage.h"
+#include "Core/Models/NguoiDung.h"
 #include "Core/QuanLy/HeThongQuanLy.h"
 
 class MainWindow : public QMainWindow
@@ -21,7 +22,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QuanTriVien *currentUser, QWidget *parent = nullptr);
+    explicit MainWindow(NguoiDung *currentUser, QWidget *parent = nullptr);
     ~MainWindow();
 
 protected:
@@ -38,7 +39,7 @@ private:
     void updateHeaderTitle(int pageIndex);
 
     // Current user
-    QuanTriVien *m_currentUser;
+    NguoiDung *m_currentUser;
 
     // Main layout components
     QSplitter *m_mainSplitter;

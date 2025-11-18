@@ -937,7 +937,19 @@ void TimelineTab::onSaveClicked()
         {
             // Update existing booking
             // Note: Core API may need update method
-            QMessageBox::information(this, "Thành công", "Cập nhật đặt sân thành công!");
+            QString updateMsg = QString(
+                "✅ CẬP NHẬT THÀNH CÔNG\n\n"
+                "📋 Mã đặt sân: %1\n"
+                "⚽ Sân: %2\n"
+                "🕐 Thời gian: %3 - %4\n"
+                "📅 Ngày: %5\n\n"
+                "Thông tin đã được cập nhật!")
+                .arg(QString::fromStdString(currentBooking->getMaDatSan()))
+                .arg(QString::fromStdString(currentBooking->getSan()->getTenSan()))
+                .arg(QString::fromStdString(currentBooking->getKhungGio().layGioBatDau().toString()))
+                .arg(QString::fromStdString(currentBooking->getKhungGio().layGioKetThuc().toString()))
+                .arg(QString::fromStdString(currentBooking->getThoiGianDat().getNgayThang().toString()));
+            QMessageBox::information(this, "✅ Thành công", updateMsg);
         }
         else
         {

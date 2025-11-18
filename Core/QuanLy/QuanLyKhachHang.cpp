@@ -7,7 +7,7 @@
  */
 
 #include "QuanLyKhachHang.h"
-#include "../Utils/CSVHandler.h"
+#include "../Utils/CSVManager.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -15,7 +15,7 @@
 
 using namespace std;
 
-QuanLyKhachHang::QuanLyKhachHang() : maxCustomerId(0) {}
+QuanLyKhachHang::QuanLyKhachHang() : maxCustomerId(0), isLoadingFromCSV(false) {}
 
 QuanLyKhachHang::~QuanLyKhachHang()
 {
@@ -28,23 +28,13 @@ bool QuanLyKhachHang::themKhachHang(KhachHang *kh)
 
     if (kh == nullptr)
     {
-        cout << "ERROR: Null customer pointer" << endl;
         return false;
     }
-
-    cout << "Attempting to add customer:" << endl;
-    cout << "  ID: " << kh->getMaNguoiDung() << endl;
-    cout << "  Name: " << kh->getHoTen() << endl;
-    cout << "  Phone: " << kh->getSoDienThoai() << endl;
-    cout << "  Current customer count: " << danhSachKhachHang.size() << endl;
-    cout << "  Current maxCustomerId: " << maxCustomerId << endl;
 
     // Check for duplicate ID
     KhachHang *existing = timKhachHang(kh->getMaNguoiDung());
     if (existing != nullptr)
     {
-        cout << "ERROR: Customer ID already exists: " << kh->getMaNguoiDung() << endl;
-        cout << "  Existing customer: " << existing->getHoTen() << endl;
         return false;
     }
 
@@ -52,16 +42,17 @@ bool QuanLyKhachHang::themKhachHang(KhachHang *kh)
     KhachHang *existingPhone = timKhachHangTheoSDT(kh->getSoDienThoai());
     if (existingPhone != nullptr)
     {
-        cout << "ERROR: Phone number already exists: " << kh->getSoDienThoai() << endl;
-        cout << "  Owner: " << existingPhone->getHoTen() << " (" << existingPhone->getMaNguoiDung() << ")" << endl;
         return false;
     }
 
     danhSachKhachHang.push_back(kh);
-    cout << "SUCCESS: Added customer " << kh->getMaNguoiDung() << " - " << kh->getHoTen() << endl;
-    cout << "  New customer count: " << danhSachKhachHang.size() << endl;
-    cout << "========================\n"
-         << endl;
+
+    // Auto-save to CSV after add (skip if loading)
+    if (!isLoadingFromCSV)
+    {
+        luuCSV("khachhang.csv");
+    }
+
     return true;
 }
 
@@ -73,6 +64,10 @@ bool QuanLyKhachHang::xoaKhachHang(const string &maKH)
         {
             delete danhSachKhachHang[i];
             danhSachKhachHang.erase(i);
+
+            // Auto-save to CSV after delete
+            luuCSV("khachhang.csv");
+
             return true;
         }
     }
@@ -85,6 +80,10 @@ bool QuanLyKhachHang::capNhatKhachHang(const string &maKH, const KhachHang &khMo
     if (kh == nullptr)
         return false;
     *kh = khMoi;
+
+    // Auto-save to CSV after update
+    luuCSV("khachhang.csv");
+
     return true;
 }
 
@@ -295,7 +294,7 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
         rows.push_back(row);
     }
 
-    bool success = CSVHandler::writeCSV(filename, headers, rows);
+    bool success = CSVManager::writeCSV(filename, headers, rows);
     if (success)
     {
         cout << "Saved " << danhSachKhachHang.size() << " customers to CSV: " << filename << endl;
@@ -305,7 +304,7 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
 
 bool QuanLyKhachHang::docCSV(const string &filename)
 {
-    vector<vector<string>> rows = CSVHandler::readCSV(filename);
+    vector<vector<string>> rows = CSVManager::readCSV(filename, false);
 
     if (rows.empty())
     {
@@ -315,10 +314,11 @@ bool QuanLyKhachHang::docCSV(const string &filename)
     }
 
     xoaTatCa();
+    isLoadingFromCSV = true; // Prevent auto-save during load
 
     // Skip header row, read customer data starting from row 1
     maxCustomerId = 0;
-    
+
     for (size_t i = 1; i < rows.size(); i++)
     {
         const auto &row = rows[i];
@@ -350,14 +350,18 @@ bool QuanLyKhachHang::docCSV(const string &filename)
             kh->datTongChiTieu(tongChiTieu);
 
             danhSachKhachHang.push_back(kh);
-            
+
             // Update maxCustomerId from KH### format
             if (maKH.length() > 2 && maKH.substr(0, 2) == "KH")
             {
-                try {
+                try
+                {
                     int id = stoi(maKH.substr(2));
-                    if (id > maxCustomerId) maxCustomerId = id;
-                } catch (...) {
+                    if (id > maxCustomerId)
+                        maxCustomerId = id;
+                }
+                catch (...)
+                {
                     // Ignore invalid ID format
                 }
             }
@@ -369,6 +373,7 @@ bool QuanLyKhachHang::docCSV(const string &filename)
         }
     }
 
+    isLoadingFromCSV = false; // Re-enable auto-save
     cout << "Loaded " << danhSachKhachHang.size() << " customers from CSV" << endl;
     return true;
 }

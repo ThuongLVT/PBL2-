@@ -131,23 +131,23 @@ void ServiceManagementWidget::setupUI()
     serviceTable->setObjectName("dataTable");
     serviceTable->setHorizontalHeaderLabels({"Ảnh", "Mã DV", "Tên DV", "Loại", "Đơn vị", "Giá", "Số lượng", "Đã bán", "Trạng thái"});
     serviceTable->horizontalHeader()->setStretchLastSection(false);
-    serviceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);  // Ảnh
-    serviceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);  // Mã
+    serviceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);   // Ảnh
+    serviceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);   // Mã
     serviceTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch); // Tên
-    serviceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);  // Loại
-    serviceTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);  // Đơn vị
-    serviceTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);  // Giá
-    serviceTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed);  // Số lượng
-    serviceTable->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);  // Đã bán
-    serviceTable->horizontalHeader()->setSectionResizeMode(8, QHeaderView::Fixed);  // Trạng thái
-    serviceTable->setColumnWidth(0, 60);   // Ảnh
-    serviceTable->setColumnWidth(1, 80);   // Mã DV
-    serviceTable->setColumnWidth(3, 90);   // Loại
-    serviceTable->setColumnWidth(4, 80);   // Đơn vị
-    serviceTable->setColumnWidth(5, 90);   // Giá
-    serviceTable->setColumnWidth(6, 80);   // Số lượng
-    serviceTable->setColumnWidth(7, 80);   // Đã bán
-    serviceTable->setColumnWidth(8, 100);  // Trạng thái
+    serviceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);   // Loại
+    serviceTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);   // Đơn vị
+    serviceTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);   // Giá
+    serviceTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed);   // Số lượng
+    serviceTable->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);   // Đã bán
+    serviceTable->horizontalHeader()->setSectionResizeMode(8, QHeaderView::Fixed);   // Trạng thái
+    serviceTable->setColumnWidth(0, 60);                                             // Ảnh
+    serviceTable->setColumnWidth(1, 80);                                             // Mã DV
+    serviceTable->setColumnWidth(3, 90);                                             // Loại
+    serviceTable->setColumnWidth(4, 80);                                             // Đơn vị
+    serviceTable->setColumnWidth(5, 90);                                             // Giá
+    serviceTable->setColumnWidth(6, 80);                                             // Số lượng
+    serviceTable->setColumnWidth(7, 80);                                             // Đã bán
+    serviceTable->setColumnWidth(8, 100);                                            // Trạng thái
     serviceTable->verticalHeader()->setVisible(false);
     serviceTable->verticalHeader()->setDefaultSectionSize(70); // Chiều cao hàng 70px cho ảnh
     serviceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -360,13 +360,13 @@ void ServiceManagementWidget::loadServices()
     for (int i = 0; i < filteredServices.size(); i++)
     {
         DichVu *service = filteredServices[i];
-        
+
         // Column 0: Ảnh (Image)
         QLabel *imgLabel = new QLabel();
         imgLabel->setAlignment(Qt::AlignCenter);
         imgLabel->setFixedSize(50, 50);
         imgLabel->setScaledContents(false);
-        
+
         QString imagePath = QString::fromStdString(service->layHinhAnh());
         if (!imagePath.isEmpty())
         {
@@ -394,13 +394,13 @@ void ServiceManagementWidget::loadServices()
             imgLabel->setText("📦");
         }
         serviceTable->setCellWidget(i, 0, imgLabel);
-        
+
         // Column 1: Mã DV
         serviceTable->setItem(i, 1, new QTableWidgetItem(QString::fromStdString(service->layMaDichVu())));
-        
+
         // Column 2: Tên DV
         serviceTable->setItem(i, 2, new QTableWidgetItem(QString::fromStdString(service->layTenDichVu())));
-        
+
         // Column 3: Loại
         QString category;
         switch (service->layLoaiDichVu())
@@ -416,19 +416,19 @@ void ServiceManagementWidget::loadServices()
             break;
         }
         serviceTable->setItem(i, 3, new QTableWidgetItem(category));
-        
+
         // Column 4: Đơn vị
         serviceTable->setItem(i, 4, new QTableWidgetItem(QString::fromStdString(service->layDonVi())));
-        
+
         // Column 5: Giá
         serviceTable->setItem(i, 5, new QTableWidgetItem(QString::number(service->layDonGia(), 'f', 0) + "đ"));
-        
+
         // Column 6: Số lượng (giả sử có 50)
         serviceTable->setItem(i, 6, new QTableWidgetItem("50"));
-        
+
         // Column 7: Đã bán
         serviceTable->setItem(i, 7, new QTableWidgetItem(QString::number(service->laySoLuongBan())));
-        
+
         // Column 8: Trạng thái
         QString status = service->coConHang() ? "✓ Còn hàng" : "✗ Hết hàng";
         serviceTable->setItem(i, 8, new QTableWidgetItem(status));
@@ -449,7 +449,7 @@ void ServiceManagementWidget::loadServiceToForm(DichVu *service)
     unitEdit->setText(QString::fromStdString(service->layDonVi()));
     descriptionEdit->setPlainText(QString::fromStdString(service->layMoTa()));
     availableCheckBox->setChecked(service->coConHang());
-    
+
     // Set category
     int categoryIndex = categoryEdit->findData(static_cast<int>(service->layLoaiDichVu()));
     if (categoryIndex >= 0)
@@ -468,7 +468,7 @@ void ServiceManagementWidget::clearForm()
     // Auto-generate new service code
     QString newCode = generateNextServiceCode();
     codeEdit->setText(newCode);
-    
+
     nameEdit->clear();
     priceEdit->clear();
     unitEdit->clear();
@@ -566,7 +566,7 @@ void ServiceManagementWidget::onReloadClicked()
 void ServiceManagementWidget::onAddNewClicked()
 {
     clearForm();
-    
+
     // Enable form for new entry
     nameEdit->setEnabled(true);
     priceEdit->setEnabled(true);
@@ -575,7 +575,7 @@ void ServiceManagementWidget::onAddNewClicked()
     availableCheckBox->setEnabled(true);
     categoryEdit->setEnabled(true);
     saveBtn->setEnabled(true);
-    
+
     // Focus on name field
     nameEdit->setFocus();
 }
@@ -587,7 +587,7 @@ void ServiceManagementWidget::onTableRowClicked(int row)
 
     DichVu *service = filteredServices[row];
     loadServiceToForm(service);
-    
+
     // Enable form for editing
     nameEdit->setEnabled(true);
     priceEdit->setEnabled(true);
@@ -608,7 +608,7 @@ void ServiceManagementWidget::onSaveClicked()
     QString description = descriptionEdit->toPlainText().trimmed();
     bool available = availableCheckBox->isChecked();
     LoaiDichVu category = static_cast<LoaiDichVu>(categoryEdit->currentData().toInt());
-    
+
     double price = priceStr.toDouble();
 
     if (isEditMode && currentService)
@@ -620,8 +620,8 @@ void ServiceManagementWidget::onSaveClicked()
         currentService->datMoTa(description.toStdString());
         currentService->datConHang(available);
 
-        // Save to CSV
-        system->luuCSV("D:/QT_PBL2/Data");
+        // Save to binary file
+        system->luuHeThong("D:/QT_PBL2/Data/data.bin");
 
         QMessageBox::information(this, "Thành công",
                                  "Cập nhật dịch vụ thành công!");
@@ -631,14 +631,13 @@ void ServiceManagementWidget::onSaveClicked()
         // Add new service
         // Generate unique service ID
         QString maDV = QString("DV%1").arg(system->layQuanLyDichVu()->tongSoDichVu() + 1, 3, 10, QChar('0'));
-        
+
         DichVu *newService = new DichVu(
             maDV.toStdString(),
             name.toStdString(),
             price,
-            category
-        );
-        
+            category);
+
         newService->datDonVi(unit.toStdString());
         newService->datMoTa(description.toStdString());
         newService->datConHang(available);
@@ -646,12 +645,12 @@ void ServiceManagementWidget::onSaveClicked()
         newService->datHinhAnh("images/product.jpg");
 
         bool added = system->layQuanLyDichVu()->themDichVu(newService);
-        
+
         if (added)
         {
-            // Save to CSV
-            system->luuCSV("D:/QT_PBL2/Data");
-            
+            // Save to binary file
+            system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+
             QMessageBox::information(this, "Thành công",
                                      QString("Thêm dịch vụ mới thành công!\nMã DV: %1").arg(maDV));
             clearForm();
@@ -684,9 +683,9 @@ void ServiceManagementWidget::onDeleteClicked()
         std::string maDV = currentService->layMaDichVu();
         if (system->layQuanLyDichVu()->xoaDichVu(maDV))
         {
-            // Save to CSV
-            system->luuCSV("D:/QT_PBL2/Data");
-            
+            // Save to binary file
+            system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+
             QMessageBox::information(this, "Thành công", "Xóa dịch vụ thành công!");
             clearForm();
             loadServices();

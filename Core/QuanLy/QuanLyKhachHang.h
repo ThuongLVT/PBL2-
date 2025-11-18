@@ -28,6 +28,7 @@ class QuanLyKhachHang
 private:
     MangDong<KhachHang *> danhSachKhachHang; ///< Danh sách khách hàng
     int maxCustomerId;                       ///< Mã KH cao nhất đã sử dụng (không tái sử dụng)
+    bool isLoadingFromCSV;                   ///< Flag to prevent auto-save during CSV load
 
 public:
     // ========== CONSTRUCTORS ==========

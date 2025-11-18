@@ -208,11 +208,10 @@ void ServiceOrderWidget::setupRightPanel()
     addNewCustomerBtn->setMinimumHeight(36);
     customerLayout->addWidget(addNewCustomerBtn);
     connect(addNewCustomerBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onAddNewCustomerClicked);
-    
+
     // Search connection
-    connect(customerSearchEdit, &QLineEdit::textChanged, [this, customerSearchEdit]() {
-        filterCustomers(customerSearchEdit->text());
-    });
+    connect(customerSearchEdit, &QLineEdit::textChanged, [this, customerSearchEdit]()
+            { filterCustomers(customerSearchEdit->text()); });
 
     // Spacing
     customerLayout->addSpacing(10);
@@ -221,7 +220,7 @@ void ServiceOrderWidget::setupRightPanel()
     QLabel *selectedLabel = new QLabel("Khách hàng đã chọn:", this);
     selectedLabel->setObjectName("fieldLabel");
     customerLayout->addWidget(selectedLabel);
-    
+
     QHBoxLayout *phoneLayout = new QHBoxLayout();
     QLabel *phoneLabelText = new QLabel("SĐT:", this);
     phoneLabelText->setObjectName("fieldLabel");
@@ -371,7 +370,7 @@ void ServiceOrderWidget::setupConnections()
     connect(reloadBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onReloadClicked);
 
     // Customer - use activated instead of currentIndexChanged (only fires on user click)
-    connect(customerComboBox, QOverload<int>::of(&QComboBox::activated), 
+    connect(customerComboBox, QOverload<int>::of(&QComboBox::activated),
             this, &ServiceOrderWidget::onCustomerSelected);
 
     // Actions
@@ -605,7 +604,7 @@ void ServiceOrderWidget::loadCustomers()
     customerComboBox->blockSignals(true);
     customerComboBox->clear();
     customerComboBox->addItem("-- Click để chọn khách hàng --", "");
-    
+
     const MangDong<KhachHang *> &customers = system->layDanhSachKhachHang();
     for (int i = 0; i < customers.size(); i++)
     {
@@ -614,7 +613,7 @@ void ServiceOrderWidget::loadCustomers()
         {
             std::string phone = cust->laySoDienThoai();
             std::string name = cust->layHoTen();
-            
+
             if (!phone.empty())
             {
                 QString displayText = QString::fromStdString(phone + " - " + name);
@@ -622,7 +621,7 @@ void ServiceOrderWidget::loadCustomers()
             }
         }
     }
-    
+
     customerComboBox->blockSignals(false);
 }
 
@@ -631,7 +630,7 @@ void ServiceOrderWidget::filterCustomers(const QString &searchText)
     customerComboBox->blockSignals(true);
     customerComboBox->clear();
     customerComboBox->addItem("-- Click để chọn khách hàng --", "");
-    
+
     const MangDong<KhachHang *> &customers = system->layDanhSachKhachHang();
     for (int i = 0; i < customers.size(); i++)
     {
@@ -640,15 +639,15 @@ void ServiceOrderWidget::filterCustomers(const QString &searchText)
         {
             std::string phone = cust->laySoDienThoai();
             std::string name = cust->layHoTen();
-            
+
             if (!phone.empty())
             {
                 QString qPhone = QString::fromStdString(phone);
                 QString qName = QString::fromStdString(name);
-                
+
                 // Filter
-                if (searchText.isEmpty() || 
-                    qPhone.contains(searchText, Qt::CaseInsensitive) || 
+                if (searchText.isEmpty() ||
+                    qPhone.contains(searchText, Qt::CaseInsensitive) ||
                     qName.contains(searchText, Qt::CaseInsensitive))
                 {
                     QString displayText = qPhone + " - " + qName;
@@ -657,7 +656,7 @@ void ServiceOrderWidget::filterCustomers(const QString &searchText)
             }
         }
     }
-    
+
     customerComboBox->blockSignals(false);
 }
 
@@ -712,7 +711,7 @@ QWidget *ServiceOrderWidget::createServiceCard(DichVu *service)
     imageLabel->setFixedSize(140, 140);
     imageLabel->setAlignment(Qt::AlignCenter);
     imageLabel->setStyleSheet("background-color: #4C4C4C; border-radius: 5px;");
-    
+
     QString imagePath = QString::fromStdString(service->layHinhAnh());
     if (!imagePath.isEmpty())
     {
@@ -752,8 +751,7 @@ QWidget *ServiceOrderWidget::createServiceCard(DichVu *service)
     // Price
     QLabel *priceLabel = new QLabel(
         QString::number(service->layDonGia(), 'f', 0) + " đ",
-        card
-    );
+        card);
     priceLabel->setAlignment(Qt::AlignCenter);
     priceLabel->setStyleSheet("font-size: 12px; font-weight: bold; color: #16a34a;");
     cardLayout->addWidget(priceLabel);
@@ -766,16 +764,16 @@ QWidget *ServiceOrderWidget::createServiceCard(DichVu *service)
     cardLayout->addWidget(addBtn);
 
     // Connect click event
-    connect(addBtn, &QPushButton::clicked, [this, service]() {
-        onServiceCardClicked(service);
-    });
+    connect(addBtn, &QPushButton::clicked, [this, service]()
+            { onServiceCardClicked(service); });
 
     return card;
 }
 
 void ServiceOrderWidget::onServiceCardClicked(DichVu *service)
 {
-    if (!service) return;
+    if (!service)
+        return;
     addToCart(service);
 }
 
@@ -822,17 +820,17 @@ void ServiceOrderWidget::updateCart()
 
         // Image - load from service with centered widget
         DichVu *service = system->timDichVu(item.maDichVu.toStdString());
-        
+
         QWidget *imgContainer = new QWidget();
         QHBoxLayout *imgLayout = new QHBoxLayout(imgContainer);
         imgLayout->setContentsMargins(5, 2, 5, 2);
         imgLayout->setAlignment(Qt::AlignCenter);
-        
+
         QLabel *imgLabel = new QLabel();
         imgLabel->setFixedSize(50, 50);
         imgLabel->setAlignment(Qt::AlignCenter);
         imgLabel->setScaledContents(false);
-        
+
         if (service)
         {
             std::string imgPath = service->layHinhAnh();
@@ -861,7 +859,7 @@ void ServiceOrderWidget::updateCart()
             imgLabel->setStyleSheet("background-color: #e5e7eb; border-radius: 3px; font-size: 20px;");
             imgLabel->setText("❌");
         }
-        
+
         imgLayout->addWidget(imgLabel);
         cartTable->setCellWidget(row, 0, imgContainer);
 
@@ -872,21 +870,17 @@ void ServiceOrderWidget::updateCart()
         cartTable->setItem(row, 2, new QTableWidgetItem(item.donVi));
 
         // Price
-        cartTable->setItem(row, 3, new QTableWidgetItem(
-            QString::number(item.donGia, 'f', 0) + " đ"
-        ));
+        cartTable->setItem(row, 3, new QTableWidgetItem(QString::number(item.donGia, 'f', 0) + " đ"));
 
         // Quantity
-        cartTable->setItem(row, 4, new QTableWidgetItem(
-            QString::number(item.soLuong)
-        ));
+        cartTable->setItem(row, 4, new QTableWidgetItem(QString::number(item.soLuong)));
 
         // Delete button - centered red box with X text only
         QWidget *deleteContainer = new QWidget();
         QHBoxLayout *deleteLayout = new QHBoxLayout(deleteContainer);
         deleteLayout->setContentsMargins(5, 2, 5, 2);
         deleteLayout->setAlignment(Qt::AlignCenter);
-        
+
         QPushButton *deleteBtn = new QPushButton("X");
         deleteBtn->setFixedSize(35, 30);
         deleteBtn->setStyleSheet(R"(
@@ -903,10 +897,9 @@ void ServiceOrderWidget::updateCart()
             }
         )");
         deleteBtn->setCursor(Qt::PointingHandCursor);
-        connect(deleteBtn, &QPushButton::clicked, [this, i]() {
-            onRemoveFromCartClicked(i);
-        });
-        
+        connect(deleteBtn, &QPushButton::clicked, [this, i]()
+                { onRemoveFromCartClicked(i); });
+
         deleteLayout->addWidget(deleteBtn);
         cartTable->setCellWidget(row, 5, deleteContainer);
     }
@@ -944,16 +937,16 @@ void ServiceOrderWidget::updateTotals()
 
     // Update labels
     cartTotalLabel->setText(QString("Tổng: %1 đ")
-        .arg(QString::number(totalPrice, 'f', 0)));
+                                .arg(QString::number(totalPrice, 'f', 0)));
 
     totalPriceLabel->setText(QString("Tổng tiền: %1 đ")
-        .arg(QString::number(totalPrice, 'f', 0)));
+                                 .arg(QString::number(totalPrice, 'f', 0)));
 
     discountLabel->setText(QString("Giảm giá: %1 đ")
-        .arg(QString::number(discount, 'f', 0)));
+                               .arg(QString::number(discount, 'f', 0)));
 
     finalAmountLabel->setText(QString("Thành tiền: %1 đ")
-        .arg(QString::number(finalAmount, 'f', 0)));
+                                  .arg(QString::number(finalAmount, 'f', 0)));
 }
 
 void ServiceOrderWidget::onSearchTextChanged(const QString &text)
@@ -999,11 +992,13 @@ void ServiceOrderWidget::onCategoryFilterChanged(int index)
 
 void ServiceOrderWidget::onCustomerSelected(int index)
 {
-    if (index <= 0) return;
+    if (index <= 0)
+        return;
 
     QString phone = customerComboBox->itemData(index).toString();
-    if (phone.isEmpty()) return;
-    
+    if (phone.isEmpty())
+        return;
+
     KhachHang *customer = system->timKhachHangTheoSDT(phone.toStdString());
     if (customer)
     {
@@ -1013,32 +1008,33 @@ void ServiceOrderWidget::onCustomerSelected(int index)
 
 void ServiceOrderWidget::onAddNewCustomerClicked()
 {
-    try {
+    try
+    {
         qDebug() << "Opening AddCustomerDialog...";
         AddCustomerDialog dialog(this);
-        
+
         if (dialog.exec() == QDialog::Accepted)
         {
             qDebug() << "Dialog accepted, getting new customer...";
             KhachHang *newCustomer = dialog.getNewCustomer();
-            
+
             if (!newCustomer)
             {
                 qDebug() << "Error: newCustomer is null";
                 QMessageBox::warning(this, "Lỗi", "Không thể tạo khách hàng mới!");
                 return;
             }
-            
+
             qDebug() << "Adding customer:" << QString::fromStdString(newCustomer->layHoTen());
-            
+
             if (system->themKhachHang(newCustomer))
             {
                 qDebug() << "Customer added successfully, saving to CSV...";
-                system->luuCSV("D:/QT_PBL2/Data");
-                
+                system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+
                 qDebug() << "Reloading customer list...";
                 loadCustomers();
-                
+
                 qDebug() << "Auto-selecting new customer...";
                 // Auto select new customer by phone
                 QString newPhone = QString::fromStdString(newCustomer->laySoDienThoai());
@@ -1050,15 +1046,15 @@ void ServiceOrderWidget::onAddNewCustomerClicked()
                         customerComboBox->blockSignals(true);
                         customerComboBox->setCurrentIndex(i);
                         customerComboBox->blockSignals(false);
-                        
+
                         // Manually trigger selection
                         selectCustomer(newCustomer);
                         break;
                     }
                 }
-                
-                QMessageBox::information(this, "Thành công", 
-                    "Đã thêm khách hàng: " + QString::fromStdString(newCustomer->layHoTen()));
+
+                QMessageBox::information(this, "Thành công",
+                                         "Đã thêm khách hàng: " + QString::fromStdString(newCustomer->layHoTen()));
             }
             else
             {
@@ -1070,10 +1066,14 @@ void ServiceOrderWidget::onAddNewCustomerClicked()
         {
             qDebug() << "Dialog cancelled";
         }
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
         qDebug() << "Error in onAddNewCustomerClicked:" << e.what();
         QMessageBox::critical(this, "Lỗi", QString("Lỗi thêm khách hàng: %1").arg(e.what()));
-    } catch (...) {
+    }
+    catch (...)
+    {
         qDebug() << "Unknown error in onAddNewCustomerClicked";
         QMessageBox::critical(this, "Lỗi", "Lỗi không xác định khi thêm khách hàng!");
     }
@@ -1120,15 +1120,15 @@ void ServiceOrderWidget::onPaymentClicked()
 
     // Confirm payment
     QString msg = QString(
-        "Xác nhận thanh toán?\n\n"
-        "Mã đơn: %1\n"
-        "Tổng tiền: %2 đ\n"
-        "Giảm giá: %3 đ\n"
-        "Thành tiền: %4 đ"
-    ).arg(QString::fromStdString(order->getMaDonHang()))
-     .arg(QString::number(order->getTongTien(), 'f', 0))
-     .arg(QString::number(order->getGiamGia(), 'f', 0))
-     .arg(QString::number(order->getThanhTien(), 'f', 0));
+                      "Xác nhận thanh toán?\n\n"
+                      "Mã đơn: %1\n"
+                      "Tổng tiền: %2 đ\n"
+                      "Giảm giá: %3 đ\n"
+                      "Thành tiền: %4 đ")
+                      .arg(QString::fromStdString(order->getMaDonHang()))
+                      .arg(QString::number(order->getTongTien(), 'f', 0))
+                      .arg(QString::number(order->getGiamGia(), 'f', 0))
+                      .arg(QString::number(order->getThanhTien(), 'f', 0));
 
     int ret = QMessageBox::question(this, "Xác nhận thanh toán", msg);
 
@@ -1137,8 +1137,8 @@ void ServiceOrderWidget::onPaymentClicked()
         order->setTrangThai(TrangThaiDonHang::HOAN_THANH);
 
         QMessageBox::information(this, "Thành công",
-            QString("Đã thanh toán đơn hàng %1")
-            .arg(QString::fromStdString(order->getMaDonHang())));
+                                 QString("Đã thanh toán đơn hàng %1")
+                                     .arg(QString::fromStdString(order->getMaDonHang())));
 
         emit orderCreated(QString::fromStdString(order->getMaDonHang()));
 
@@ -1153,7 +1153,7 @@ void ServiceOrderWidget::onClearCartClicked()
         return;
 
     int ret = QMessageBox::question(this, "Xác nhận",
-        "Bạn có chắc muốn xóa toàn bộ giỏ hàng?");
+                                    "Bạn có chắc muốn xóa toàn bộ giỏ hàng?");
 
     if (ret == QMessageBox::Yes)
     {
@@ -1177,7 +1177,7 @@ void ServiceOrderWidget::clearCart()
 void ServiceOrderWidget::onExportClicked()
 {
     QMessageBox::information(this, "Xuất hóa đơn",
-        "Tính năng xuất hóa đơn PDF sẽ được thêm sau.");
+                             "Tính năng xuất hóa đơn PDF sẽ được thêm sau.");
 }
 
 void ServiceOrderWidget::onReloadClicked()
@@ -1194,24 +1194,24 @@ void ServiceOrderWidget::selectCustomer(KhachHang *customer)
     }
 
     selectedCustomer = customer;
-    
+
     // Fill customer info with safety checks
     std::string phone = customer->laySoDienThoai();
     std::string name = customer->layHoTen();
-    
+
     if (!phone.empty())
     {
         phoneLineEdit->setText(QString::fromStdString(phone));
     }
-    
+
     if (!name.empty())
     {
         nameLineEdit->setText(QString::fromStdString(name));
     }
-    
+
     // Update payment info display
     updateCustomerInfo();
-    
+
     // Recalculate totals with discount
     updateTotals();
 }
@@ -1229,7 +1229,7 @@ void ServiceOrderWidget::updateCustomerInfo()
     std::string name = selectedCustomer->layHoTen();
     std::string phone = selectedCustomer->laySoDienThoai();
     std::string rank = selectedCustomer->layTenHang();
-    
+
     customerNameLabel->setText(name.empty() ? "(Không rõ)" : QString::fromStdString(name));
     phoneLabel->setText(phone.empty() ? "-" : QString::fromStdString(phone));
     membershipLabel->setText(rank.empty() ? "-" : QString::fromStdString(rank));

@@ -6,6 +6,10 @@
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QApplication>
+#include <QCloseEvent>
+#include <iostream>
+
+using namespace std;
 
 MainWindow::MainWindow(QuanTriVien *currentUser, QWidget *parent)
     : QMainWindow(parent), m_currentUser(currentUser), m_mainSplitter(nullptr), m_sidebar(nullptr), m_rightPanel(nullptr), m_header(nullptr), m_contentStack(nullptr), m_bookingPage(nullptr), m_paymentPage(nullptr), m_fieldPage(nullptr), m_customerPage(nullptr), m_servicePage(nullptr), m_staffPage(nullptr), m_statisticsPage(nullptr), m_accountPage(nullptr)
@@ -38,6 +42,34 @@ MainWindow::~MainWindow()
         // Auto save system data
         system->luuHeThong("D:/QT_PBL2/Data/data.bin");
     }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    // Save data before closing
+    cout << "\n=== SAVING DATA BEFORE EXIT ===" << endl;
+    HeThongQuanLy *system = HeThongQuanLy::getInstance();
+    if (system)
+    {
+        bool saved = system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+        if (saved)
+        {
+            cout << "✅ Data saved successfully!" << endl;
+            cout << "  - Customers: " << system->tongSoKhachHang() << endl;
+            cout << "  - Fields: " << system->tongSoSan() << endl;
+            cout << "  - Services: " << system->layDanhSachDichVu().size() << endl;
+            cout << "  - Bookings: " << system->tongSoDatSan() << endl;
+        }
+        else
+        {
+            cout << "❌ Failed to save data!" << endl;
+        }
+    }
+    cout << "===============================\n"
+         << endl;
+
+    // Accept the close event
+    event->accept();
 }
 
 void MainWindow::setupUI()

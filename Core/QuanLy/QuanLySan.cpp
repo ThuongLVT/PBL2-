@@ -7,6 +7,7 @@
  */
 
 #include "QuanLySan.h"
+#include "../Utils/CSVManager.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -53,7 +54,7 @@ TrangThaiSan QuanLySan::parseTrangThai(const string &str) const
 
 // ========== CONSTRUCTORS ==========
 
-QuanLySan::QuanLySan() : csvFilePath("Data/san.csv")
+QuanLySan::QuanLySan() : csvFilePath("san.csv")
 {
 }
 
@@ -78,6 +79,10 @@ bool QuanLySan::themSan(San *san)
     }
 
     danhSachSan.push_back(san);
+
+    // Auto-save to CSV
+    saveToCSV();
+
     return true;
 }
 
@@ -89,6 +94,10 @@ bool QuanLySan::xoaSan(const string &maSan)
         {
             delete danhSachSan[i];
             danhSachSan.erase(i);
+
+            // Auto-save to CSV
+            saveToCSV();
+
             return true;
         }
     }
@@ -104,6 +113,10 @@ bool QuanLySan::capNhatSan(const string &maSan, const San &sanMoi)
     }
 
     *san = sanMoi;
+
+    // Auto-save to CSV
+    saveToCSV();
+
     return true;
 }
 
@@ -410,59 +423,37 @@ bool QuanLySan::loadFromCSV(const string &filePath)
         csvFilePath = filePath;
     }
 
-    // Open file with UTF-8 encoding support
-    ifstream file(csvFilePath, ios::binary);
-    if (!file.is_open())
+    vector<vector<string>> rows = CSVManager::readCSV(csvFilePath, true);
+
+    if (rows.empty())
     {
-        cerr << "Khong the mo file: " << csvFilePath << endl;
-        return false;
+        cout << "No field data found in CSV: " << csvFilePath << endl;
+        return true; // Not an error, just empty file
     }
 
     // Xóa dữ liệu cũ
     xoaTatCa();
 
-    string line;
-    // Skip BOM if present (UTF-8 BOM: EF BB BF)
-    char bom[3] = {0};
-    file.read(bom, 3);
-    if (!(bom[0] == (char)0xEF && bom[1] == (char)0xBB && bom[2] == (char)0xBF))
+    for (size_t i = 0; i < rows.size(); i++)
     {
-        // No BOM, rewind to start
-        file.seekg(0);
-    }
-
-    // Bỏ qua header
-    getline(file, line);
-
-    int lineNumber = 1;
-    while (getline(file, line))
-    {
-        lineNumber++;
-        if (line.empty())
-            continue;
-
-        stringstream ss(line);
-        string maSan, tenSan, loaiSanStr, khuVucStr, giaThueStr, trangThaiStr, ghiChu;
+        const auto &row = rows[i];
 
         // Parse CSV: MaSan,TenSan,LoaiSan,KhuVuc,GiaThue,TrangThai,GhiChu
-        getline(ss, maSan, ',');
-        getline(ss, tenSan, ',');
-        getline(ss, loaiSanStr, ',');
-        getline(ss, khuVucStr, ',');
-        getline(ss, giaThueStr, ',');
-        getline(ss, trangThaiStr, ',');
-        getline(ss, ghiChu, ',');
-
-        // Trim whitespace
-        maSan.erase(0, maSan.find_first_not_of(" \t\r\n"));
-        maSan.erase(maSan.find_last_not_of(" \t\r\n") + 1);
+        if (row.size() < 7)
+        {
+            cerr << "Invalid CSV row at line " << (i + 2) << ": insufficient columns" << endl;
+            continue;
+        }
 
         try
         {
-            LoaiSan loaiSan = parseLoaiSan(loaiSanStr);
-            KhuVuc khuVuc = parseKhuVuc(khuVucStr);
-            double giaThue = stod(giaThueStr);
-            TrangThaiSan trangThai = parseTrangThai(trangThaiStr);
+            string maSan = row[0];
+            string tenSan = row[1];
+            LoaiSan loaiSan = parseLoaiSan(row[2]);
+            KhuVuc khuVuc = parseKhuVuc(row[3]);
+            double giaThue = stod(row[4]);
+            TrangThaiSan trangThai = parseTrangThai(row[5]);
+            string ghiChu = row[6];
 
             San *san = new San(maSan, tenSan, loaiSan, khuVuc, giaThue);
             san->datTrangThai(trangThai);
@@ -475,43 +466,41 @@ bool QuanLySan::loadFromCSV(const string &filePath)
         }
         catch (const exception &e)
         {
-            cerr << "Loi doc dong " << lineNumber << ": " << e.what() << endl;
+            cerr << "Error parsing CSV row " << (i + 2) << ": " << e.what() << endl;
         }
     }
 
-    file.close();
-    cout << "Load thanh cong " << danhSachSan.size() << " san tu " << csvFilePath << endl;
+    cout << "Loaded " << danhSachSan.size() << " fields from CSV: " << csvFilePath << endl;
     return true;
 }
 
 bool QuanLySan::saveToCSV()
 {
-    ofstream file(csvFilePath);
-    if (!file.is_open())
-    {
-        cerr << "Khong the mo file de ghi: " << csvFilePath << endl;
-        return false;
-    }
+    vector<string> headers = {"MaSan", "TenSan", "LoaiSan", "KhuVuc", "GiaThue", "TrangThai", "GhiChu"};
+    vector<vector<string>> rows;
 
-    // Write header
-    file << "MaSan,TenSan,LoaiSan,KhuVuc,GiaThue,TrangThai,GhiChu\n";
-
-    // Write data
     for (int i = 0; i < danhSachSan.size(); i++)
     {
         San *san = danhSachSan[i];
-        file << san->layMaSan() << ","
-             << san->layTenSan() << ","
-             << san->layTenLoaiSan() << ","
-             << san->layTenKhuVuc() << ","
-             << san->layGiaThueGio() << ","
-             << san->layTenTrangThai() << ","
-             << san->layGhiChu() << "\n";
+        vector<string> row;
+
+        row.push_back(san->layMaSan());
+        row.push_back(san->layTenSan());
+        row.push_back(san->layTenLoaiSan());
+        row.push_back(san->layTenKhuVuc());
+        row.push_back(to_string(static_cast<long long>(san->layGiaThueGio())));
+        row.push_back(san->layTenTrangThai());
+        row.push_back(san->layGhiChu());
+
+        rows.push_back(row);
     }
 
-    file.close();
-    cout << "Luu thanh cong " << danhSachSan.size() << " san vao " << csvFilePath << endl;
-    return true;
+    bool success = CSVManager::writeCSV(csvFilePath, headers, rows);
+    if (success)
+    {
+        cout << "Saved " << danhSachSan.size() << " fields to CSV: " << csvFilePath << endl;
+    }
+    return success;
 }
 
 // ========== AUTO GENERATION ==========

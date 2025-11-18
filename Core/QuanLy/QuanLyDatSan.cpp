@@ -7,11 +7,16 @@
  */
 
 #include "QuanLyDatSan.h"
+#include "QuanLyKhachHang.h"
+#include "QuanLySan.h"
+#include "../Utils/CSVManager.h"
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 
-QuanLyDatSan::QuanLyDatSan() {}
+QuanLyDatSan::QuanLyDatSan() : maxBookingId(0) {}
 
 QuanLyDatSan::~QuanLyDatSan()
 {
@@ -32,14 +37,35 @@ DatSan *QuanLyDatSan::taoDatSan(KhachHang *kh, San *san, const NgayGio &thoiGian
         return nullptr;
     }
 
-    // Tạo mã đặt sân tự động
-    static int soThuTu = 1;
-    string maDatSan = "DS" + to_string(soThuTu++);
+    // Tạo mã đặt sân tự động với format DS001, DS002, etc.
+    maxBookingId++;
+    char maDatSan[10];
+    sprintf(maDatSan, "DS%03d", maxBookingId);
 
-    DatSan *datSan = new DatSan(maDatSan, kh, san, thoiGian, khung);
+    DatSan *datSan = new DatSan(string(maDatSan), kh, san, thoiGian, khung);
     danhSachDatSan.push_back(datSan);
 
     return datSan;
+}
+
+void QuanLyDatSan::themDatSanTrucTiep(DatSan *datSan)
+{
+    // Add booking directly without generating new ID (for CSV loading)
+    if (datSan != nullptr)
+    {
+        danhSachDatSan.push_back(datSan);
+
+        // Update maxBookingId to prevent ID reuse
+        string maDS = datSan->getMaDatSan();
+        if (maDS.length() > 2 && maDS.substr(0, 2) == "DS")
+        {
+            int id = atoi(maDS.substr(2).c_str());
+            if (id > maxBookingId)
+            {
+                maxBookingId = id;
+            }
+        }
+    }
 }
 
 bool QuanLyDatSan::huyDatSan(const string &maDatSan)
@@ -235,4 +261,199 @@ void QuanLyDatSan::xoaTatCa()
         delete danhSachDatSan[i];
     }
     danhSachDatSan = MangDong<DatSan *>();
+}
+
+// ========== CSV I/O ==========
+
+bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlKH, QuanLySan *qlSan)
+{
+    if (qlKH == nullptr || qlSan == nullptr)
+    {
+        cerr << "QuanLyKhachHang or QuanLySan is null!" << endl;
+        return false;
+    }
+
+    vector<vector<string>> rows = CSVManager::readCSV(filename, true);
+
+    if (rows.empty())
+    {
+        cout << "No booking data found in CSV: " << filename << endl;
+        return true; // Not an error, just empty file
+    }
+
+    for (size_t i = 0; i < rows.size(); i++)
+    {
+        const auto &row = rows[i];
+
+        // CSV Format: MaDatSan,MaKhachHang,MaSan,NgayDat,GioBatDau,GioKetThuc,TongTien,TienCoc,TrangThai,TrangThaiCoc,GhiChu
+        if (row.size() < 11)
+        {
+            cerr << "Invalid CSV row at line " << (i + 2) << ": insufficient columns" << endl;
+            continue;
+        }
+
+        try
+        {
+            string maDatSan = row[0];
+            string maKH = row[1];
+            string maSan = row[2];
+            string ngayDatStr = row[3];    // DD/MM/YYYY HH:MM
+            string gioBatDauStr = row[4];  // HH:MM
+            string gioKetThucStr = row[5]; // HH:MM
+            double tongTien = stod(row[6]);
+            double tienCoc = stod(row[7]);
+            string trangThaiStr = row[8];
+            string trangThaiCocStr = row[9];
+            string ghiChu = row[10];
+
+            // Find customer and field
+            KhachHang *kh = qlKH->timKhachHang(maKH);
+            San *san = qlSan->timSan(maSan);
+
+            if (kh == nullptr || san == nullptr)
+            {
+                cerr << "Cannot resolve customer " << maKH << " or field " << maSan << endl;
+                continue;
+            }
+
+            // Parse date time: DD/MM/YYYY HH:MM
+            int day, month, year, hour, minute;
+            char sep;
+            stringstream ss(ngayDatStr);
+            ss >> day >> sep >> month >> sep >> year >> hour >> sep >> minute;
+            NgayGio ngayDat(day, month, year, hour, minute);
+
+            // Parse time: HH:MM
+            int gioBatDauH, gioBatDauM, gioKetThucH, gioKetThucM;
+            stringstream ss1(gioBatDauStr);
+            ss1 >> gioBatDauH >> sep >> gioBatDauM;
+            stringstream ss2(gioKetThucStr);
+            ss2 >> gioKetThucH >> sep >> gioKetThucM;
+            ThoiGian gioBatDau(gioBatDauH, gioBatDauM);
+            ThoiGian gioKetThuc(gioKetThucH, gioKetThucM);
+            KhungGio khungGio(gioBatDau, gioKetThuc);
+
+            // Create DatSan object
+            DatSan *datSan = new DatSan(maDatSan, kh, san, ngayDat, khungGio);
+            datSan->setGhiChu(ghiChu);
+
+            // Set trang thai
+            if (trangThaiStr == "DA_DAT")
+                datSan->setTrangThai(TrangThaiDatSan::DA_DAT);
+            else if (trangThaiStr == "HOAN_THANH")
+                datSan->setTrangThai(TrangThaiDatSan::HOAN_THANH);
+            else if (trangThaiStr == "DA_HUY")
+                datSan->setTrangThai(TrangThaiDatSan::DA_HUY);
+
+            // Set trang thai coc
+            if (trangThaiCocStr == "DA_COC")
+                datSan->setTrangThaiCoc(TrangThaiCoc::DA_COC);
+            else if (trangThaiCocStr == "HOAN_COC")
+                datSan->setTrangThaiCoc(TrangThaiCoc::HOAN_COC);
+            else if (trangThaiCocStr == "MAT_COC")
+                datSan->setTrangThaiCoc(TrangThaiCoc::MAT_COC);
+
+            // Don't auto-save when loading from CSV
+            themDatSanTrucTiep(datSan);
+        }
+        catch (const exception &e)
+        {
+            cerr << "Error parsing CSV row " << (i + 2) << ": " << e.what() << endl;
+            continue;
+        }
+    }
+
+    cout << "Loaded " << danhSachDatSan.size() << " bookings from CSV: " << filename << endl;
+    return true;
+}
+
+bool QuanLyDatSan::saveToCSV(const std::string &filename)
+{
+    vector<string> headers = {"MaDatSan", "MaKhachHang", "MaSan", "NgayDat", "GioBatDau", "GioKetThuc", "TongTien", "TienCoc", "TrangThai", "TrangThaiCoc", "GhiChu"};
+    vector<vector<string>> rows;
+
+    for (int i = 0; i < danhSachDatSan.size(); i++)
+    {
+        DatSan *ds = danhSachDatSan[i];
+        vector<string> row;
+
+        row.push_back(ds->getMaDatSan());
+        row.push_back(ds->getMaKhachHang());
+        row.push_back(ds->getMaSan());
+
+        // NgayDat: DD/MM/YYYY HH:MM
+        NgayGio ngayDat = ds->getThoiGianDat();
+        stringstream ss;
+        ss << setfill('0') << setw(2) << ngayDat.getNgay() << "/"
+           << setfill('0') << setw(2) << ngayDat.getThang() << "/"
+           << ngayDat.getNam() << " "
+           << setfill('0') << setw(2) << ngayDat.getGio() << ":"
+           << setfill('0') << setw(2) << ngayDat.getPhut();
+        row.push_back(ss.str());
+
+        // GioBatDau: HH:MM
+        KhungGio khungGio = ds->getKhungGio();
+        ThoiGian gioBatDau = khungGio.layGioBatDau();
+        stringstream ss1;
+        ss1 << setfill('0') << setw(2) << gioBatDau.getGio() << ":"
+            << setfill('0') << setw(2) << gioBatDau.getPhut();
+        row.push_back(ss1.str());
+
+        // GioKetThuc: HH:MM
+        ThoiGian gioKetThuc = khungGio.layGioKetThuc();
+        stringstream ss2;
+        ss2 << setfill('0') << setw(2) << gioKetThuc.getGio() << ":"
+            << setfill('0') << setw(2) << gioKetThuc.getPhut();
+        row.push_back(ss2.str());
+
+        // TongTien
+        row.push_back(to_string(static_cast<long long>(ds->getTongTien())));
+
+        // TienCoc
+        row.push_back(to_string(static_cast<long long>(ds->getTienCoc())));
+
+        // TrangThai
+        string trangThai;
+        switch (ds->getTrangThai())
+        {
+        case TrangThaiDatSan::DA_DAT:
+            trangThai = "DA_DAT";
+            break;
+        case TrangThaiDatSan::HOAN_THANH:
+            trangThai = "HOAN_THANH";
+            break;
+        case TrangThaiDatSan::DA_HUY:
+            trangThai = "DA_HUY";
+            break;
+        }
+        row.push_back(trangThai);
+
+        // TrangThaiCoc
+        string trangThaiCoc;
+        switch (ds->getTrangThaiCoc())
+        {
+        case TrangThaiCoc::DA_COC:
+            trangThaiCoc = "DA_COC";
+            break;
+        case TrangThaiCoc::HOAN_COC:
+            trangThaiCoc = "HOAN_COC";
+            break;
+        case TrangThaiCoc::MAT_COC:
+            trangThaiCoc = "MAT_COC";
+            break;
+        }
+        row.push_back(trangThaiCoc);
+
+        // GhiChu
+        row.push_back(ds->getGhiChu());
+
+        rows.push_back(row);
+    }
+
+    bool success = CSVManager::writeCSV(filename, headers, rows);
+    if (success)
+    {
+        cout << "Saved " << danhSachDatSan.size() << " bookings to CSV: " << filename << endl;
+    }
+    return success;
 }

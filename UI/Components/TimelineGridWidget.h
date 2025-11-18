@@ -34,12 +34,12 @@ struct BookingBlock
     int startHour;
     int startMinute;
     int durationMinutes;
-    QRect rect; // Rendered rectangle
+    QRect rect;   // Rendered rectangle
     QColor color; // Status-based color
-    bool isPaid; // Payment status
+    bool isPaid;  // Payment status
 
     BookingBlock(DatSan *b, int fi, int sh, int sm, int dm)
-        : booking(b), fieldIndex(fi), startHour(sh), startMinute(sm), durationMinutes(dm), 
+        : booking(b), fieldIndex(fi), startHour(sh), startMinute(sm), durationMinutes(dm),
           color(QColor("#3b82f6")), isPaid(false) {}
 };
 
@@ -64,12 +64,7 @@ public:
      * @brief Load bookings for current date
      */
     void loadBookings();
-    
-    /**
-     * @brief Apply filters to timeline
-     */
-    void applyFilters(int fieldIndex, int statusFilter, int timeFilter);
-    
+
     /**
      * @brief Clear pending selection (when user cancels)
      */
@@ -122,9 +117,9 @@ private:
     static constexpr int END_HOUR = 22;    // 22:00
     static constexpr int HOUR_HEIGHT = 60; // pixels per hour
     static constexpr int HEADER_HEIGHT = 40;
-    static constexpr int TIME_LABEL_WIDTH = 0; // No time label column
+    static constexpr int TIME_LABEL_WIDTH = 60; // Width for time column
     static constexpr int MIN_FIELD_WIDTH = 100;
-    static constexpr int MIN_DURATION_MINUTES = 30;
+    static constexpr int MIN_DURATION_MINUTES = 60; // Cố định 1 tiếng
 
     // ===== DATA =====
     HeThongQuanLy *system;
@@ -139,18 +134,13 @@ private:
     int dragFieldIndex;
     int dragStartHour;
     int dragStartMinute;
-    
+
     // ===== PENDING SELECTION =====
     bool hasPendingSelection;
     int pendingFieldIndex;
     int pendingStartHour;
     int pendingStartMinute;
     int pendingDurationMinutes;
-    
-    // ===== FILTER STATE =====
-    int currentFieldFilter; // -1 = All
-    int currentStatusFilter; // 0 = All, 1 = Empty, 2 = Booked
-    int currentTimeFilter; // 0 = All, 1 = Morning, 2 = Afternoon, 3 = Evening
 
     // ===== GEOMETRY =====
     int totalWidth;

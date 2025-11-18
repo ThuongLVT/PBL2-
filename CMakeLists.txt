@@ -87,6 +87,7 @@ set(CORE_MODELS_HEADERS
 # Source files - Core/QuanLy
 set(CORE_QUANLY_SOURCES
     Core/QuanLy/HeThongQuanLy.cpp
+    Core/QuanLy/HeThongQuanLyCSV.cpp
     Core/QuanLy/FileManager.cpp
     Core/QuanLy/BackupManager.cpp
     Core/QuanLy/QuanLySan.cpp
@@ -95,6 +96,7 @@ set(CORE_QUANLY_SOURCES
     Core/QuanLy/QuanLyDonHangDichVu.cpp
     Core/QuanLy/QuanLyDatSan.cpp
     Core/QuanLy/QuanLyThanhToan.cpp
+    Core/Utils/CSVHelper.cpp
 )
 
 set(CORE_QUANLY_HEADERS
@@ -107,6 +109,7 @@ set(CORE_QUANLY_HEADERS
     Core/QuanLy/QuanLyDonHangDichVu.h
     Core/QuanLy/QuanLyDatSan.h
     Core/QuanLy/QuanLyThanhToan.h
+    Core/Utils/CSVHelper.h
 )
 
 # Source files - Core/ThongKe
@@ -133,11 +136,13 @@ set(CORE_THUATTOAN_HEADERS
 # Source files - Core/Utils (header-only)
 set(CORE_UTILS_SOURCES
     Core/Utils/CSVHandler.cpp
+    Core/Utils/CSVManager.cpp
 )
 
 set(CORE_UTILS_HEADERS
     Core/Utils/FileHelper.h
     Core/Utils/CSVHandler.h
+    Core/Utils/CSVManager.h
 )
 
 # ============================================
@@ -160,7 +165,9 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Components/TimelineGridWidget.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/TimelineTab.cpp
-    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingListPage.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingTableTab.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingDetailDialog.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/CancelBookingDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/PaymentListPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.cpp
@@ -185,7 +192,9 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Components/TimelineGridWidget.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/TimelineTab.h
-    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingListPage.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingTableTab.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingDetailDialog.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/CancelBookingDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/PaymentListPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.h

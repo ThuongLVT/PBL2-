@@ -9,15 +9,19 @@ using namespace std;
 // Constructor mặc định
 DatSan::DatSan()
     : maDatSan(""), khachHang(nullptr), san(nullptr),
-      tongTien(0.0), trangThai(CHO_XAC_NHAN), ghiChu("") {}
+      tongTien(0.0), trangThai(DA_DAT), ghiChu(""),
+      tienCoc(0.0), trangThaiCoc(DA_COC), lyDoHuy(""), hoanCoc(false) {}
 
 // Constructor với tham số
 DatSan::DatSan(const std::string &ma, KhachHang *kh, San *s, const NgayGio &tgDat, const KhungGio &kg)
     : maDatSan(ma), khachHang(kh), san(s), thoiGianDat(tgDat), khungGio(kg),
-      tongTien(0.0), trangThai(CHO_XAC_NHAN), ghiChu("")
+      tongTien(0.0), trangThai(DA_DAT), ghiChu(""),
+      tienCoc(0.0), trangThaiCoc(DA_COC), lyDoHuy(""), hoanCoc(false)
 {
     ngayTao = NgayGio::layThoiGianHienTai();
+    ngayDatCoc = NgayGio::layThoiGianHienTai();
     tinhTongTien();
+    tinhTienCoc(); // Auto cọc 30% khi tạo
 }
 
 // Copy constructor
@@ -33,6 +37,11 @@ DatSan::DatSan(const DatSan &other)
     trangThai = other.trangThai;
     ngayTao = other.ngayTao;
     ghiChu = other.ghiChu;
+    tienCoc = other.tienCoc;
+    trangThaiCoc = other.trangThaiCoc;
+    ngayDatCoc = other.ngayDatCoc;
+    lyDoHuy = other.lyDoHuy;
+    hoanCoc = other.hoanCoc;
 }
 
 // Destructor
@@ -56,6 +65,11 @@ DatSan &DatSan::operator=(const DatSan &other)
         trangThai = other.trangThai;
         ngayTao = other.ngayTao;
         ghiChu = other.ghiChu;
+        tienCoc = other.tienCoc;
+        trangThaiCoc = other.trangThaiCoc;
+        ngayDatCoc = other.ngayDatCoc;
+        lyDoHuy = other.lyDoHuy;
+        hoanCoc = other.hoanCoc;
     }
     return *this;
 }
@@ -77,6 +91,11 @@ double DatSan::getTongTien() const { return tongTien; }
 TrangThaiDatSan DatSan::getTrangThai() const { return trangThai; }
 NgayGio DatSan::getNgayTao() const { return ngayTao; }
 std::string DatSan::getGhiChu() const { return ghiChu; }
+double DatSan::getTienCoc() const { return tienCoc; }
+TrangThaiCoc DatSan::getTrangThaiCoc() const { return trangThaiCoc; }
+NgayGio DatSan::getNgayDatCoc() const { return ngayDatCoc; }
+std::string DatSan::getLyDoHuy() const { return lyDoHuy; }
+bool DatSan::isHoanCoc() const { return hoanCoc; }
 
 // Setters
 void DatSan::setMaDatSan(const std::string &ma) { maDatSan = ma; }
@@ -94,6 +113,11 @@ void DatSan::setKhungGio(const KhungGio &kg)
 }
 void DatSan::setTrangThai(TrangThaiDatSan tt) { trangThai = tt; }
 void DatSan::setGhiChu(const std::string &gc) { ghiChu = gc; }
+void DatSan::setTienCoc(double tc) { tienCoc = tc; }
+void DatSan::setTrangThaiCoc(TrangThaiCoc ttc) { trangThaiCoc = ttc; }
+void DatSan::setNgayDatCoc(const NgayGio &ndc) { ngayDatCoc = ndc; }
+void DatSan::setLyDoHuy(const std::string &lyDo) { lyDoHuy = lyDo; }
+void DatSan::setHoanCoc(bool hoan) { hoanCoc = hoan; }
 
 // Methods
 void DatSan::themDichVu(const DichVuDat &dv)
@@ -133,18 +157,14 @@ std::string DatSan::getTrangThaiText() const
 {
     switch (trangThai)
     {
-    case CHO_XAC_NHAN:
-        return std::string("Cho xac nhan");
-    case DA_XAC_NHAN:
-        return std::string("Da xac nhan");
-    case DANG_SU_DUNG:
-        return std::string("Dang su dung");
+    case DA_DAT:
+        return std::string("Đã đặt");
     case HOAN_THANH:
-        return std::string("Hoan thanh");
+        return std::string("Hoàn thành");
     case DA_HUY:
-        return std::string("Da huy");
+        return std::string("Đã hủy");
     default:
-        return std::string("Khong xac dinh");
+        return std::string("Không xác định");
     }
 }
 
@@ -256,6 +276,21 @@ void DatSan::ghiFile(FILE *f) const
     {
         fwrite(ghiChu.c_str(), sizeof(char), len, f);
     }
+
+    // Ghi deposit fields
+    fwrite(&tienCoc, sizeof(double), 1, f);
+    int ttc = static_cast<int>(trangThaiCoc);
+    fwrite(&ttc, sizeof(int), 1, f);
+    ngayDatCoc.ghiFile(f);
+
+    // Ghi cancel fields
+    len = lyDoHuy.length();
+    fwrite(&len, sizeof(int), 1, f);
+    if (len > 0)
+    {
+        fwrite(lyDoHuy.c_str(), sizeof(char), len, f);
+    }
+    fwrite(&hoanCoc, sizeof(bool), 1, f);
 }
 
 void DatSan::docFile(FILE *f)
@@ -334,6 +369,25 @@ void DatSan::docFile(FILE *f)
         ghiChu = std::string(buffer);
         delete[] buffer;
     }
+
+    // Đọc deposit fields
+    fread(&tienCoc, sizeof(double), 1, f);
+    int ttc;
+    fread(&ttc, sizeof(int), 1, f);
+    trangThaiCoc = static_cast<TrangThaiCoc>(ttc);
+    ngayDatCoc.docFile(f);
+
+    // Đọc cancel fields
+    fread(&len, sizeof(int), 1, f);
+    if (len > 0)
+    {
+        char *buffer = new char[len + 1];
+        fread(buffer, sizeof(char), len, f);
+        buffer[len] = '\0';
+        lyDoHuy = std::string(buffer);
+        delete[] buffer;
+    }
+    fread(&hoanCoc, sizeof(bool), 1, f);
 }
 
 // Helper methods for pointer resolution
@@ -354,4 +408,46 @@ std::string DatSan::taoMaDatSan()
     char buffer[50];
     sprintf(buffer, "DS%lld", static_cast<long long>(now));
     return std::string(buffer);
+}
+
+// ===== DEPOSIT METHODS =====
+
+std::string DatSan::getTrangThaiCocText() const
+{
+    switch (trangThaiCoc)
+    {
+    case DA_COC:
+        return "Đã cọc 30%";
+    case HOAN_COC:
+        return "Hoàn cọc";
+    case MAT_COC:
+        return "Mất cọc";
+    default:
+        return "N/A";
+    }
+}
+
+void DatSan::tinhTienCoc()
+{
+    // Tiền cọc = 30% tổng tiền
+    tienCoc = tongTien * 0.3;
+}
+
+void DatSan::huyBooking(bool hoan, const std::string &lyDo)
+{
+    // Hủy booking với lý do (nhân viên chọn hoàn/mất cọc)
+    trangThai = DA_HUY;
+    lyDoHuy = lyDo;
+    hoanCoc = hoan;
+
+    if (hoan)
+    {
+        // Hoàn cọc
+        trangThaiCoc = HOAN_COC;
+    }
+    else
+    {
+        // Mất cọc
+        trangThaiCoc = MAT_COC;
+    }
 }

@@ -24,6 +24,9 @@ public:
     explicit MainWindow(QuanTriVien *currentUser, QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private slots:
     void onMenuItemClicked(int index);
     void onAdminClicked();

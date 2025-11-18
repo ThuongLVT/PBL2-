@@ -136,29 +136,30 @@ public:
     const MangDong<ThanhToan *> &layDanhSachThanhToan() const;
     void hienThiDanhSachThanhToan() const;
 
-    // ===== FILE I/O =====
+    // ===== FILE I/O (BINARY ONLY) =====
     bool luuHeThong(const std::string &tenFile);
     bool docHeThong(const std::string &tenFile);
     void xoaTatCaDuLieu();
 
-    // ===== CSV I/O =====
     /**
-     * @brief Lưu hệ thống ra các file CSV
-     * @param dataDir Thư mục chứa các file CSV (D:/QT_PBL2/Data/)
-     * @return true nếu thành công
+     * @brief Khởi tạo dữ liệu mẫu (10 items mỗi loại)
+     * @details Dùng khi chạy lần đầu hoặc không có data.bin
      */
-    bool luuCSV(const std::string &dataDir);
-
-    /**
-     * @brief Đọc hệ thống từ các file CSV
-     * @param dataDir Thư mục chứa các file CSV
-     * @return true nếu thành công
-     */
-    bool docCSV(const std::string &dataDir);
+    void khoiTaoDuLieuMau();
 
     // ===== BACKUP/RESTORE =====
     bool saoLuuHeThong(const std::string &fileGoc);
     bool khoiPhucHeThong(const std::string &fileBackup, const std::string &fileDich);
+
+    // ===== CSV I/O (NEW) =====
+    bool luuKhachHangCSV(const std::string &filename);
+    bool docKhachHangCSV(const std::string &filename);
+    bool luuSanCSV(const std::string &filename);
+    bool docSanCSV(const std::string &filename);
+    bool luuDichVuCSV(const std::string &filename);
+    bool docDichVuCSV(const std::string &filename);
+    bool luuDatSanCSV(const std::string &filename);
+    bool docDatSanCSV(const std::string &filename);
 
     // ===== UTILITY =====
     int tongSoKhachHang() const;

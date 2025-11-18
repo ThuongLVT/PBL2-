@@ -15,7 +15,6 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QSplitter>
 #include <QCalendarWidget>
 #include <QLineEdit>
 #include <QComboBox>
@@ -79,11 +78,6 @@ private slots:
     void onDeleteClicked();
 
     /**
-     * @brief Checkin/Match action
-     */
-    void onCheckinClicked();
-    
-    /**
      * @brief Cancel selection (clear pending selection)
      */
     void onCancelSelectionClicked();
@@ -97,12 +91,12 @@ private slots:
      * @brief Existing booking clicked
      */
     void onBookingBlockClicked(DatSan *booking);
-    
+
     /**
      * @brief Quick add customer button clicked
      */
     void onAddCustomerClicked();
-    
+
     /**
      * @brief Duration quick select (30/60/90/120 min)
      */
@@ -110,13 +104,6 @@ private slots:
     void onDuration60Clicked();
     void onDuration90Clicked();
     void onDuration120Clicked();
-    
-    /**
-     * @brief Timeline filters changed
-     */
-    void onFieldFilterChanged(int index);
-    void onStatusFilterChanged(int index);
-    void onTimeFilterChanged(int index);
 
 signals:
     /**
@@ -138,20 +125,18 @@ private:
      * @brief Format currency for display
      */
     QString formatCurrency(double amount);
-    
+
     /**
      * @brief Update calendar to highlight dates with bookings
      */
     void updateCalendarDates();
     void setupFilters();
     bool checkBookingConflict(San *san, const NgayGio &ngayGio, const KhungGio &khungGio);
-    void applyTimelineFilters();
     void setDuration(int minutes);
 
 private:
     // ===== MAIN LAYOUT =====
     QVBoxLayout *mainLayout;
-    QSplitter *verticalSplitter;
 
     // ===== TOP PANEL (40%) =====
     QWidget *topPanel;
@@ -169,10 +154,10 @@ private:
 
     // Form fields
     QLineEdit *phoneEdit;
-    QPushButton *addCustomerBtn; // Quick add customer
     QLabel *nameLabel;
     QComboBox *fieldCombo;
     QLabel *priceLabel;
+    QLabel *depositLabel; // Nh\u00e3n hi\u1ec3n th\u1ecb ti\u1ec1n c\u1ecdc (30% ti\u1ec1n s\u00e2n)
     QComboBox *statusCombo;
     QComboBox *typeCombo;
     QDateEdit *dateEdit;
@@ -185,16 +170,11 @@ private:
     QPushButton *duration90Btn;
     QPushButton *duration120Btn;
     QTextEdit *noteEdit;
-    
-    // Timeline filters
-    QComboBox *fieldFilterCombo;
-    QComboBox *statusFilterCombo;
-    QComboBox *timeFilterCombo;
 
     // Action buttons
     QPushButton *saveBtn;
     QPushButton *deleteBtn;
-    QPushButton *checkinBtn;
+    // Removed: checkinBtn (no longer needed)
 
     // ===== BOTTOM PANEL (60%) =====
     QFrame *timelinePanel;

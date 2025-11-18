@@ -1,24 +1,11 @@
 MaSan,TenSan,LoaiSan,KhuVuc,GiaThue,TrangThai,GhiChu
-SB01,Sân A5-1,5,A,200000,Hoạt động,
-SB02,Sân A5-2,5,A,200000,Hoạt động,
-SB03,Sân A5-3,5,A,200000,Ngừng hoạt động,Chờ nâng cấp
-SB04,Sân A7-1,7,A,400000,Hoạt động,
-SB06,Sân B5-1,5,B,200000,Hoạt động,
-SB07,Sân B5-2,5,B,200000,Hoạt động,
-SB08,Sân B5-3,5,B,200000,Bảo trì,Đang sửa chữa đèn
-SB09,Sân B5-4,5,B,200000,Hoạt động,
-SB10,Sân B7-1,7,B,400000,Hoạt động,
-SB11,Sân B7-2,7,B,400000,Hoạt động,
-SB13,Sân C5-1,5,C,200000,Hoạt động,
-SB14,Sân C5-2,5,C,200000,Ngừng hoạt động,Tạm ngừng kinh doanh
-SB15,Sân C5-3,5,C,200000,Hoạt động,
-SB16,Sân C5-4,5,C,200000,Hoạt động,
-SB17,Sân C7-1,7,C,400000,Hoạt động,
-SB18,Sân C7-2,7,C,400000,Bảo trì,Thay cỏ nhân tạo
-SB19,Sân C7-3,7,C,400000,Hoạt động,
-SB21,Sân D5-1,5,D,200000,Hoạt động,
-SB22,Sân D5-2,5,D,200000,Hoạt động,
-SB23,Sân D5-3,5,D,200000,Ngừng hoạt động,Chờ xây dựng lại
-SB24,Sân D7-1,7,D,400000,Hoạt động,
-SB25,Sân D7-2,7,D,400000,Hoạt động,
-SB26,Sân D7-3,7,D,400000,Bảo trì,Sửa chữa hàng rào
+A501,Sân A5-01,5,A,200000,Hoạt động,Sân 5 người khu vực A
+A502,Sân A5-02,5,A,200000,Hoạt động,Sân 5 người khu vực A
+A701,Sân A7-01,7,A,300000,Hoạt động,Sân 7 người khu vực A
+B501,Sân B5-01,5,B,200000,Hoạt động,Sân 5 người khu vực B
+B701,Sân B7-01,7,B,300000,Hoạt động,Sân 7 người khu vực B
+C501,Sân C5-01,5,C,200000,Bảo trì,Đang bảo trì thảm cỏ
+C701,Sân C7-01,7,C,300000,Hoạt động,Sân 7 người khu vực C
+D501,Sân D5-01,5,D,200000,Hoạt động,Sân 5 người khu vực D
+D701,Sân D7-01,7,D,300000,Hoạt động,Sân 7 người khu vực D
+D702,Sân D7-02,7,D,300000,Ngừng hoạt động,Tạm ngừng hoạt động

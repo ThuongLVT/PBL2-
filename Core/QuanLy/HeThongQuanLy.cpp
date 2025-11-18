@@ -8,7 +8,9 @@
  */
 
 #include "HeThongQuanLy.h"
+#include "../Utils/CSVHelper.h"
 #include <iostream>
+#include <sstream>
 #include <fstream>
 
 using namespace std;
@@ -28,8 +30,8 @@ HeThongQuanLy::HeThongQuanLy()
     quanLyThanhToan = new QuanLyThanhToan();
     backupManager = new BackupManager();
 
-    // Tải dữ liệu dịch vụ từ CSV (path tuyệt đối)
-    quanLyDichVu->taiDuLieuTuCSV("D:/QT_PBL2/Data/dichvu.csv");
+    // NOTE: Do NOT auto-load CSV here
+    // CSV will be loaded by main.cpp via docHeThong() to avoid duplicate loading
 }
 
 // Destructor
@@ -368,148 +370,47 @@ void HeThongQuanLy::hienThiDanhSachThanhToan() const
 // ===== FILE I/O =====
 bool HeThongQuanLy::luuHeThong(const string &tenFile)
 {
-    ofstream file(tenFile, ios::binary);
-    if (!file.is_open())
+    // Save each manager to separate CSV files
+    bool success = true;
+
+    success &= luuKhachHangCSV("khachhang.csv");
+    success &= luuSanCSV("san.csv");
+    success &= luuDichVuCSV("dichvu.csv");
+    success &= luuDatSanCSV("datsan.csv");
+
+    if (success)
     {
-        cout << "Loi: Khong the mo file de ghi: " << tenFile << endl;
-        return false;
+        cout << "Luu he thong thanh cong (CSV format)" << endl;
+    }
+    else
+    {
+        cout << "Loi: Khong the luu mot so file CSV" << endl;
     }
 
-    // Ghi từng Manager
-    if (!quanLyKhachHang->ghiFile(file))
-    {
-        cout << "Loi: Khong the ghi QuanLyKhachHang" << endl;
-        return false;
-    }
-
-    if (!quanLySan->ghiFile(file))
-    {
-        cout << "Loi: Khong the ghi QuanLySan" << endl;
-        return false;
-    }
-
-    if (!quanLyDichVu->ghiFile(file))
-    {
-        cout << "Loi: Khong the ghi QuanLyDichVu" << endl;
-        return false;
-    }
-
-    if (!quanLyDatSan->ghiFile(file))
-    {
-        cout << "Loi: Khong the ghi QuanLyDatSan" << endl;
-        return false;
-    }
-
-    // TODO Week 1 Day 1: Convert QuanLyThanhToan to std::ofstream or write payments directly
-    // Temporary: Write payments count and skip detailed data
-    int soThanhToan = quanLyThanhToan->tongSoThanhToan();
-    file.write(reinterpret_cast<const char *>(&soThanhToan), sizeof(int));
-    // if (!quanLyThanhToan->ghiFile(file))
-    // {
-    //     cout << "Loi: Khong the ghi QuanLyThanhToan" << endl;
-    //     return false;
-    // }
-
-    // Ghi Nhân viên & Quản trị viên
-    int soNV = danhSachNhanVien.size();
-    file.write(reinterpret_cast<const char *>(&soNV), sizeof(soNV));
-    for (int i = 0; i < soNV; i++)
-    {
-        if (!danhSachNhanVien[i]->ghiFile(file))
-            return false;
-    }
-
-    int soQTV = danhSachQuanTriVien.size();
-    file.write(reinterpret_cast<const char *>(&soQTV), sizeof(soQTV));
-    for (int i = 0; i < soQTV; i++)
-    {
-        if (!danhSachQuanTriVien[i]->ghiFile(file))
-            return false;
-    }
-
-    file.close();
-    cout << "Luu he thong thanh cong: " << tenFile << endl;
-    return true;
+    return success;
 }
 
 bool HeThongQuanLy::docHeThong(const string &tenFile)
 {
-    ifstream file(tenFile, ios::binary);
-    if (!file.is_open())
+    cout << "\n[DEBUG] docHeThong() called" << endl;
+    // Load each manager from separate CSV files
+    bool success = true;
+
+    success &= docKhachHangCSV("khachhang.csv");
+    success &= docSanCSV("san.csv");
+    success &= docDichVuCSV("dichvu.csv");
+    success &= docDatSanCSV("datsan.csv");
+
+    if (success)
     {
-        cout << "Loi: Khong the mo file de doc: " << tenFile << endl;
-        return false;
+        cout << "Doc he thong thanh cong (CSV format)" << endl;
+    }
+    else
+    {
+        cout << "Loi: Khong the doc mot so file CSV" << endl;
     }
 
-    // Xóa dữ liệu cũ
-    xoaTatCaDuLieu();
-
-    // Đọc từng Manager
-    if (!quanLyKhachHang->docFile(file))
-    {
-        cout << "Loi: Khong the doc QuanLyKhachHang" << endl;
-        return false;
-    }
-
-    if (!quanLySan->docFile(file))
-    {
-        cout << "Loi: Khong the doc QuanLySan" << endl;
-        return false;
-    }
-
-    if (!quanLyDichVu->docFile(file))
-    {
-        cout << "Loi: Khong the doc QuanLyDichVu" << endl;
-        return false;
-    }
-
-    if (!quanLyDatSan->docFile(file))
-    {
-        cout << "Loi: Khong the doc QuanLyDatSan" << endl;
-        return false;
-    }
-
-    // TODO Week 1 Day 1: Read payments properly after conversion
-    // Temporary: Skip reading payment details
-    int soThanhToan;
-    file.read(reinterpret_cast<char *>(&soThanhToan), sizeof(int));
-    // if (!quanLyThanhToan->docFile(file))
-    // {
-    //     cout << "Loi: Khong the doc QuanLyThanhToan" << endl;
-    //     return false;
-    // }
-
-    // Đọc Nhân viên
-    int soNV;
-    file.read(reinterpret_cast<char *>(&soNV), sizeof(soNV));
-    for (int i = 0; i < soNV; i++)
-    {
-        NhanVien *nv = new NhanVien();
-        if (!nv->docFile(file))
-        {
-            delete nv;
-            return false;
-        }
-        danhSachNhanVien.push_back(nv);
-    }
-
-    // Đọc Quản trị viên
-    int soQTV;
-    file.read(reinterpret_cast<char *>(&soQTV), sizeof(soQTV));
-    for (int i = 0; i < soQTV; i++)
-    {
-        QuanTriVien *qtv = new QuanTriVien();
-        if (!qtv->docFile(file))
-        {
-            delete qtv;
-            return false;
-        }
-        danhSachQuanTriVien.push_back(qtv);
-    }
-
-    file.close();
-    cout << "Doc he thong thanh cong: " << tenFile << endl;
-    return true;
+    return success;
 }
 
 void HeThongQuanLy::xoaTatCaDuLieu()
@@ -595,69 +496,126 @@ int HeThongQuanLy::tongSoThanhToan() const
     return quanLyThanhToan->tongSoThanhToan();
 }
 
-// ===== CSV I/O =====
-bool HeThongQuanLy::luuCSV(const string &dataDir)
+// ===== SAMPLE DATA INITIALIZATION =====
+void HeThongQuanLy::khoiTaoDuLieuMau()
 {
-    cout << "\n=== SAVING DATA TO CSV ===" << endl;
-    cout << "Data directory: " << dataDir << endl;
+    cout << "\n=== INITIALIZING SAMPLE DATA ===" << endl;
 
-    bool success = true;
-
-    // Save customers
-    string khachhangFile = dataDir + "/khachhang.csv";
-    if (!quanLyKhachHang->luuCSV(khachhangFile))
+    // 1. Khởi tạo 10 sân
+    for (int i = 1; i <= 10; i++)
     {
-        cerr << "Failed to save customers to CSV" << endl;
-        success = false;
+        string maSan = string("S") + (i < 10 ? "0" : "") + to_string(i);
+        string tenSan = "Sân " + to_string(i) + (i % 2 == 0 ? " (Sân 7)" : " (Sân 5)");
+        LoaiSan loai = (i % 2 == 0) ? LoaiSan::SAN_7 : LoaiSan::SAN_5;
+        KhuVuc khuVuc = static_cast<KhuVuc>((i - 1) % 4);    // A, B, C, D
+        double giaThue = (i % 2 == 0) ? 300000.0 : 200000.0; // Sân 7: 300k, Sân 5: 200k
+
+        San *san = new San(maSan, tenSan, loai, khuVuc, giaThue);
+        san->datTrangThai(TrangThaiSan::HOAT_DONG); // Sân hoạt động
+        quanLySan->themSan(san);
+    }
+    cout << "✓ Created 10 fields" << endl;
+
+    // 2. Khởi tạo 10 khách hàng
+    string hoTenList[] = {"Nguyễn Văn An", "Trần Thị Bình", "Lê Hoàng Cường", "Phạm Thị Dung",
+                          "Hoàng Văn Em", "Vũ Thị Phượng", "Đặng Văn Giang", "Bùi Thị Hoa",
+                          "Phan Văn Inh", "Ngô Thị Kim"};
+    for (int i = 1; i <= 10; i++)
+    {
+        string maKH = string("KH") + (i < 10 ? "0" : "") + to_string(i);
+        string hoTen = hoTenList[i - 1];
+        string sdt = "09" + to_string(10000000 + i * 1111111).substr(0, 8);
+        string diaChi = "Địa chỉ " + to_string(i);
+
+        KhachHang *kh = new KhachHang(hoTen, sdt, diaChi, maKH);
+        quanLyKhachHang->themKhachHang(kh);
+    }
+    cout << "✓ Created 10 customers" << endl;
+
+    // 3. Khởi tạo 10 dịch vụ
+    string dichVuList[] = {"Nước suối", "Nước ngọt", "Thuê bóng", "Thuê áo đấu", "Giày đá bóng",
+                           "Băng bảo vệ", "Nước tăng lực", "Khăn lau", "Dép tắm", "Túi đựng đồ"};
+    double giaList[] = {5000, 10000, 30000, 50000, 150000, 20000, 15000, 10000, 25000, 30000};
+    LoaiDichVu loaiList[] = {LoaiDichVu::DO_UONG, LoaiDichVu::DO_UONG, LoaiDichVu::THIET_BI, LoaiDichVu::THIET_BI,
+                             LoaiDichVu::THIET_BI, LoaiDichVu::THIET_BI, LoaiDichVu::DO_UONG, LoaiDichVu::THIET_BI,
+                             LoaiDichVu::THIET_BI, LoaiDichVu::THIET_BI};
+
+    for (int i = 1; i <= 10; i++)
+    {
+        string maDV = string("DV") + (i < 10 ? "0" : "") + to_string(i);
+        DichVu *dv = new DichVu(maDV, dichVuList[i - 1], giaList[i - 1], loaiList[i - 1]);
+        quanLyDichVu->themDichVu(dv);
+    }
+    cout << "✓ Created 10 services" << endl;
+
+    // 4. Khởi tạo 5 booking mẫu cho ngày hôm nay
+    if (quanLyKhachHang->layDanhSachKhachHang().size() >= 5 && quanLySan->layDanhSachSan().size() >= 5)
+    {
+        NgayGio ngayHienTai = NgayGio::layThoiGianHienTai();
+        int nam = ngayHienTai.getNam();
+        int thang = ngayHienTai.getThang();
+        int ngay = ngayHienTai.getNgay();
+
+        // Booking 1: 08:00-09:00, Sân 1, KH1
+        KhachHang *kh1 = quanLyKhachHang->layDanhSachKhachHang()[0];
+        San *san1 = quanLySan->layDanhSachSan()[0];
+        NgayGio thoiGian1(8, 0, 0, ngay, thang, nam);
+        KhungGio khung1(8, 0, 9, 0);
+        DatSan *booking1 = quanLyDatSan->taoDatSan(kh1, san1, thoiGian1, khung1);
+        if (booking1)
+        {
+            booking1->tinhTienCoc();
+            cout << "✓ Created booking 1: 08:00-09:00, Field 1" << endl;
+        }
+
+        // Booking 2: 10:00-11:00, Sân 2, KH2
+        KhachHang *kh2 = quanLyKhachHang->layDanhSachKhachHang()[1];
+        San *san2 = quanLySan->layDanhSachSan()[1];
+        NgayGio thoiGian2(10, 0, 0, ngay, thang, nam);
+        KhungGio khung2(10, 0, 11, 0);
+        DatSan *booking2 = quanLyDatSan->taoDatSan(kh2, san2, thoiGian2, khung2);
+        if (booking2)
+        {
+            booking2->tinhTienCoc();
+            cout << "✓ Created booking 2: 10:00-11:00, Field 2" << endl;
+        }
+
+        // Booking 3: 14:00-15:00, Sân 3, KH3
+        KhachHang *kh3 = quanLyKhachHang->layDanhSachKhachHang()[2];
+        San *san3 = quanLySan->layDanhSachSan()[2];
+        NgayGio thoiGian3(14, 0, 0, ngay, thang, nam);
+        KhungGio khung3(14, 0, 15, 0);
+        DatSan *booking3 = quanLyDatSan->taoDatSan(kh3, san3, thoiGian3, khung3);
+        if (booking3)
+        {
+            booking3->tinhTienCoc();
+            cout << "✓ Created booking 3: 14:00-15:00, Field 3" << endl;
+        }
+
+        // Booking 4: 16:00-17:00, Sân 4, KH4
+        KhachHang *kh4 = quanLyKhachHang->layDanhSachKhachHang()[3];
+        San *san4 = quanLySan->layDanhSachSan()[3];
+        NgayGio thoiGian4(16, 0, 0, ngay, thang, nam);
+        KhungGio khung4(16, 0, 17, 0);
+        DatSan *booking4 = quanLyDatSan->taoDatSan(kh4, san4, thoiGian4, khung4);
+        if (booking4)
+        {
+            booking4->tinhTienCoc();
+            cout << "✓ Created booking 4: 16:00-17:00, Field 4" << endl;
+        }
+
+        // Booking 5: 18:00-19:00, Sân 5, KH5
+        KhachHang *kh5 = quanLyKhachHang->layDanhSachKhachHang()[4];
+        San *san5 = quanLySan->layDanhSachSan()[4];
+        NgayGio thoiGian5(18, 0, 0, ngay, thang, nam);
+        KhungGio khung5(18, 0, 19, 0);
+        DatSan *booking5 = quanLyDatSan->taoDatSan(kh5, san5, thoiGian5, khung5);
+        if (booking5)
+        {
+            booking5->tinhTienCoc();
+            cout << "✓ Created booking 5: 18:00-19:00, Field 5" << endl;
+        }
     }
 
-    // Save services
-    string dichvuFile = dataDir + "/dichvu.csv";
-    if (!quanLyDichVu->luuDuLieuRaCSV(dichvuFile))
-    {
-        cerr << "Failed to save services to CSV" << endl;
-        success = false;
-    }
-
-    // TODO: Add other entities (San, DatSan, ThanhToan, NhanVien, QuanTriVien)
-
-    if (success)
-    {
-        cout << "✓ All data saved to CSV successfully!" << endl;
-    }
-
-    return success;
-}
-
-bool HeThongQuanLy::docCSV(const string &dataDir)
-{
-    cout << "\n=== LOADING DATA FROM CSV ===" << endl;
-    cout << "Data directory: " << dataDir << endl;
-
-    bool success = true;
-
-    // Load customers
-    string khachhangFile = dataDir + "/khachhang.csv";
-    if (!quanLyKhachHang->docCSV(khachhangFile))
-    {
-        cerr << "Failed to load customers from CSV" << endl;
-        success = false;
-    }
-
-    // Load fields (san)
-    string sanFile = dataDir + "/san.csv";
-    if (!quanLySan->loadFromCSV(sanFile))
-    {
-        cerr << "Failed to load fields from CSV" << endl;
-        success = false;
-    }
-
-    // TODO: Add other entities (DichVu, DatSan, ThanhToan, NhanVien, QuanTriVien)
-
-    if (success)
-    {
-        cout << "✓ All data loaded from CSV successfully!" << endl;
-    }
-
-    return success;
+    cout << "=== SAMPLE DATA INITIALIZED SUCCESSFULLY ===" << endl;
 }

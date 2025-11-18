@@ -34,6 +34,7 @@ class QuanLyDatSan
 {
 private:
     MangDong<DatSan *> danhSachDatSan; ///< Danh sách đặt sân
+    int maxBookingId;                  ///< Track highest booking ID to prevent reuse
 
 public:
     // ========== CONSTRUCTORS ==========
@@ -42,6 +43,7 @@ public:
 
     // ========== CRUD OPERATIONS ==========
     DatSan *taoDatSan(KhachHang *kh, San *san, const NgayGio &thoiGian, const KhungGio &khung);
+    void themDatSanTrucTiep(DatSan *datSan); // For CSV loading - doesn't generate new ID
     bool huyDatSan(const std::string &maDatSan);
     bool capNhatTrangThaiDatSan(const std::string &maDatSan, TrangThaiDatSan trangThai);
     DatSan *timDatSan(const std::string &maDatSan);
@@ -66,6 +68,23 @@ public:
     bool ghiFile(std::ofstream &file) const;
     bool docFile(std::ifstream &file);
     void xoaTatCa();
+
+    // ========== CSV I/O ==========
+    /**
+     * @brief Load bookings from CSV file
+     * @param filename CSV filename
+     * @param qlKH QuanLyKhachHang instance to resolve customer pointers
+     * @param qlSan QuanLySan instance to resolve field pointers
+     * @return true if successful
+     */
+    bool loadFromCSV(const std::string &filename, class QuanLyKhachHang *qlKH, class QuanLySan *qlSan);
+
+    /**
+     * @brief Save bookings to CSV file
+     * @param filename CSV filename
+     * @return true if successful
+     */
+    bool saveToCSV(const std::string &filename);
 };
 
 #endif // QUANLYDATSAN_H

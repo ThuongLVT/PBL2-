@@ -50,8 +50,9 @@
 
 using namespace std;
 
-// Define data directories
-const string DATA_DIR = "D:/QT_PBL2/Data";
+// Define data files with absolute path
+const string DATA_DIR = "D:/QT_PBL2/Data/";
+const string DATA_FILE = DATA_DIR + "data.bin";
 
 int main(int argc, char *argv[])
 {
@@ -72,15 +73,18 @@ int main(int argc, char *argv[])
      cout << "Initializing system..." << endl;
      HeThongQuanLy *heThong = HeThongQuanLy::getInstance();
 
-     // Try to load existing CSV data
-     bool dataLoaded = heThong->docCSV(DATA_DIR);
+     // Try to load existing binary data
+     bool dataLoaded = heThong->docHeThong(DATA_FILE);
      if (dataLoaded)
      {
-          cout << "✅ Loaded existing data from CSV" << endl;
+          cout << "✅ Loaded existing data from " << DATA_FILE << endl;
      }
      else
      {
-          cout << "⚠️  No CSV data found - starting with empty system" << endl;
+          cout << "⚠️  No data file found - initializing with sample data..." << endl;
+          heThong->khoiTaoDuLieuMau();
+          heThong->luuHeThong(DATA_FILE);
+          cout << "✅ Sample data created and saved to " << DATA_FILE << endl;
      }
 
      // Create default admin if no admin exists

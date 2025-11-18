@@ -7,6 +7,7 @@
  */
 
 #include "QuanLyDichVu.h"
+#include "../Utils/CSVManager.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -27,6 +28,10 @@ bool QuanLyDichVu::themDichVu(DichVu *dv)
         return false;
     }
     danhSachDichVu.push_back(dv);
+
+    // Auto-save to CSV
+    luuDuLieuRaCSV("dichvu.csv");
+
     return true;
 }
 
@@ -38,6 +43,10 @@ bool QuanLyDichVu::xoaDichVu(const string &maDV)
         {
             delete danhSachDichVu[i];
             danhSachDichVu.erase(i);
+
+            // Auto-save to CSV
+            luuDuLieuRaCSV("dichvu.csv");
+
             return true;
         }
     }
@@ -50,6 +59,10 @@ bool QuanLyDichVu::capNhatDichVu(const string &maDV, const DichVu &dvMoi)
     if (dv == nullptr)
         return false;
     *dv = dvMoi;
+
+    // Auto-save to CSV
+    luuDuLieuRaCSV("dichvu.csv");
+
     return true;
 }
 
@@ -162,108 +175,115 @@ void QuanLyDichVu::xoaTatCa()
 
 bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
 {
-    ifstream file(filePath);
-    if (!file.is_open())
-    {
-        cerr << "Khong the mo file: " << filePath << endl;
-        return false;
-    }
+    vector<vector<string>> rows = CSVManager::readCSV(filePath, true);
 
-    string line;
-    // Skip header line
-    getline(file, line);
+    if (rows.empty())
+    {
+        cout << "No service data found in CSV: " << filePath << endl;
+        return true; // Not an error, just empty file
+    }
 
     int count = 0;
-    while (getline(file, line))
+    for (size_t i = 0; i < rows.size(); i++)
     {
-        if (line.empty()) continue;
+        const auto &row = rows[i];
 
         // Parse CSV line: MaDichVu,TenDichVu,LoaiDichVu,DonGia,DonVi,SoLuongBan,TrangThai,HinhAnh,MoTa
-        stringstream ss(line);
-        string maDV, tenDV, loaiStr, donGiaStr, donVi, soLuongBanStr, trangThaiStr, hinhAnh, moTa;
-
-        getline(ss, maDV, ',');
-        getline(ss, tenDV, ',');
-        getline(ss, loaiStr, ',');
-        getline(ss, donGiaStr, ',');
-        getline(ss, donVi, ',');
-        getline(ss, soLuongBanStr, ',');
-        getline(ss, trangThaiStr, ',');
-        getline(ss, hinhAnh, ',');
-        getline(ss, moTa);
-
-        // Convert loaiStr to LoaiDichVu
-        LoaiDichVu loai = LoaiDichVu::KHAC;
-        if (loaiStr == "DO_UONG") loai = LoaiDichVu::DO_UONG;
-        else if (loaiStr == "THIET_BI") loai = LoaiDichVu::THIET_BI;
-        else if (loaiStr == "BAO_HIEM") loai = LoaiDichVu::BAO_HIEM;
-
-        // Convert donGia
-        double donGia = stod(donGiaStr);
-
-        // Create DichVu object
-        DichVu* dv = new DichVu(maDV, tenDV, donGia, loai);
-        dv->datDonVi(donVi);
-        dv->datSoLuongBan(stoi(soLuongBanStr));
-        dv->datConHang(trangThaiStr == "1");
-        dv->datHinhAnh(hinhAnh);
-        dv->datMoTa(moTa);
-
-        if (themDichVu(dv))
+        if (row.size() < 9)
         {
+            cerr << "Invalid CSV row at line " << (i + 2) << ": insufficient columns" << endl;
+            continue;
+        }
+
+        try
+        {
+            string maDV = row[0];
+            string tenDV = row[1];
+            string loaiStr = row[2];
+            double donGia = stod(row[3]);
+            string donVi = row[4];
+            int soLuongBan = stoi(row[5]);
+            bool trangThai = (row[6] == "1");
+            string hinhAnh = row[7];
+            string moTa = row[8];
+
+            // Convert loaiStr to LoaiDichVu
+            LoaiDichVu loai = LoaiDichVu::KHAC;
+            if (loaiStr == "DO_UONG")
+                loai = LoaiDichVu::DO_UONG;
+            else if (loaiStr == "THIET_BI")
+                loai = LoaiDichVu::THIET_BI;
+            else if (loaiStr == "BAO_HIEM")
+                loai = LoaiDichVu::BAO_HIEM;
+
+            // Create DichVu object
+            DichVu *dv = new DichVu(maDV, tenDV, donGia, loai);
+            dv->datDonVi(donVi);
+            dv->datSoLuongBan(soLuongBan);
+            dv->datConHang(trangThai);
+            dv->datHinhAnh(hinhAnh);
+            dv->datMoTa(moTa);
+
+            // Don't auto-save when loading from CSV (avoid infinite loop)
+            danhSachDichVu.push_back(dv);
             count++;
         }
-        else
+        catch (const exception &e)
         {
-            delete dv;
+            cerr << "Error parsing CSV row " << (i + 2) << ": " << e.what() << endl;
+            continue;
         }
     }
 
-    file.close();
-    cout << "Tai thanh cong " << count << " dich vu tu CSV" << endl;
+    cout << "Loaded " << count << " services from CSV: " << filePath << endl;
     return count > 0;
 }
 
 bool QuanLyDichVu::luuDuLieuRaCSV(const std::string &filePath) const
 {
-    ofstream file(filePath);
-    if (!file.is_open())
-    {
-        cerr << "Khong the mo file de ghi: " << filePath << endl;
-        return false;
-    }
+    vector<string> headers = {"MaDichVu", "TenDichVu", "LoaiDichVu", "DonGia", "DonVi", "SoLuongBan", "TrangThai", "HinhAnh", "MoTa"};
+    vector<vector<string>> rows;
 
-    // Write header
-    file << "MaDichVu,TenDichVu,LoaiDichVu,DonGia,DonVi,SoLuongBan,TrangThai,HinhAnh,MoTa" << endl;
-
-    // Write each service
     for (int i = 0; i < danhSachDichVu.size(); i++)
     {
-        DichVu* dv = danhSachDichVu[i];
-        
+        DichVu *dv = danhSachDichVu[i];
+        vector<string> row;
+
         // Convert LoaiDichVu to string
         string loaiStr;
         switch (dv->layLoaiDichVu())
         {
-            case LoaiDichVu::DO_UONG: loaiStr = "DO_UONG"; break;
-            case LoaiDichVu::THIET_BI: loaiStr = "THIET_BI"; break;
-            case LoaiDichVu::BAO_HIEM: loaiStr = "BAO_HIEM"; break;
-            default: loaiStr = "KHAC"; break;
+        case LoaiDichVu::DO_UONG:
+            loaiStr = "DO_UONG";
+            break;
+        case LoaiDichVu::THIET_BI:
+            loaiStr = "THIET_BI";
+            break;
+        case LoaiDichVu::BAO_HIEM:
+            loaiStr = "BAO_HIEM";
+            break;
+        default:
+            loaiStr = "KHAC";
+            break;
         }
 
-        // Write CSV line: MaDichVu,TenDichVu,LoaiDichVu,DonGia,DonVi,SoLuongBan,TrangThai,HinhAnh,MoTa
-        file << dv->layMaDichVu() << ","
-             << dv->layTenDichVu() << ","
-             << loaiStr << ","
-             << dv->layDonGia() << ","
-             << dv->layDonVi() << ","
-             << dv->laySoLuongBan() << ","
-             << (dv->coConHang() ? "1" : "0") << ","
-             << dv->layHinhAnh() << ","
-             << dv->layMoTa() << endl;
+        row.push_back(dv->layMaDichVu());
+        row.push_back(dv->layTenDichVu());
+        row.push_back(loaiStr);
+        row.push_back(to_string(static_cast<long long>(dv->layDonGia())));
+        row.push_back(dv->layDonVi());
+        row.push_back(to_string(dv->laySoLuongBan()));
+        row.push_back(dv->coConHang() ? "1" : "0");
+        row.push_back(dv->layHinhAnh());
+        row.push_back(dv->layMoTa());
+
+        rows.push_back(row);
     }
 
-    file.close();
-    cout << "Luu thanh cong " << danhSachDichVu.size() << " dich vu ra CSV: " << filePath << endl;
-    return true;
+    bool success = CSVManager::writeCSV(filePath, headers, rows);
+    if (success)
+    {
+        cout << "Saved " << danhSachDichVu.size() << " services to CSV: " << filePath << endl;
+    }
+    return success;
 }

@@ -10,14 +10,20 @@
 #include "../CauTrucDuLieu/MangDong.h"
 #include "../CauTrucDuLieu/NgayGio.h"
 
-// Enum trạng thái đặt sân
+// Enum trạng thái đặt sân (SIMPLIFIED - 3 states only)
 enum TrangThaiDatSan
 {
-    CHO_XAC_NHAN,
-    DA_XAC_NHAN,
-    DANG_SU_DUNG,
-    HOAN_THANH,
-    DA_HUY
+    DA_DAT,     // Đã đặt (đã cọc 30%, chờ thanh toán đủ)
+    HOAN_THANH, // Hoàn thành (đã thanh toán 100%)
+    DA_HUY      // Đã hủy (có ghi lý do)
+};
+
+// Enum trạng thái cọc
+enum TrangThaiCoc
+{
+    DA_COC,   // Đã đặt cọc 30% (mặc định khi tạo booking)
+    HOAN_COC, // Đã hoàn cọc (nhân viên chọn khi hủy)
+    MAT_COC   // Mất cọc (nhân viên chọn khi hủy)
 };
 
 // Lớp đại diện cho một đơn đặt sân
@@ -34,6 +40,15 @@ private:
     TrangThaiDatSan trangThai;          // Trạng thái
     NgayGio ngayTao;                    // Ngày tạo đơn
     std::string ghiChu;                 // Ghi chú
+
+    // Deposit fields (Tiền cọc)
+    double tienCoc;            // Tiền cọc (30% tổng tiền)
+    TrangThaiCoc trangThaiCoc; // Trạng thái cọc
+    NgayGio ngayDatCoc;        // Ngày đặt cọc
+
+    // Cancel fields (Hủy lịch)
+    std::string lyDoHuy; // Lý do hủy (bắt buộc khi hủy)
+    bool hoanCoc;        // true = hoàn cọc, false = mất cọc
 
 public:
     // Constructor & Destructor
@@ -57,6 +72,11 @@ public:
     TrangThaiDatSan getTrangThai() const;
     NgayGio getNgayTao() const;
     std::string getGhiChu() const;
+    double getTienCoc() const;
+    TrangThaiCoc getTrangThaiCoc() const;
+    NgayGio getNgayDatCoc() const;
+    std::string getLyDoHuy() const;
+    bool isHoanCoc() const;
 
     // Setters
     void setMaDatSan(const std::string &ma);
@@ -66,6 +86,11 @@ public:
     void setKhungGio(const KhungGio &kg);
     void setTrangThai(TrangThaiDatSan tt);
     void setGhiChu(const std::string &gc);
+    void setTienCoc(double tc);
+    void setTrangThaiCoc(TrangThaiCoc ttc);
+    void setNgayDatCoc(const NgayGio &ndc);
+    void setLyDoHuy(const std::string &lyDo);
+    void setHoanCoc(bool hoan);
 
     // Methods
     void themDichVu(const DichVuDat &dv);
@@ -73,6 +98,9 @@ public:
     void tinhTongTien(); // Tính tổng tiền = tiền sân + dịch vụ
     void hienThi() const;
     std::string getTrangThaiText() const;
+    std::string getTrangThaiCocText() const;
+    void tinhTienCoc();                                     // Tính tiền cọc (30% tổng tiền)
+    void huyBooking(bool hoanCoc, const std::string &lyDo); // Hủy booking với lý do
 
     // File I/O
     void ghiFile(FILE *f) const;

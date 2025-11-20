@@ -16,6 +16,32 @@
 #include <QEvent>
 #include <QLocale>
 #include <algorithm>
+#include <QStyledItemDelegate>
+#include <QPainter>
+
+// Delegate to preserve text color when selected
+class StatusDelegate : public QStyledItemDelegate
+{
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+    {
+        QStyleOptionViewItem opt = option;
+        initStyleOption(&opt, index);
+
+        // If selected, force the text color to be the same as unselected (which is stored in ForegroundRole)
+        if (opt.state & QStyle::State_Selected)
+        {
+            QVariant colorData = index.data(Qt::ForegroundRole);
+            if (colorData.isValid())
+            {
+                opt.palette.setColor(QPalette::HighlightedText, colorData.value<QColor>());
+            }
+        }
+
+        QStyledItemDelegate::paint(painter, opt, index);
+    }
+};
 
 FieldManagementPage::FieldManagementPage(QWidget *parent)
     : QWidget(parent), quanLySan(nullptr), selectedFieldId(""), currentStatsFilter(FILTER_ALL)
@@ -232,6 +258,9 @@ void FieldManagementPage::setupLeftPanel()
     dataTable->horizontalHeaderItem(5)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter); // Trạng thái
     dataTable->horizontalHeaderItem(6)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter); // Ghi chú
 
+    // Set custom delegate for Status column (index 5) to preserve text color on selection
+    dataTable->setItemDelegateForColumn(5, new StatusDelegate(dataTable));
+
     layout->addWidget(dataTable);
 }
 
@@ -352,19 +381,6 @@ void FieldManagementPage::setupConnections()
             this, &FieldManagementPage::onFilterChanged);
     connect(dataTable, &QTableWidget::cellClicked, this, &FieldManagementPage::onTableRowClicked);
 
-    // Restore status colors after selection using ForegroundRole
-    connect(dataTable, &QTableWidget::itemSelectionChanged, this, [this]()
-            {
-        for (int row = 0; row < dataTable->rowCount(); ++row) {
-            QTableWidgetItem *statusItem = dataTable->item(row, 5); // Column 5 is status
-            if (statusItem) {
-                QVariant colorData = statusItem->data(Qt::UserRole);
-                if (colorData.isValid()) {
-                    statusItem->setData(Qt::ForegroundRole, colorData.value<QColor>());
-                }
-            }
-        } });
-
     // Stats cards - use mousePressEvent would be better, but lambda is simpler
     totalCard->installEventFilter(this);
     activeCard->installEventFilter(this);
@@ -376,6 +392,12 @@ void FieldManagementPage::setupConnections()
     connect(saveBtn, &QPushButton::clicked, this, &FieldManagementPage::onSaveFieldClicked);
     connect(maintenanceBtn, &QPushButton::clicked, this, &FieldManagementPage::onMaintenanceFieldClicked);
     connect(deleteBtn, &QPushButton::clicked, this, &FieldManagementPage::onDeleteFieldClicked);
+
+    // Auto-generate name when combos change (only in Add New mode)
+    connect(loaiSanDetailCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &FieldManagementPage::generateFieldName);
+    connect(khuVucDetailCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &FieldManagementPage::generateFieldName);
 }
 
 bool FieldManagementPage::eventFilter(QObject *watched, QEvent *event)
@@ -552,6 +574,9 @@ void FieldManagementPage::applyStyles()
     dataTable->setShowGrid(false); // Disable grid completely
     dataTable->verticalHeader()->setVisible(false);
     dataTable->setFocusPolicy(Qt::NoFocus); // Remove focus outline
+
+    // Set custom delegate for status column to preserve text color on selection
+    dataTable->setItemDelegateForColumn(5, new StatusDelegate(this));
 }
 
 void FieldManagementPage::loadData()
@@ -783,6 +808,9 @@ void FieldManagementPage::onAddNewFieldClicked()
     clearForm();
     setFormMode(true, true); // New mode
     selectedFieldId = "";
+
+    // Trigger auto-generation for initial default values
+    generateFieldName();
 }
 
 void FieldManagementPage::onSaveFieldClicked()
@@ -820,6 +848,7 @@ void FieldManagementPage::onSaveFieldClicked()
             loadData();
             clearForm();
             setFormMode(false, false);
+            emit dataChanged();
         }
         else
         {
@@ -840,6 +869,7 @@ void FieldManagementPage::onSaveFieldClicked()
             QMessageBox::information(this, "Thành công", "Cập nhật sân thành công!");
             loadData();
             setFormMode(false, false);
+            emit dataChanged();
         }
         else
         {
@@ -894,6 +924,7 @@ void FieldManagementPage::onMaintenanceFieldClicked()
                                          .arg(reason));
             loadData();
             loadFieldToForm(getSelectedField());
+            emit dataChanged();
         }
         else
         {
@@ -928,6 +959,7 @@ void FieldManagementPage::onDeleteFieldClicked()
             clearForm();
             setFormMode(false, false);
             loadData();
+            emit dataChanged();
         }
         else
         {
@@ -1012,4 +1044,72 @@ San *FieldManagementPage::getSelectedField()
     }
 
     return quanLySan->timSan(selectedFieldId.toStdString());
+}
+
+void FieldManagementPage::generateFieldName()
+{
+    // Only generate if adding new field (selectedFieldId is empty)
+    if (!selectedFieldId.isEmpty() || !quanLySan)
+    {
+        return;
+    }
+
+    // Get selected Area and Type
+    int loaiSanIndex = loaiSanDetailCombo->currentData().toInt();
+    int khuVucIndex = khuVucDetailCombo->currentData().toInt();
+
+    LoaiSan loaiSan = static_cast<LoaiSan>(loaiSanIndex);
+    KhuVuc khuVuc = static_cast<KhuVuc>(khuVucIndex);
+
+    // Determine characters
+    QString areaChar;
+    switch (khuVuc)
+    {
+    case KhuVuc::A:
+        areaChar = "A";
+        break;
+    case KhuVuc::B:
+        areaChar = "B";
+        break;
+    case KhuVuc::C:
+        areaChar = "C";
+        break;
+    case KhuVuc::D:
+        areaChar = "D";
+        break;
+    default:
+        areaChar = "A";
+        break;
+    }
+
+    QString typeChar = (loaiSan == LoaiSan::SAN_5) ? "5" : "7";
+
+    // Prefix: "Sân A5-"
+    QString prefix = QString("Sân %1%2-").arg(areaChar, typeChar);
+
+    // Find max number for this prefix
+    int maxNum = 0;
+    MangDong<San *> allFields = quanLySan->layDanhSachSan();
+
+    for (int i = 0; i < allFields.size(); i++)
+    {
+        QString name = QString::fromStdString(allFields[i]->layTenSan());
+        if (name.startsWith(prefix))
+        {
+            QString numPart = name.mid(prefix.length());
+            bool ok;
+            int num = numPart.toInt(&ok);
+            if (ok && num > maxNum)
+            {
+                maxNum = num;
+            }
+        }
+    }
+
+    // Generate next number
+    int nextNum = maxNum + 1;
+    QString nextNumStr = QString("%1").arg(nextNum, 2, 10, QChar('0')); // Pad with 0 (e.g., 01, 02)
+
+    // Set text
+    tenSanEdit->setText(prefix + nextNumStr);
 }

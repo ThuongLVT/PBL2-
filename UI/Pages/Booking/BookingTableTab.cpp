@@ -120,7 +120,7 @@ void BookingTableTab::setupSearchAndFilters()
 
     fromDateEdit = new QDateEdit();
     fromDateEdit->setCalendarPopup(true);
-    fromDateEdit->setDate(QDate::currentDate().addMonths(-1));
+    fromDateEdit->setDate(QDate::currentDate().addYears(-1)); // Default to 1 year back
     fromDateEdit->setDisplayFormat("dd/MM/yyyy");
     fromDateEdit->setMinimumHeight(42);
     fromDateEdit->setStyleSheet(
@@ -139,7 +139,7 @@ void BookingTableTab::setupSearchAndFilters()
 
     toDateEdit = new QDateEdit();
     toDateEdit->setCalendarPopup(true);
-    toDateEdit->setDate(QDate::currentDate().addMonths(1));
+    toDateEdit->setDate(QDate::currentDate().addYears(1)); // Default to 1 year forward
     toDateEdit->setDisplayFormat("dd/MM/yyyy");
     toDateEdit->setMinimumHeight(42);
     toDateEdit->setStyleSheet(
@@ -272,12 +272,12 @@ void BookingTableTab::setupTable()
 
     bookingTable->horizontalHeader()->setStretchLastSection(true);
     bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
-    bookingTable->setColumnWidth(0, 120); // Mã đặt sân
-    bookingTable->setColumnWidth(1, 180); // Khách hàng
+    bookingTable->setColumnWidth(0, 110); // Mã đặt sân (-10px)
+    bookingTable->setColumnWidth(1, 150); // Khách hàng (-30px)
     bookingTable->setColumnWidth(2, 120); // SĐT
     bookingTable->setColumnWidth(3, 100); // Sân
     bookingTable->setColumnWidth(4, 100); // Ngày đặt
-    bookingTable->setColumnWidth(5, 100); // Giờ
+    bookingTable->setColumnWidth(5, 140); // Giờ (+40px)
     bookingTable->setColumnWidth(6, 120); // Tổng tiền
     bookingTable->setColumnWidth(7, 120); // Tiền cọc
     bookingTable->setColumnWidth(8, 120); // Trạng thái
@@ -476,9 +476,14 @@ void BookingTableTab::loadTableData()
         bookingTable->setItem(row, 4, dateItem);
 
         // Column 5: Giờ
-        QString timeStr = QString("%1:%2")
-                              .arg(ngayGio.getGio(), 2, 10, QChar('0'))
-                              .arg(ngayGio.getPhut(), 2, 10, QChar('0'));
+        KhungGio kg = booking->getKhungGio();
+        ThoiGian tStart = kg.layGioBatDau();
+        ThoiGian tEnd = kg.layGioKetThuc();
+        QString timeStr = QString("%1:%2 - %3:%4")
+                              .arg(tStart.getGio(), 2, 10, QChar('0'))
+                              .arg(tStart.getPhut(), 2, 10, QChar('0'))
+                              .arg(tEnd.getGio(), 2, 10, QChar('0'))
+                              .arg(tEnd.getPhut(), 2, 10, QChar('0'));
         QTableWidgetItem *timeItem = new QTableWidgetItem(timeStr);
         timeItem->setTextAlignment(Qt::AlignCenter);
         bookingTable->setItem(row, 5, timeItem);

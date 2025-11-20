@@ -63,3 +63,14 @@ bool HeThongQuanLy::docDatSanCSV(const string &filename)
 {
     return quanLyDatSan->loadFromCSV(filename, quanLyKhachHang, quanLySan);
 }
+
+// ========== ADMIN CSV ==========
+bool HeThongQuanLy::luuQuanTriVienCSV(const string &filename)
+{
+    return quanLyNhanVien->luuAdminCSV(filename);
+}
+
+bool HeThongQuanLy::docQuanTriVienCSV(const string &filename)
+{
+    return quanLyNhanVien->docAdminCSV(filename);
+}

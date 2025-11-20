@@ -103,13 +103,15 @@ void TimelineGridWidget::loadBookings()
         }
 
         // Get time info
-        int startHour = ngayGio.getGio();
-        int startMinute = ngayGio.getPhut();
-
+        // FIX: Use KhungGio for start time, not NgayGio (which is just the date)
         KhungGio khungGio = booking->getKhungGio();
-        // Calculate duration from start and end time
         ThoiGian gioBD = khungGio.getGioBatDau();
         ThoiGian gioKT = khungGio.getGioKetThuc();
+
+        int startHour = gioBD.getGio();
+        int startMinute = gioBD.getPhut();
+
+        // Calculate duration from start and end time
         int startMinutes = gioBD.getGio() * 60 + gioBD.getPhut();
         int endMinutes = gioKT.getGio() * 60 + gioKT.getPhut();
         int durationMinutes = endMinutes - startMinutes;
@@ -323,36 +325,67 @@ void TimelineGridWidget::drawBookingBlocks(QPainter &painter)
 
         // ===== DRAW WITH STATUS COLOR =====
         QColor blockColor = block->color;
-        blockColor.setAlpha(180); // Semi-transparent
+        blockColor.setAlpha(200); // Increased opacity for better visibility
         painter.fillRect(block->rect, blockColor);
 
         // Border
-        painter.setPen(QPen(blockColor, 2));
+        painter.setPen(QPen(blockColor.darker(120), 2));
         painter.drawRect(block->rect);
 
-        // ===== HIỂN THỊ SĐT KHÁCH HÀNG (TO, Ở GIỮA) =====
-        painter.setPen(QColor(255, 255, 255));
-        QFont phoneFont = painter.font();
-        phoneFont.setPointSize(11); // Kích thước lớn
-        phoneFont.setBold(true);
-        painter.setFont(phoneFont);
-
-        KhachHang *customer = block->booking->getKhachHang();
-        if (customer)
+        // ===== HIỂN THỊ THÔNG TIN: GIỜ ĐÁ, TÊN SÂN, SĐT (Thứ tự mới) =====
+        // Helper lambda to draw text (Normal White, No Shadow as requested)
+        auto drawTextNormal = [&](const QRect &r, const QString &text, const QFont &f)
         {
-            QString phoneNumber = QString::fromStdString(customer->laySoDienThoai());
-            QRect phoneRect = block->rect.adjusted(4, 4, -4, -4);
-            painter.drawText(phoneRect, Qt::AlignCenter | Qt::TextWordWrap, phoneNumber);
+            painter.setFont(f);
+            painter.setPen(Qt::white);
+            painter.drawText(r, Qt::AlignCenter, text);
+        };
+
+        // 1. Giờ đá (Line 1) - WHITE
+        QFont timeFont = painter.font();
+        timeFont.setPointSize(9);
+        timeFont.setBold(true);
+
+        int endHour = block->startHour + (block->startMinute + block->durationMinutes) / 60;
+        int endMinute = (block->startMinute + block->durationMinutes) % 60;
+
+        QString timeText = QString("%1:%2 - %3:%4")
+                               .arg(block->startHour, 2, 10, QChar('0'))
+                               .arg(block->startMinute, 2, 10, QChar('0'))
+                               .arg(endHour, 2, 10, QChar('0'))
+                               .arg(endMinute, 2, 10, QChar('0'));
+
+        QRect line1Rect = block->rect.adjusted(4, 4, -4, -block->rect.height() * 2 / 3);
+        drawTextNormal(line1Rect, timeText, timeFont);
+
+        // 2. Tên sân (Line 2) - WHITE
+        QFont fieldFont = painter.font();
+        fieldFont.setPointSize(9);
+        fieldFont.setBold(true);
+
+        QString fieldName = "";
+        if (block->fieldIndex >= 0 && block->fieldIndex < fields.size())
+        {
+            fieldName = QString::fromStdString(fields[block->fieldIndex]->layTenSan());
         }
 
-        // Time - ở dưới cùng
-        phoneFont.setPointSize(8);
-        painter.setFont(phoneFont);
-        QString timeText = QString("%1:%2")
-                               .arg(block->startHour, 2, 10, QChar('0'))
-                               .arg(block->startMinute, 2, 10, QChar('0'));
-        QRect timeRect = block->rect.adjusted(4, 0, -4, -4);
-        painter.drawText(timeRect, Qt::AlignBottom | Qt::AlignHCenter, timeText);
+        QRect line2Rect = block->rect.adjusted(4, block->rect.height() / 3, -4, -block->rect.height() / 3);
+        drawTextNormal(line2Rect, fieldName, fieldFont);
+
+        // 3. SĐT (Line 3) - WHITE
+        QFont phoneFont = painter.font();
+        phoneFont.setPointSize(10);
+        phoneFont.setBold(true);
+
+        KhachHang *customer = block->booking->getKhachHang();
+        QString phoneNumber = "";
+        if (customer)
+        {
+            phoneNumber = QString::fromStdString(customer->laySoDienThoai());
+        }
+
+        QRect line3Rect = block->rect.adjusted(4, block->rect.height() * 2 / 3, -4, -4);
+        drawTextNormal(line3Rect, phoneNumber, phoneFont);
     }
 }
 
@@ -415,6 +448,13 @@ void TimelineGridWidget::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton)
     {
+        return;
+    }
+
+    // Check if locked (selection active)
+    if (property("isLocked").toBool())
+    {
+        // Optional: Emit signal or show tooltip that it's locked
         return;
     }
 

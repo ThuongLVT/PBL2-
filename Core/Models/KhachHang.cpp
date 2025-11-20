@@ -10,14 +10,14 @@
 
 KhachHang::KhachHang()
     : ConNguoi(), maKhachHang(""), tongChiTieu(0.0),
-      hang(HangKhachHang::THUONG), ngayDangKy(), soLanDatSan(0)
+      hang(HangKhachHang::THUONG), ngayDangKy(NgayThang::layNgayHienTai()), soLanDatSan(0)
 {
 }
 
 KhachHang::KhachHang(const std::string &ht, const std::string &sdt, const std::string &dc,
                      const std::string &maKH)
     : ConNguoi(ht, sdt, dc), maKhachHang(maKH), tongChiTieu(0.0),
-      hang(HangKhachHang::THUONG), ngayDangKy(), soLanDatSan(0)
+      hang(HangKhachHang::THUONG), ngayDangKy(NgayThang::layNgayHienTai()), soLanDatSan(0)
 {
 }
 

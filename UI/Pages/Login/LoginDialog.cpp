@@ -7,6 +7,8 @@
 #include <QPixmap>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QAction>
+#include <QIcon>
 
 LoginDialog::LoginDialog(QWidget *parent)
     : QDialog(parent), m_isAdmin(false)
@@ -66,11 +68,24 @@ void LoginDialog::setupUI()
     m_passwordEdit->setEchoMode(QLineEdit::Password);
     m_passwordEdit->setFixedHeight(40);
 
+    // Add toggle password visibility action
+    QAction *togglePasswordAction = m_passwordEdit->addAction(QIcon(":/icons/eye-off.svg"), QLineEdit::TrailingPosition);
+    connect(togglePasswordAction, &QAction::triggered, this, [this, togglePasswordAction]()
+            {
+        if (m_passwordEdit->echoMode() == QLineEdit::Password) {
+            m_passwordEdit->setEchoMode(QLineEdit::Normal);
+            togglePasswordAction->setIcon(QIcon(":/icons/eye.svg"));
+        } else {
+            m_passwordEdit->setEchoMode(QLineEdit::Password);
+            togglePasswordAction->setIcon(QIcon(":/icons/eye-off.svg"));
+        } });
+
     // Buttons
     m_loginButton = new QPushButton("Đăng nhập", centerWidget);
     m_loginButton->setObjectName("loginButton");
     m_loginButton->setFixedHeight(40);
     m_loginButton->setCursor(Qt::PointingHandCursor);
+    m_loginButton->setDefault(true); // Set as default button to handle Enter key
 
     m_closeButton = new QPushButton("Đóng", centerWidget);
     m_closeButton->setObjectName("closeButton");
@@ -101,7 +116,8 @@ void LoginDialog::setupUI()
     // Connect signals
     connect(m_loginButton, &QPushButton::clicked, this, &LoginDialog::onLoginClicked);
     connect(m_closeButton, &QPushButton::clicked, this, &LoginDialog::onCloseClicked);
-    connect(m_passwordEdit, &QLineEdit::returnPressed, this, &LoginDialog::onLoginClicked);
+    // Removed returnPressed connection to avoid double triggering with default button
+    // connect(m_passwordEdit, &QLineEdit::returnPressed, this, &LoginDialog::onLoginClicked);
 
     // Set focus to password field by default
     m_passwordEdit->setFocus();

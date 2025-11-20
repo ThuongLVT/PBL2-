@@ -28,11 +28,11 @@
 class QuanLyNhanVien
 {
 private:
-    MangDong<NguoiDung *> danhSachNhanVien;     ///< Danh sách tất cả nhân viên (NhanVien only, admin separate)
+    MangDong<NguoiDung *> danhSachNhanVien;      ///< Danh sách tất cả nhân viên (NhanVien only, admin separate)
     MangDong<QuanTriVien *> danhSachQuanTriVien; ///< Danh sách quản trị viên (separate from staff)
-    int maxEmployeeId;                          ///< Mã NV cao nhất đã sử dụng
-    bool isLoadingFromCSV;                      ///< Flag để ngăn auto-save trong khi load CSV
-    NguoiDung *currentUser;                     ///< User hiện tại (để kiểm tra quyền admin)
+    int maxEmployeeId;                           ///< Mã NV cao nhất đã sử dụng
+    bool isLoadingFromCSV;                       ///< Flag để ngăn auto-save trong khi load CSV
+    NguoiDung *currentUser;                      ///< User hiện tại (để kiểm tra quyền admin)
 
 public:
     // ========== CONSTRUCTORS ==========
@@ -87,6 +87,12 @@ public:
      * @return Reference tới MangDong<NguoiDung*>
      */
     const MangDong<NguoiDung *> &layDanhSachNhanVien() const;
+
+    /**
+     * @brief Lấy danh sách quản trị viên
+     * @return Reference tới MangDong<QuanTriVien*>
+     */
+    const MangDong<QuanTriVien *> &layDanhSachQuanTriVien() const;
 
     // ========== SEARCH ==========
     /**

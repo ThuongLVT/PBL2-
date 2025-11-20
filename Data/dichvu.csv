@@ -1,11 +1,2 @@
 MaDichVu,TenDichVu,LoaiDichVu,DonGia,DonVi,SoLuongBan,TrangThai,HinhAnh,MoTa
-DV001,Nước suối Aquafina,DO_UONG,5000,Chai,150,1,nuoc_suoi.png,Nước suối tinh khiết 500ml
-DV002,Nước ngọt Coca Cola,DO_UONG,10000,Lon,200,1,coca.png,Nước ngọt có gas 330ml
-DV003,Nước tăng lực Red Bull,DO_UONG,15000,Lon,100,1,redbull.png,Nước tăng lực 250ml
-DV004,Thuê bóng,THIET_BI,30000,Quả,50,1,ball.png,Bóng đá tiêu chuẩn FIFA
-DV005,Thuê áo đấu,THIET_BI,50000,Bộ,80,1,jersey.png,Bộ áo đấu thể thao
-DV006,Giày đá bóng,THIET_BI,150000,Đôi,20,1,shoes.png,Giày đá bóng chuyên dụng
-DV007,Băng bảo vệ,THIET_BI,20000,Cái,45,1,guard.png,Băng bảo vệ ống quyển
-DV008,Khăn lau,THIET_BI,10000,Cái,60,1,towel.png,Khăn lau mồ hôi
-DV009,Dép tắm,THIET_BI,25000,Đôi,30,1,slippers.png,Dép tắm cao su
-DV010,Túi đựng đồ,THIET_BI,30000,Cái,25,1,bag.png,Túi đựng đồ thể thao
+DV001,Coca,DO_UONG,15000,Lon,0,1,images/product.jpg,Nước uống giải khát

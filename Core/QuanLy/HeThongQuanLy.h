@@ -159,6 +159,8 @@ public:
     bool docKhachHangCSV(const std::string &filename);
     bool luuNhanVienCSV(const std::string &filename);
     bool docNhanVienCSV(const std::string &filename);
+    bool luuQuanTriVienCSV(const std::string &filename);
+    bool docQuanTriVienCSV(const std::string &filename);
     bool luuSanCSV(const std::string &filename);
     bool docSanCSV(const std::string &filename);
     bool luuDichVuCSV(const std::string &filename);

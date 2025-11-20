@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <string>
 
 using namespace std;
 
@@ -37,10 +38,10 @@ DatSan *QuanLyDatSan::taoDatSan(KhachHang *kh, San *san, const NgayGio &thoiGian
         return nullptr;
     }
 
-    // Tạo mã đặt sân tự động với format DS001, DS002, etc.
+    // Tạo mã đặt sân tự động với format BK001, BK002, etc.
     maxBookingId++;
     char maDatSan[10];
-    sprintf(maDatSan, "DS%03d", maxBookingId);
+    sprintf(maDatSan, "BK%03d", maxBookingId);
 
     DatSan *datSan = new DatSan(string(maDatSan), kh, san, thoiGian, khung);
     danhSachDatSan.push_back(datSan);
@@ -57,7 +58,7 @@ void QuanLyDatSan::themDatSanTrucTiep(DatSan *datSan)
 
         // Update maxBookingId to prevent ID reuse
         string maDS = datSan->getMaDatSan();
-        if (maDS.length() > 2 && maDS.substr(0, 2) == "DS")
+        if (maDS.length() > 2 && maDS.substr(0, 2) == "BK")
         {
             int id = atoi(maDS.substr(2).c_str());
             if (id > maxBookingId)
@@ -316,12 +317,13 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
                 continue;
             }
 
-            // Parse date time: DD/MM/YYYY HH:MM
-            int day, month, year, hour, minute;
+            // Parse date time: DD/MM/YYYY (Time is in KhungGio)
+            int day, month, year;
             char sep;
             stringstream ss(ngayDatStr);
-            ss >> day >> sep >> month >> sep >> year >> hour >> sep >> minute;
-            NgayGio ngayDat(day, month, year, hour, minute);
+            ss >> day >> sep >> month >> sep >> year;
+            // Set time to 00:00 for the date object
+            NgayGio ngayDat(day, month, year, 0, 0);
 
             // Parse time: HH:MM
             int gioBatDauH, gioBatDauM, gioKetThucH, gioKetThucM;
@@ -381,14 +383,12 @@ bool QuanLyDatSan::saveToCSV(const std::string &filename)
         row.push_back(ds->getMaKhachHang());
         row.push_back(ds->getMaSan());
 
-        // NgayDat: DD/MM/YYYY HH:MM
+        // NgayDat: DD/MM/YYYY (Only Date)
         NgayGio ngayDat = ds->getThoiGianDat();
         stringstream ss;
         ss << setfill('0') << setw(2) << ngayDat.getNgay() << "/"
            << setfill('0') << setw(2) << ngayDat.getThang() << "/"
-           << ngayDat.getNam() << " "
-           << setfill('0') << setw(2) << ngayDat.getGio() << ":"
-           << setfill('0') << setw(2) << ngayDat.getPhut();
+           << ngayDat.getNam();
         row.push_back(ss.str());
 
         // GioBatDau: HH:MM

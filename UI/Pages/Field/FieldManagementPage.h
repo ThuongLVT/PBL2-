@@ -137,6 +137,12 @@ private:
     void clearForm();
     void loadFieldToForm(San *san);
     San *getSelectedField();
+
+    // Auto-generate field name
+    void generateFieldName();
+
+signals:
+    void dataChanged();
 };
 
 #endif // FIELDMANAGEMENTPAGE_H

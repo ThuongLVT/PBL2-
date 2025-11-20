@@ -77,6 +77,7 @@ void BookingPage::setupConnections()
 
 void BookingPage::refreshData()
 {
+    qDebug() << "BookingPage::refreshData() called";
     // Refresh both tabs when page becomes visible
     if (timelineTab)
     {
@@ -86,5 +87,13 @@ void BookingPage::refreshData()
     if (bookingTableTab)
     {
         bookingTableTab->refreshData();
+    }
+}
+
+void BookingPage::reloadFields()
+{
+    if (timelineTab)
+    {
+        timelineTab->reloadFields();
     }
 }

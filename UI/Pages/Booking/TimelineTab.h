@@ -51,6 +51,11 @@ public:
      */
     void refreshData();
 
+    /**
+     * @brief Reload fields from Core
+     */
+    void reloadFields();
+
 private slots:
     /**
      * @brief Date selected in calendar
@@ -154,7 +159,7 @@ private:
 
     // Form fields
     QLineEdit *phoneEdit;
-    QLabel *nameLabel;
+    QLineEdit *nameEdit; // Changed from QLabel to QLineEdit
     QComboBox *fieldCombo;
     QLabel *priceLabel;
     QLabel *depositLabel; // Nh\u00e3n hi\u1ec3n th\u1ecb ti\u1ec1n c\u1ecdc (30% ti\u1ec1n s\u00e2n)

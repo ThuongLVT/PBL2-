@@ -22,7 +22,7 @@
 
 std::string CSVManager::getDataPath()
 {
-    return "D:/QT_PBL2/Data/";
+    return "D:/PBL2-/Data/";
 }
 
 bool CSVManager::ensureDataDirectory()

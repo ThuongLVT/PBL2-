@@ -505,54 +505,25 @@ bool QuanLySan::saveToCSV()
 
 // ========== AUTO GENERATION ==========
 
-string QuanLySan::taoMaSanTuDong(KhuVuc khuVuc, LoaiSan loaiSan)
+string QuanLySan::taoMaSanTuDong(KhuVuc /*khuVuc*/, LoaiSan /*loaiSan*/)
 {
-    // Format: <Khu><Loai><STT> (VD: A501, B702, C1103)
-    string khuStr;
-    switch (khuVuc)
-    {
-    case KhuVuc::A:
-        khuStr = "A";
-        break;
-    case KhuVuc::B:
-        khuStr = "B";
-        break;
-    case KhuVuc::C:
-        khuStr = "C";
-        break;
-    case KhuVuc::D:
-        khuStr = "D";
-        break;
-    }
+    // Format: SBxx (SB01, SB02...)
+    // Non-reusable: Find max ID and increment
 
-    string loaiStr;
-    switch (loaiSan)
-    {
-    case LoaiSan::SAN_5:
-        loaiStr = "5";
-        break;
-    case LoaiSan::SAN_7:
-        loaiStr = "7";
-        break;
-    }
-
-    // Find max STT for this khu + loai combination
-    int maxSTT = 0;
-    string prefix = khuStr + loaiStr;
+    int maxID = 0;
+    string prefix = "SB";
 
     for (int i = 0; i < danhSachSan.size(); i++)
     {
         string maSan = danhSachSan[i]->layMaSan();
-        if (maSan.substr(0, prefix.length()) == prefix)
+        if (maSan.length() > 2 && maSan.substr(0, 2) == prefix)
         {
-            // Extract STT
-            string sttStr = maSan.substr(prefix.length());
             try
             {
-                int stt = stoi(sttStr);
-                if (stt > maxSTT)
+                int id = stoi(maSan.substr(2));
+                if (id > maxID)
                 {
-                    maxSTT = stt;
+                    maxID = id;
                 }
             }
             catch (...)
@@ -563,12 +534,12 @@ string QuanLySan::taoMaSanTuDong(KhuVuc khuVuc, LoaiSan loaiSan)
     }
 
     // Generate new code
-    int newSTT = maxSTT + 1;
+    int newID = maxID + 1;
     stringstream ss;
-    ss << khuStr << loaiStr;
-    if (newSTT < 10)
+    ss << prefix;
+    if (newID < 10)
         ss << "0";
-    ss << newSTT;
+    ss << newID;
 
     return ss.str();
 }

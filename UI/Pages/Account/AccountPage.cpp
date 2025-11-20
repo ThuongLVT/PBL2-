@@ -209,18 +209,21 @@ void AccountPage::loadUserData()
 
     m_nameEdit->setText(QString::fromStdString(m_currentUser->layHoTen()));
     m_phoneEdit->setText(QString::fromStdString(m_currentUser->laySoDienThoai()));
-    
+
     // Load gender and DOB from model
     m_genderEdit->setText(QString::fromStdString(m_currentUser->layGioiTinh()));
     m_dobEdit->setText(QString::fromStdString(m_currentUser->layNgaySinh()));
-    
+
     m_usernameEdit->setText(QString::fromStdString(m_currentUser->layTenDangNhap()));
     m_passwordEdit->setText(QString::fromStdString(m_currentUser->layMatKhau()));
 
     // Set role based on user type
-    if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN) {
+    if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN)
+    {
         m_roleEdit->setText("Quản Trị Viên");
-    } else {
+    }
+    else
+    {
         m_roleEdit->setText("Nhân Viên");
     }
 }
@@ -255,15 +258,18 @@ void AccountPage::onEditPersonalInfoClicked()
         // Save to CSV (admin to admin.csv, staff to nhanvien.csv)
         HeThongQuanLy *hethong = HeThongQuanLy::getInstance();
         QuanLyNhanVien *staffMgr = hethong->layQuanLyNhanVien();
-        
-        if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN) {
+
+        if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN)
+        {
             // Save admin to admin.csv
             staffMgr->luuAdminCSV("admin.csv");
-        } else {
+        }
+        else
+        {
             // Save staff to nhanvien.csv
             hethong->luuNhanVienCSV("nhanvien.csv");
         }
-        
+
         // Save to binary file
         if (hethong->luuHeThong("D:/QT_PBL2/Data/data.bin"))
         {
@@ -304,6 +310,7 @@ void AccountPage::onChangePasswordClicked()
         if (hethong->luuHeThong("D:/QT_PBL2/Data/data.bin"))
         {
             QMessageBox::information(this, "Thành công", "Đã đổi mật khẩu thành công!");
+            loadUserData(); // Refresh display with new password
         }
         else
         {

@@ -39,8 +39,29 @@ void BookingDetailDialog::setupUI()
     mainLayout->setSpacing(20);
     mainLayout->setContentsMargins(25, 25, 25, 25);
 
-    setupInfoSection();
-    setupServicesSection();
+    // Main content: Split Info (Left) and Services (Right)
+    QHBoxLayout *contentLayout = new QHBoxLayout();
+    contentLayout->setSpacing(20);
+
+    // Left side: Info
+    QWidget *leftWidget = new QWidget();
+    QVBoxLayout *leftLayout = new QVBoxLayout(leftWidget);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    setupInfoSection(leftLayout); // Modified to take layout
+    leftWidget->setLayout(leftLayout);
+
+    // Right side: Services
+    QWidget *rightWidget = new QWidget();
+    QVBoxLayout *rightLayout = new QVBoxLayout(rightWidget);
+    rightLayout->setContentsMargins(0, 0, 0, 0);
+    setupServicesSection(rightLayout); // Modified to take layout
+    rightWidget->setLayout(rightLayout);
+
+    // Add to content layout with ratio
+    contentLayout->addWidget(leftWidget, 6);  // 60%
+    contentLayout->addWidget(rightWidget, 4); // 40%
+
+    mainLayout->addLayout(contentLayout);
     setupActionButtons();
 
     setLayout(mainLayout);
@@ -90,7 +111,7 @@ void BookingDetailDialog::setupUI()
         "}");
 }
 
-void BookingDetailDialog::setupInfoSection()
+void BookingDetailDialog::setupInfoSection(QVBoxLayout *parentLayout)
 {
     QGroupBox *infoGroup = new QGroupBox("📋 Thông tin đặt sân");
     QFormLayout *formLayout = new QFormLayout(infoGroup);
@@ -196,10 +217,10 @@ void BookingDetailDialog::setupInfoSection()
     depositStatusWidget->setLayout(depositStatusLayout);
     formLayout->addRow("Trạng thái cọc:", depositStatusWidget);
 
-    mainLayout->addWidget(infoGroup);
+    parentLayout->addWidget(infoGroup);
 }
 
-void BookingDetailDialog::setupServicesSection()
+void BookingDetailDialog::setupServicesSection(QVBoxLayout *parentLayout)
 {
     QGroupBox *serviceGroup = new QGroupBox("🍽️ Dịch vụ đã đặt");
     QVBoxLayout *serviceLayout = new QVBoxLayout(serviceGroup);
@@ -229,7 +250,7 @@ void BookingDetailDialog::setupServicesSection()
     QHBoxLayout *serviceBtnLayout = new QHBoxLayout();
     serviceBtnLayout->setSpacing(10);
 
-    addServiceBtn = new QPushButton("➕ Thêm dịch vụ");
+    addServiceBtn = new QPushButton("➕ Thêm");
     addServiceBtn->setStyleSheet(
         "QPushButton { "
         "background-color: #16a34a; "
@@ -240,7 +261,7 @@ void BookingDetailDialog::setupServicesSection()
         "}");
     serviceBtnLayout->addWidget(addServiceBtn);
 
-    removeServiceBtn = new QPushButton("➖ Xóa dịch vụ");
+    removeServiceBtn = new QPushButton("➖ Xóa");
     removeServiceBtn->setStyleSheet(
         "QPushButton { "
         "background-color: #dc2626; "
@@ -253,7 +274,7 @@ void BookingDetailDialog::setupServicesSection()
 
     serviceLayout->addLayout(serviceBtnLayout);
 
-    mainLayout->addWidget(serviceGroup);
+    parentLayout->addWidget(serviceGroup);
 
     // Connect service buttons
     connect(addServiceBtn, &QPushButton::clicked, this, &BookingDetailDialog::onAddServiceClicked);

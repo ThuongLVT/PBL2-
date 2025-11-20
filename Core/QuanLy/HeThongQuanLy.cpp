@@ -100,57 +100,57 @@ void HeThongQuanLy::hienThiDanhSachKhachHang() const
 // ===== NHÂN VIÊN (Quản lý trực tiếp) =====
 bool HeThongQuanLy::themNhanVien(NhanVien *nv)
 {
-    if (nv == nullptr || timNhanVien(nv->layMaNhanVien()) != nullptr)
-        return false;
-    danhSachNhanVien.push_back(nv);
-    return true;
+    return quanLyNhanVien->themNhanVien(nv);
 }
 
 bool HeThongQuanLy::xoaNhanVien(const string &ma)
 {
-    for (int i = 0; i < danhSachNhanVien.size(); i++)
-    {
-        if (danhSachNhanVien[i]->layMaNhanVien() == ma)
-        {
-            delete danhSachNhanVien[i];
-            danhSachNhanVien.erase(i);
-            return true;
-        }
-    }
-    return false;
+    return quanLyNhanVien->xoaNhanVien(ma);
 }
 
 bool HeThongQuanLy::capNhatNhanVien(const string &ma, const NhanVien &nvMoi)
 {
-    NhanVien *nv = timNhanVien(ma);
-    if (nv == nullptr)
-        return false;
-    *nv = nvMoi;
-    return true;
+    return quanLyNhanVien->capNhatNhanVien(ma, nvMoi);
 }
 
 NhanVien *HeThongQuanLy::timNhanVien(const string &ma)
 {
-    for (int i = 0; i < danhSachNhanVien.size(); i++)
-    {
-        if (danhSachNhanVien[i]->layMaNhanVien() == ma)
-            return danhSachNhanVien[i];
-    }
-    return nullptr;
+    return quanLyNhanVien->timNhanVien(ma);
 }
 
 const MangDong<NhanVien *> &HeThongQuanLy::layDanhSachNhanVien() const
 {
-    return danhSachNhanVien;
+    // Note: This returns MangDong<NguoiDung*>, we might need to cast or change return type
+    // For now, we can't easily convert MangDong<NguoiDung*> to MangDong<NhanVien*> reference
+    // So we might need to keep a local cache or change the interface.
+    // However, since we are refactoring, let's see if we can change the return type in header.
+    // But MangDong is a template.
+
+    // Temporary workaround: Cast the list (unsafe but works if memory layout matches)
+    // Better: Change HeThongQuanLy to return MangDong<NguoiDung*> or fix the architecture.
+    // Given the constraints, I will assume the caller handles NguoiDung* or I construct a new list.
+    // Constructing a new list is safer but slower.
+
+    static MangDong<NhanVien *> cache;
+    cache.clear();
+    const MangDong<NguoiDung *> &users = quanLyNhanVien->layDanhSachNhanVien();
+    for (int i = 0; i < users.size(); i++)
+    {
+        NhanVien *nv = dynamic_cast<NhanVien *>(users[i]);
+        if (nv)
+            cache.push_back(nv);
+    }
+    return cache;
 }
 
 void HeThongQuanLy::hienThiDanhSachNhanVien() const
 {
+    const MangDong<NguoiDung *> &users = quanLyNhanVien->layDanhSachNhanVien();
     cout << "\n===== DANH SACH NHAN VIEN =====" << endl;
-    cout << "Tong so: " << danhSachNhanVien.size() << endl;
-    for (int i = 0; i < danhSachNhanVien.size(); i++)
+    cout << "Tong so: " << users.size() << endl;
+    for (int i = 0; i < users.size(); i++)
     {
-        danhSachNhanVien[i]->hienThiThongTin();
+        users[i]->hienThiThongTin();
         cout << "---" << endl;
     }
 }
@@ -158,25 +158,17 @@ void HeThongQuanLy::hienThiDanhSachNhanVien() const
 // ===== QUẢN TRỊ VIÊN (Quản lý trực tiếp) =====
 bool HeThongQuanLy::themQuanTriVien(QuanTriVien *qtv)
 {
-    if (qtv == nullptr || timQuanTriVien(qtv->layTenDangNhap()) != nullptr)
-        return false;
-    danhSachQuanTriVien.push_back(qtv);
-    return true;
+    return quanLyNhanVien->themNhanVien(qtv);
 }
 
 QuanTriVien *HeThongQuanLy::timQuanTriVien(const string &ma)
 {
-    for (int i = 0; i < danhSachQuanTriVien.size(); i++)
-    {
-        if (danhSachQuanTriVien[i]->layTenDangNhap() == ma)
-            return danhSachQuanTriVien[i];
-    }
-    return nullptr;
+    return quanLyNhanVien->timQuanTriVienTheoUsername(ma);
 }
 
 const MangDong<QuanTriVien *> &HeThongQuanLy::layDanhSachQuanTriVien() const
 {
-    return danhSachQuanTriVien;
+    return quanLyNhanVien->layDanhSachQuanTriVien();
 }
 
 // ===== SÂN (Delegate to QuanLySan) =====
@@ -380,6 +372,7 @@ bool HeThongQuanLy::luuHeThong(const string &tenFile)
     success &= luuDichVuCSV("dichvu.csv");
     success &= luuDatSanCSV("datsan.csv");
     success &= quanLyDonHangDichVu->luuCSV("donhangdichvu.csv");
+    success &= luuQuanTriVienCSV("admin.csv");
 
     if (success)
     {
@@ -402,7 +395,10 @@ bool HeThongQuanLy::docHeThong(const string &tenFile)
     success &= docKhachHangCSV("khachhang.csv");
     success &= docSanCSV("san.csv");
     success &= docDichVuCSV("dichvu.csv");
+    success &= docNhanVienCSV("nhanvien.csv");
     success &= docDatSanCSV("datsan.csv");
+    success &= quanLyDonHangDichVu->docCSV("donhangdichvu.csv");
+    success &= docQuanTriVienCSV("admin.csv");
 
     if (success)
     {
@@ -438,18 +434,10 @@ void HeThongQuanLy::xoaTatCaDuLieu()
         quanLyThanhToan->xoaTatCa();
 
     // Xóa nhân viên
-    for (int i = 0; i < danhSachNhanVien.size(); i++)
-    {
-        delete danhSachNhanVien[i];
-    }
-    danhSachNhanVien = MangDong<NhanVien *>();
+    // Handled by quanLyNhanVien->xoaTatCa()
 
     // Xóa quản trị viên
-    for (int i = 0; i < danhSachQuanTriVien.size(); i++)
-    {
-        delete danhSachQuanTriVien[i];
-    }
-    danhSachQuanTriVien = MangDong<QuanTriVien *>();
+    // Handled by quanLyNhanVien->xoaTatCa()
 }
 
 // ===== BACKUP/RESTORE =====
@@ -471,7 +459,7 @@ int HeThongQuanLy::tongSoKhachHang() const
 
 int HeThongQuanLy::tongSoNhanVien() const
 {
-    return danhSachNhanVien.size();
+    return quanLyNhanVien->tongSoNhanVien();
 }
 
 int HeThongQuanLy::tongSoSan() const
@@ -502,123 +490,6 @@ int HeThongQuanLy::tongSoThanhToan() const
 // ===== SAMPLE DATA INITIALIZATION =====
 void HeThongQuanLy::khoiTaoDuLieuMau()
 {
-    cout << "\n=== INITIALIZING SAMPLE DATA ===" << endl;
-
-    // 1. Khởi tạo 10 sân
-    for (int i = 1; i <= 10; i++)
-    {
-        string maSan = string("S") + (i < 10 ? "0" : "") + to_string(i);
-        string tenSan = "Sân " + to_string(i) + (i % 2 == 0 ? " (Sân 7)" : " (Sân 5)");
-        LoaiSan loai = (i % 2 == 0) ? LoaiSan::SAN_7 : LoaiSan::SAN_5;
-        KhuVuc khuVuc = static_cast<KhuVuc>((i - 1) % 4);    // A, B, C, D
-        double giaThue = (i % 2 == 0) ? 300000.0 : 200000.0; // Sân 7: 300k, Sân 5: 200k
-
-        San *san = new San(maSan, tenSan, loai, khuVuc, giaThue);
-        san->datTrangThai(TrangThaiSan::HOAT_DONG); // Sân hoạt động
-        quanLySan->themSan(san);
-    }
-    cout << "✓ Created 10 fields" << endl;
-
-    // 2. Khởi tạo 10 khách hàng
-    string hoTenList[] = {"Nguyễn Văn An", "Trần Thị Bình", "Lê Hoàng Cường", "Phạm Thị Dung",
-                          "Hoàng Văn Em", "Vũ Thị Phượng", "Đặng Văn Giang", "Bùi Thị Hoa",
-                          "Phan Văn Inh", "Ngô Thị Kim"};
-    for (int i = 1; i <= 10; i++)
-    {
-        string maKH = string("KH") + (i < 10 ? "0" : "") + to_string(i);
-        string hoTen = hoTenList[i - 1];
-        string sdt = "09" + to_string(10000000 + i * 1111111).substr(0, 8);
-        string diaChi = "Địa chỉ " + to_string(i);
-
-        KhachHang *kh = new KhachHang(hoTen, sdt, diaChi, maKH);
-        quanLyKhachHang->themKhachHang(kh);
-    }
-    cout << "✓ Created 10 customers" << endl;
-
-    // 3. Khởi tạo 10 dịch vụ
-    string dichVuList[] = {"Nước suối", "Nước ngọt", "Thuê bóng", "Thuê áo đấu", "Giày đá bóng",
-                           "Băng bảo vệ", "Nước tăng lực", "Khăn lau", "Dép tắm", "Túi đựng đồ"};
-    double giaList[] = {5000, 10000, 30000, 50000, 150000, 20000, 15000, 10000, 25000, 30000};
-    LoaiDichVu loaiList[] = {LoaiDichVu::DO_UONG, LoaiDichVu::DO_UONG, LoaiDichVu::THIET_BI, LoaiDichVu::THIET_BI,
-                             LoaiDichVu::THIET_BI, LoaiDichVu::THIET_BI, LoaiDichVu::DO_UONG, LoaiDichVu::THIET_BI,
-                             LoaiDichVu::THIET_BI, LoaiDichVu::THIET_BI};
-
-    for (int i = 1; i <= 10; i++)
-    {
-        string maDV = string("DV") + (i < 10 ? "0" : "") + to_string(i);
-        DichVu *dv = new DichVu(maDV, dichVuList[i - 1], giaList[i - 1], loaiList[i - 1]);
-        quanLyDichVu->themDichVu(dv);
-    }
-    cout << "✓ Created 10 services" << endl;
-
-    // 4. Khởi tạo 5 booking mẫu cho ngày hôm nay
-    if (quanLyKhachHang->layDanhSachKhachHang().size() >= 5 && quanLySan->layDanhSachSan().size() >= 5)
-    {
-        NgayGio ngayHienTai = NgayGio::layThoiGianHienTai();
-        int nam = ngayHienTai.getNam();
-        int thang = ngayHienTai.getThang();
-        int ngay = ngayHienTai.getNgay();
-
-        // Booking 1: 08:00-09:00, Sân 1, KH1
-        KhachHang *kh1 = quanLyKhachHang->layDanhSachKhachHang()[0];
-        San *san1 = quanLySan->layDanhSachSan()[0];
-        NgayGio thoiGian1(8, 0, 0, ngay, thang, nam);
-        KhungGio khung1(8, 0, 9, 0);
-        DatSan *booking1 = quanLyDatSan->taoDatSan(kh1, san1, thoiGian1, khung1);
-        if (booking1)
-        {
-            booking1->tinhTienCoc();
-            cout << "✓ Created booking 1: 08:00-09:00, Field 1" << endl;
-        }
-
-        // Booking 2: 10:00-11:00, Sân 2, KH2
-        KhachHang *kh2 = quanLyKhachHang->layDanhSachKhachHang()[1];
-        San *san2 = quanLySan->layDanhSachSan()[1];
-        NgayGio thoiGian2(10, 0, 0, ngay, thang, nam);
-        KhungGio khung2(10, 0, 11, 0);
-        DatSan *booking2 = quanLyDatSan->taoDatSan(kh2, san2, thoiGian2, khung2);
-        if (booking2)
-        {
-            booking2->tinhTienCoc();
-            cout << "✓ Created booking 2: 10:00-11:00, Field 2" << endl;
-        }
-
-        // Booking 3: 14:00-15:00, Sân 3, KH3
-        KhachHang *kh3 = quanLyKhachHang->layDanhSachKhachHang()[2];
-        San *san3 = quanLySan->layDanhSachSan()[2];
-        NgayGio thoiGian3(14, 0, 0, ngay, thang, nam);
-        KhungGio khung3(14, 0, 15, 0);
-        DatSan *booking3 = quanLyDatSan->taoDatSan(kh3, san3, thoiGian3, khung3);
-        if (booking3)
-        {
-            booking3->tinhTienCoc();
-            cout << "✓ Created booking 3: 14:00-15:00, Field 3" << endl;
-        }
-
-        // Booking 4: 16:00-17:00, Sân 4, KH4
-        KhachHang *kh4 = quanLyKhachHang->layDanhSachKhachHang()[3];
-        San *san4 = quanLySan->layDanhSachSan()[3];
-        NgayGio thoiGian4(16, 0, 0, ngay, thang, nam);
-        KhungGio khung4(16, 0, 17, 0);
-        DatSan *booking4 = quanLyDatSan->taoDatSan(kh4, san4, thoiGian4, khung4);
-        if (booking4)
-        {
-            booking4->tinhTienCoc();
-            cout << "✓ Created booking 4: 16:00-17:00, Field 4" << endl;
-        }
-
-        // Booking 5: 18:00-19:00, Sân 5, KH5
-        KhachHang *kh5 = quanLyKhachHang->layDanhSachKhachHang()[4];
-        San *san5 = quanLySan->layDanhSachSan()[4];
-        NgayGio thoiGian5(18, 0, 0, ngay, thang, nam);
-        KhungGio khung5(18, 0, 19, 0);
-        DatSan *booking5 = quanLyDatSan->taoDatSan(kh5, san5, thoiGian5, khung5);
-        if (booking5)
-        {
-            booking5->tinhTienCoc();
-            cout << "✓ Created booking 5: 18:00-19:00, Field 5" << endl;
-        }
-    }
-
-    cout << "=== SAMPLE DATA INITIALIZED SUCCESSFULLY ===" << endl;
+    cout << "\n=== SAMPLE DATA GENERATION DISABLED ===" << endl;
+    // Data generation code removed as per request
 }

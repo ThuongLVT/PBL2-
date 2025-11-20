@@ -17,7 +17,7 @@ MainWindow::MainWindow(NguoiDung *currentUser, QWidget *parent)
 {
     // Setup page titles
     m_pageTitles << "Quản Lý Đặt Sân"
-                 << "Quản Lý Thanh Toán"
+                 << "Quản Lý Hoá Đơn"
                  << "Quản Lý Sân Bóng"
                  << "Quản Lý Khách Hàng"
                  << "Quản Lý Dịch Vụ"
@@ -109,7 +109,7 @@ void MainWindow::setupUI()
 
     // Create pages
     m_bookingPage = new BookingPage(this);
-    m_paymentPage = new PaymentListPage(this);
+    m_paymentPage = new InvoicePage(this);
     m_fieldPage = new FieldManagementPage(this);
     m_customerPage = new CustomerManagementPage(this);
     m_servicePage = new ServiceManagementPage(this);
@@ -119,11 +119,13 @@ void MainWindow::setupUI()
 
     // Set current user for account page and staff page
     m_accountPage->setCurrentUser(m_currentUser);
-    
+
     // Staff page needs admin access - cast if user is admin
-    if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN) {
-        QuanTriVien *admin = dynamic_cast<QuanTriVien*>(m_currentUser);
-        if (admin) {
+    if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN)
+    {
+        QuanTriVien *admin = dynamic_cast<QuanTriVien *>(m_currentUser);
+        if (admin)
+        {
             m_staffPage->setCurrentAdmin(admin);
         }
     }
@@ -158,25 +160,43 @@ void MainWindow::setupConnections()
     // Connect admin and logout actions
     connect(m_sidebar, &Sidebar::adminClicked, this, &MainWindow::onAdminClicked);
     connect(m_sidebar, &Sidebar::logoutClicked, this, &MainWindow::onLogoutClicked);
+
+    // Connect FieldManagementPage dataChanged to BookingPage refreshData
+    connect(m_fieldPage, &FieldManagementPage::dataChanged, m_bookingPage, &BookingPage::refreshData);
 }
 
 void MainWindow::onMenuItemClicked(int index)
 {
     // Prevent staff from accessing admin-only pages
     bool isAdmin = (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN);
-    
-    // Index 5 = Staff Management, Index 6 = Statistics (admin only)
-    if (!isAdmin && (index == 5 || index == 6)) {
+
+    // Index 1 = Invoice, Index 5 = Staff Management, Index 6 = Statistics (admin only)
+    if (!isAdmin && (index == 1 || index == 5 || index == 6))
+    {
         QMessageBox::warning(this, "Không có quyền", "Bạn không có quyền truy cập trang này!");
         return;
     }
-    
+
     // Switch to the corresponding page
     if (index >= 0 && index < m_contentStack->count())
     {
         m_contentStack->setCurrentIndex(index);
         updateHeaderTitle(index);
         m_sidebar->setAccountActive(false); // Deactivate account button
+
+        // Refresh data based on page index
+        if (index == 0) // Booking Page
+        {
+            m_bookingPage->refreshData();
+        }
+        else if (index == 1) // Invoice Page
+        {
+            m_paymentPage->refreshData();
+        }
+        else if (index == 3) // Customer Page
+        {
+            m_customerPage->refreshData();
+        }
     }
 }
 
@@ -213,19 +233,21 @@ void MainWindow::onLogoutClicked()
         {
             cout << "\n=== SAVING DATA ON LOGOUT ===" << endl;
             heThong->luuHeThong("D:/QT_PBL2/Data/data.bin");
-            
+
             // Save admin and staff CSV
             QuanLyNhanVien *staffMgr = heThong->layQuanLyNhanVien();
-            if (staffMgr) {
+            if (staffMgr)
+            {
                 staffMgr->luuAdminCSV("admin.csv");
                 heThong->luuNhanVienCSV("nhanvien.csv");
             }
-            
+
             cout << "✅ Data saved successfully on logout!" << endl;
-            cout << "==============================\n" << endl;
+            cout << "==============================\n"
+                 << endl;
         }
-        
-        // Close application
-        QApplication::quit();
+
+        // Close application with logout code (888)
+        QApplication::exit(888);
     }
 }

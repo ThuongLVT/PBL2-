@@ -121,7 +121,7 @@ void Sidebar::createMenuSection()
 
     MenuItem menuItems[] = {
         {"   Đặt Sân", ":/icons/booking.svg", &m_bookingButton},
-        {"   Thanh Toán", ":/icons/payment.svg", &m_paymentButton},
+        {"   Hoá Đơn", ":/icons/payment.svg", &m_paymentButton},
         {"   Sân Bóng", ":/icons/field.svg", &m_fieldButton},
         {"   Khách Hàng", ":/icons/customer.svg", &m_customerButton},
         {"   Dịch Vụ", ":/icons/service.svg", &m_serviceButton},

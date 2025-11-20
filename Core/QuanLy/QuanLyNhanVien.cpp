@@ -58,18 +58,33 @@ bool QuanLyNhanVien::themNhanVien(NguoiDung *user)
         return false;
     }
 
-    danhSachNhanVien.push_back(user);
-
-    // Auto-save to CSV after add (skip if loading)
-    if (!isLoadingFromCSV)
+    if (user->layVaiTro() == VaiTro::QUAN_TRI_VIEN)
     {
-        luuCSV();
+        QuanTriVien *qtv = dynamic_cast<QuanTriVien *>(user);
+        if (qtv)
+        {
+            danhSachQuanTriVien.push_back(qtv);
+            // Auto-save admins
+            luuAdminCSV();
+        }
+    }
+    else
+    {
+        danhSachNhanVien.push_back(user);
+        // Auto-save staff
+        if (!isLoadingFromCSV)
+        {
+            luuCSV();
+        }
     }
 
-    NhanVien *nv = dynamic_cast<NhanVien*>(user);
-    if (nv) {
+    NhanVien *nv = dynamic_cast<NhanVien *>(user);
+    if (nv)
+    {
         cout << "Added employee: " << user->layHoTen() << " (" << nv->layMaNhanVien() << ")" << endl;
-    } else {
+    }
+    else
+    {
         cout << "Added admin: " << user->layHoTen() << " (" << user->layTenDangNhap() << ")" << endl;
     }
     return true;
@@ -86,7 +101,7 @@ bool QuanLyNhanVien::xoaNhanVien(const string &maNV)
 
     for (int i = 0; i < danhSachNhanVien.size(); i++)
     {
-        NhanVien *nv = dynamic_cast<NhanVien*>(danhSachNhanVien[i]);
+        NhanVien *nv = dynamic_cast<NhanVien *>(danhSachNhanVien[i]);
         if (nv && nv->layMaNhanVien() == maNV)
         {
             cout << "Deleting employee: " << danhSachNhanVien[i]->layHoTen() << endl;
@@ -147,7 +162,7 @@ NhanVien *QuanLyNhanVien::timNhanVien(const string &maNV)
 {
     for (int i = 0; i < danhSachNhanVien.size(); i++)
     {
-        NhanVien *nv = dynamic_cast<NhanVien*>(danhSachNhanVien[i]);
+        NhanVien *nv = dynamic_cast<NhanVien *>(danhSachNhanVien[i]);
         if (nv && nv->layMaNhanVien() == maNV)
         {
             return nv;
@@ -161,6 +176,11 @@ const MangDong<NguoiDung *> &QuanLyNhanVien::layDanhSachNhanVien() const
     return danhSachNhanVien;
 }
 
+const MangDong<QuanTriVien *> &QuanLyNhanVien::layDanhSachQuanTriVien() const
+{
+    return danhSachQuanTriVien;
+}
+
 // ========== SEARCH ==========
 NhanVien *QuanLyNhanVien::timNhanVienTheoUsername(const string &username)
 {
@@ -168,7 +188,7 @@ NhanVien *QuanLyNhanVien::timNhanVienTheoUsername(const string &username)
     {
         if (danhSachNhanVien[i]->layTenDangNhap() == username)
         {
-            return dynamic_cast<NhanVien*>(danhSachNhanVien[i]);
+            return dynamic_cast<NhanVien *>(danhSachNhanVien[i]);
         }
     }
     return nullptr;
@@ -180,7 +200,7 @@ NhanVien *QuanLyNhanVien::timNhanVienTheoSDT(const string &sdt)
     {
         if (danhSachNhanVien[i]->laySoDienThoai() == sdt)
         {
-            return dynamic_cast<NhanVien*>(danhSachNhanVien[i]);
+            return dynamic_cast<NhanVien *>(danhSachNhanVien[i]);
         }
     }
     return nullptr;
@@ -201,8 +221,9 @@ MangDong<NhanVien *> QuanLyNhanVien::timNhanVienTheoTen(const string &ten)
         if (hoTen.find(tenLower) != string::npos)
         {
             // Try to cast to NhanVien
-            NhanVien *nv = dynamic_cast<NhanVien*>(danhSachNhanVien[i]);
-            if (nv) {
+            NhanVien *nv = dynamic_cast<NhanVien *>(danhSachNhanVien[i]);
+            if (nv)
+            {
                 ketQua.push_back(nv);
             }
         }
@@ -279,9 +300,9 @@ bool QuanLyNhanVien::kiemTraUsernameTonTai(const string &username, const string 
 {
     for (int i = 0; i < danhSachNhanVien.size(); i++)
     {
-        NhanVien *nv = dynamic_cast<NhanVien*>(danhSachNhanVien[i]);
+        NhanVien *nv = dynamic_cast<NhanVien *>(danhSachNhanVien[i]);
         string maNV = nv ? nv->layMaNhanVien() : danhSachNhanVien[i]->layTenDangNhap();
-        
+
         if (maNV != excludeMaNV && danhSachNhanVien[i]->layTenDangNhap() == username)
         {
             return true;
@@ -294,9 +315,9 @@ bool QuanLyNhanVien::kiemTraSDTTonTai(const string &sdt, const string &excludeMa
 {
     for (int i = 0; i < danhSachNhanVien.size(); i++)
     {
-        NhanVien *nv = dynamic_cast<NhanVien*>(danhSachNhanVien[i]);
+        NhanVien *nv = dynamic_cast<NhanVien *>(danhSachNhanVien[i]);
         string maNV = nv ? nv->layMaNhanVien() : danhSachNhanVien[i]->layTenDangNhap();
-        
+
         if (maNV != excludeMaNV && danhSachNhanVien[i]->laySoDienThoai() == sdt)
         {
             return true;
@@ -325,15 +346,17 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
     for (int i = 0; i < danhSachNhanVien.size(); i++)
     {
         NguoiDung *user = danhSachNhanVien[i];
-        
+
         // Skip admin (QuanTriVien) - only save staff
-        if (user->layVaiTro() == VaiTro::QUAN_TRI_VIEN) {
+        if (user->layVaiTro() == VaiTro::QUAN_TRI_VIEN)
+        {
             continue;
         }
-        
-        NhanVien *nv = dynamic_cast<NhanVien*>(user);
-        if (!nv) continue; // Safety check
-        
+
+        NhanVien *nv = dynamic_cast<NhanVien *>(user);
+        if (!nv)
+            continue; // Safety check
+
         vector<string> row;
         row.push_back(nv->layMaNhanVien());
         row.push_back(nv->layHoTen());
@@ -342,15 +365,17 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
         row.push_back(nv->layNgaySinh());
         row.push_back(nv->layTenDangNhap());
         row.push_back(nv->layMatKhau());
-        
+
         // Luong
         row.push_back(to_string(nv->layLuongCoBan()));
-        
+
         // Ca lam
         CaLamViec ca = nv->layCaLamViec();
         string caStr = "SANG";
-        if (ca == CaLamViec::CHIEU) caStr = "CHIEU";
-        else if (ca == CaLamViec::TOI) caStr = "TOI";
+        if (ca == CaLamViec::CHIEU)
+            caStr = "CHIEU";
+        else if (ca == CaLamViec::TOI)
+            caStr = "TOI";
         row.push_back(caStr);
 
         rows.push_back(row);
@@ -359,7 +384,7 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
     // Extract header
     vector<string> header = rows[0];
     rows.erase(rows.begin());
-    
+
     bool success = CSVManager::writeCSV(filename, header, rows);
     if (success)
     {
@@ -389,7 +414,7 @@ bool QuanLyNhanVien::docCSV(const string &filename)
         delete danhSachNhanVien[i];
     }
     danhSachNhanVien.clear();
-    
+
     isLoadingFromCSV = true; // Prevent auto-save during load
 
     // Skip header row, read employee data starting from row 1
@@ -420,16 +445,21 @@ bool QuanLyNhanVien::docCSV(const string &filename)
 
             // Parse salary
             double luong = 0;
-            try {
+            try
+            {
                 luong = stod(luongStr);
-            } catch (...) {
+            }
+            catch (...)
+            {
                 luong = 0;
             }
 
             // Parse shift
             CaLamViec caLam = CaLamViec::SANG;
-            if (caLamStr == "CHIEU") caLam = CaLamViec::CHIEU;
-            else if (caLamStr == "TOI") caLam = CaLamViec::TOI;
+            if (caLamStr == "CHIEU")
+                caLam = CaLamViec::CHIEU;
+            else if (caLamStr == "TOI")
+                caLam = CaLamViec::TOI;
 
             // Create NhanVien only (no admin in CSV)
             NhanVien *nv = new NhanVien(hoTen, sdt, "N/A", username, password, maNV, luong, caLam);
@@ -476,13 +506,13 @@ void QuanLyNhanVien::xoaTatCa()
         delete danhSachNhanVien[i];
     }
     danhSachNhanVien.clear();
-    
+
     for (int i = 0; i < danhSachQuanTriVien.size(); i++)
     {
         delete danhSachQuanTriVien[i];
     }
     danhSachQuanTriVien.clear();
-    
+
     maxEmployeeId = 0;
 }
 
@@ -498,7 +528,7 @@ bool QuanLyNhanVien::luuAdminCSV(const std::string &filename) const
     for (int i = 0; i < danhSachQuanTriVien.size(); i++)
     {
         QuanTriVien *admin = danhSachQuanTriVien[i];
-        
+
         vector<string> row;
         row.push_back(admin->layTenDangNhap());
         row.push_back(admin->layMatKhau());
@@ -506,14 +536,14 @@ bool QuanLyNhanVien::luuAdminCSV(const std::string &filename) const
         row.push_back(admin->laySoDienThoai());
         row.push_back(admin->layGioiTinh());
         row.push_back(admin->layNgaySinh());
-        
+
         rows.push_back(row);
     }
 
     // Extract header
     vector<string> header = rows[0];
     rows.erase(rows.begin());
-    
+
     bool success = CSVManager::writeCSV(filename, header, rows);
     if (success)
     {
@@ -523,7 +553,7 @@ bool QuanLyNhanVien::luuAdminCSV(const std::string &filename) const
     {
         cerr << "Error: Failed to save admins to CSV: " << filename << endl;
     }
-    
+
     return success;
 }
 
@@ -534,24 +564,23 @@ bool QuanLyNhanVien::docAdminCSV(const std::string &filename)
     if (rows.empty())
     {
         cout << "No admin data found in CSV: " << filename << endl;
-        
+
         // Create default admin if file empty
         QuanTriVien *defaultAdmin = new QuanTriVien(
             "Quản Trị Viên",
             "0123456789",
             "",
             "admin",
-            "admin123"
-        );
+            "admin123");
         defaultAdmin->datGioiTinh("Nam");
         defaultAdmin->datNgaySinh("01/01/1990");
         defaultAdmin->datHoatDong(true);
-        
+
         danhSachQuanTriVien.push_back(defaultAdmin);
-        
+
         // Save default admin to CSV
         luuAdminCSV(filename);
-        
+
         cout << "Created default admin account: admin/admin123" << endl;
         return true;
     }
@@ -589,14 +618,13 @@ bool QuanLyNhanVien::docAdminCSV(const std::string &filename)
                 sdt,
                 "", // address
                 username,
-                password
-            );
+                password);
             admin->datGioiTinh(gioiTinh);
             admin->datNgaySinh(ngaySinh);
             admin->datHoatDong(true);
-            
+
             danhSachQuanTriVien.push_back(admin);
-            
+
             cout << "Loaded admin: " << hoTen << " (" << username << ")" << endl;
         }
         catch (const exception &e)

@@ -42,6 +42,11 @@ public:
      */
     void loadCustomers();
 
+    /**
+     * @brief Refresh data (alias for loadCustomers)
+     */
+    void refreshData() { loadCustomers(); }
+
 private slots:
     /**
      * @brief Search customers by name or phone

@@ -170,7 +170,7 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingTableTab.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingDetailDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/CancelBookingDialog.cpp
-    ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/PaymentListPage.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoicePage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementPage.cpp
@@ -197,7 +197,7 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingTableTab.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingDetailDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/CancelBookingDialog.h
-    ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/PaymentListPage.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoicePage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementPage.h

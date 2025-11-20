@@ -180,6 +180,10 @@ void CustomerManagementPage::setupRightPanel()
     nameEdit = new QLineEdit(this);
     nameEdit->setObjectName("formInput");
     nameEdit->setPlaceholderText("Nhập họ tên");
+    // Name validation - No numbers or special characters (Vietnamese supported)
+    QRegularExpression nameRegex("^[a-zA-Z\\sÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵýỷỹ]+$");
+    QRegularExpressionValidator *nameValidator = new QRegularExpressionValidator(nameRegex, this);
+    nameEdit->setValidator(nameValidator);
     nameLayout->addWidget(nameEdit, 1);
     formContentLayout->addLayout(nameLayout);
 
@@ -193,8 +197,8 @@ void CustomerManagementPage::setupRightPanel()
     phoneEdit = new QLineEdit(this);
     phoneEdit->setObjectName("formInput");
     phoneEdit->setPlaceholderText("Nhập số điện thoại");
-    // Phone validation
-    QRegularExpression phoneRegex("^[0-9]{0,11}$");
+    // Phone validation - Exactly 10 digits, starts with 0
+    QRegularExpression phoneRegex("^0[0-9]{0,9}$");
     QRegularExpressionValidator *phoneValidator = new QRegularExpressionValidator(phoneRegex, this);
     phoneEdit->setValidator(phoneValidator);
     phoneLayout->addWidget(phoneEdit, 1);
@@ -733,11 +737,20 @@ bool CustomerManagementPage::validateCustomerData()
         return false;
     }
 
-    if (phone.length() < 10 || phone.length() > 11)
+    if (phone.length() != 10 || !phone.startsWith('0'))
     {
         QMessageBox::warning(this, "Lỗi",
-                             "Số điện thoại phải có 10-11 chữ số!");
+                             "Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng số 0!");
         phoneEdit->setFocus();
+        return false;
+    }
+
+    // Manual name validation
+    QRegularExpression nameRegex("^[a-zA-Z\\sÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵýỷỹ]+$");
+    if (!nameRegex.match(name).hasMatch())
+    {
+        QMessageBox::warning(this, "Lỗi", "Tên khách hàng không được chứa số hoặc ký tự đặc biệt!");
+        nameEdit->setFocus();
         return false;
     }
 

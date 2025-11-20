@@ -1,11 +1,9 @@
 MaSan,TenSan,LoaiSan,KhuVuc,GiaThue,TrangThai,GhiChu
-A501,Sân A5-01,5,A,200000,Hoạt động,Sân 5 người khu vực A
-A502,Sân A5-02,5,A,200000,Hoạt động,Sân 5 người khu vực A
-A701,Sân A7-01,7,A,300000,Hoạt động,Sân 7 người khu vực A
-B501,Sân B5-01,5,B,200000,Hoạt động,Sân 5 người khu vực B
-B701,Sân B7-01,7,B,300000,Hoạt động,Sân 7 người khu vực B
-C501,Sân C5-01,5,C,200000,Bảo trì,Đang bảo trì thảm cỏ
-C701,Sân C7-01,7,C,300000,Hoạt động,Sân 7 người khu vực C
-D501,Sân D5-01,5,D,200000,Hoạt động,Sân 5 người khu vực D
-D701,Sân D7-01,7,D,300000,Hoạt động,Sân 7 người khu vực D
-D702,Sân D7-02,7,D,300000,Ngừng hoạt động,Tạm ngừng hoạt động
+SB01,Sân A5-01,5,A,250000,Hoạt động,
+SB02,Sân B7-01,7,B,400000,Hoạt động,
+SB03,Sân B5-01,5,B,250000,Hoạt động,
+SB05,Sân D5-01,5,D,250000,Bảo trì,Cần sơn lại vạch kẻ
+SB06,Sân A7-01,7,A,400000,Ngừng hoạt động,
+SB07,Sân C7-01,7,C,250000,Hoạt động,
+SB09,Sân C5-01,5,C,250000,Hoạt động,
+SB10,Sân A5-02,5,A,250000,Hoạt động,

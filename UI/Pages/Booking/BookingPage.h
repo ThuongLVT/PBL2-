@@ -38,6 +38,11 @@ public:
      */
     void refreshData();
 
+    /**
+     * @brief Reload fields from Core
+     */
+    void reloadFields();
+
 private:
     void setupUI();
     void setupConnections();

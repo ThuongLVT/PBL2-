@@ -7,7 +7,7 @@
 #include "UI/Components/Sidebar.h"
 #include "UI/Components/Header.h"
 #include "UI/Pages/Booking/BookingPage.h"
-#include "UI/Pages/Payment/PaymentListPage.h"
+#include "UI/Pages/Payment/InvoicePage.h"
 #include "UI/Pages/Field/FieldManagementPage.h"
 #include "UI/Pages/Customer/CustomerManagementPage.h"
 #include "UI/Pages/Service/ServiceManagementPage.h"
@@ -50,7 +50,7 @@ private:
 
     // Pages
     BookingPage *m_bookingPage;
-    PaymentListPage *m_paymentPage;
+    InvoicePage *m_paymentPage;
     FieldManagementPage *m_fieldPage;
     CustomerManagementPage *m_customerPage;
     ServiceManagementPage *m_servicePage;

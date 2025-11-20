@@ -163,7 +163,7 @@ string QuanLyKhachHang::taoMaKhachHangMoi()
 {
     maxCustomerId++;
     stringstream ss;
-    ss << "KH" << setfill('0') << setw(3) << maxCustomerId;
+    ss << "KH" << setfill('0') << setw(2) << maxCustomerId;
     return ss.str();
 }
 

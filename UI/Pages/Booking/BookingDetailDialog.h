@@ -49,8 +49,8 @@ private slots:
 
 private:
     void setupUI();
-    void setupInfoSection();
-    void setupServicesSection();
+    void setupInfoSection(QVBoxLayout *parentLayout);
+    void setupServicesSection(QVBoxLayout *parentLayout);
     void setupActionButtons();
     void populateForm();
     void loadServices();

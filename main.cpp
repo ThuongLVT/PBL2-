@@ -51,7 +51,7 @@
 using namespace std;
 
 // Define data files with absolute path
-const string DATA_DIR = "D:/QT_PBL2/Data/";
+const string DATA_DIR = "D:/PBL2-/Data/";
 const string DATA_FILE = DATA_DIR + "data.bin";
 
 int main(int argc, char *argv[])
@@ -77,14 +77,11 @@ int main(int argc, char *argv[])
      bool dataLoaded = heThong->docHeThong(DATA_FILE);
      if (dataLoaded)
      {
-          cout << "✅ Loaded existing data from " << DATA_FILE << endl;
+          cout << "✅ Loaded existing data from CSV files" << endl;
      }
      else
      {
-          cout << "⚠️  No data file found - initializing with sample data..." << endl;
-          heThong->khoiTaoDuLieuMau();
-          heThong->luuHeThong(DATA_FILE);
-          cout << "✅ Sample data created and saved to " << DATA_FILE << endl;
+          cout << "⚠️  No data found or error loading CSV files." << endl;
      }
 
      // Load staff data from CSV (nhanvien.csv)
@@ -102,17 +99,17 @@ int main(int argc, char *argv[])
           cout << "⚠️  Could not load nhanvien.csv - staff list empty" << endl;
      }
 
-    // Load admin data from CSV (admin.csv)
-    cout << "Loading admin data from admin.csv..." << endl;
-    bool adminLoaded = heThong->layQuanLyNhanVien()->docAdminCSV("admin.csv");
-    if (adminLoaded)
-    {
-        cout << "✅ Loaded admin accounts from admin.csv" << endl;
-    }
-    else
-    {
-        cout << "⚠️  Could not load admin.csv - using default admin" << endl;
-    }
+     // Load admin data from CSV (admin.csv)
+     cout << "Loading admin data from admin.csv..." << endl;
+     bool adminLoaded = heThong->layQuanLyNhanVien()->docAdminCSV("admin.csv");
+     if (adminLoaded)
+     {
+          cout << "✅ Loaded admin accounts from admin.csv" << endl;
+     }
+     else
+     {
+          cout << "⚠️  Could not load admin.csv - using default admin" << endl;
+     }
 
      cout << "System initialized with:" << endl;
      cout << "  - Customers: " << heThong->tongSoKhachHang() << endl;
@@ -140,46 +137,55 @@ int main(int argc, char *argv[])
      cout << "Week 1 Day 2: Showing Login Dialog..." << endl;
      cout << "========================================" << endl;
 
-     LoginDialog loginDialog;
-     if (loginDialog.exec() == QDialog::Accepted)
+     int exitCode = 0;
+     do
      {
-          cout << "✅ Login successful!" << endl;
-          cout << "   Username: " << loginDialog.getLoggedInUsername().toStdString() << endl;
-          cout << "   Role: " << (loginDialog.isAdmin() ? "Admin" : "Staff") << endl;
-          cout << endl;
-
-          // Week 1 Day 3-4: Show MainWindow after successful login
-          cout << "Week 1 Day 3-4: Showing MainWindow..." << endl;
-
-          // Get current user (admin from QuanLyNhanVien, staff from system)
-          NguoiDung *currentUser = nullptr;
-          QString username = loginDialog.getLoggedInUsername();
-          
-          if (loginDialog.isAdmin()) {
-               // Get admin from QuanLyNhanVien
-               currentUser = heThong->layQuanLyNhanVien()->timQuanTriVienTheoUsername(username.toStdString());
-          } else {
-               // Get staff from QuanLyNhanVien
-               currentUser = heThong->layQuanLyNhanVien()->timNhanVienTheoUsername(username.toStdString());
-          }
-          
-          if (!currentUser)
+          LoginDialog loginDialog;
+          if (loginDialog.exec() == QDialog::Accepted)
           {
-               cout << "❌ Error: Could not retrieve current user!" << endl;
-               return 1;
+               cout << "✅ Login successful!" << endl;
+               cout << "   Username: " << loginDialog.getLoggedInUsername().toStdString() << endl;
+               cout << "   Role: " << (loginDialog.isAdmin() ? "Admin" : "Staff") << endl;
+               cout << endl;
+
+               // Week 1 Day 3-4: Show MainWindow after successful login
+               cout << "Week 1 Day 3-4: Showing MainWindow..." << endl;
+
+               // Get current user (admin from QuanLyNhanVien, staff from system)
+               NguoiDung *currentUser = nullptr;
+               QString username = loginDialog.getLoggedInUsername();
+
+               if (loginDialog.isAdmin())
+               {
+                    // Get admin from QuanLyNhanVien
+                    currentUser = heThong->layQuanLyNhanVien()->timQuanTriVienTheoUsername(username.toStdString());
+               }
+               else
+               {
+                    // Get staff from QuanLyNhanVien
+                    currentUser = heThong->layQuanLyNhanVien()->timNhanVienTheoUsername(username.toStdString());
+               }
+
+               if (!currentUser)
+               {
+                    cout << "❌ Error: Could not retrieve current user!" << endl;
+                    return 1;
+               }
+
+               MainWindow mainWindow(currentUser);
+               mainWindow.showMaximized();
+
+               cout << "✅ MainWindow displayed!" << endl;
+               cout << "========================================" << endl;
+
+               exitCode = app.exec();
           }
+          else
+          {
+               cout << "Login cancelled or failed." << endl;
+               exitCode = 0;
+          }
+     } while (exitCode == 888); // 888 is the logout code
 
-          MainWindow mainWindow(currentUser);
-          mainWindow.showMaximized();
-
-          cout << "✅ MainWindow displayed!" << endl;
-          cout << "========================================" << endl;
-
-          return app.exec();
-     }
-     else
-     {
-          cout << "Login cancelled or failed." << endl;
-          return 0;
-     }
+     return exitCode;
 }

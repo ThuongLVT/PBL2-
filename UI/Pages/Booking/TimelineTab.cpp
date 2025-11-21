@@ -304,9 +304,11 @@ void TimelineTab::setupFormPanel()
     gridLayout->addWidget(areaLabel, row, 3); // Col 3
 
     QComboBox *areaCombo = new QComboBox(formPanel);
+    areaCombo->setObjectName("areaCombo");
     areaCombo->addItem("Khu A");
     areaCombo->addItem("Khu B");
     areaCombo->addItem("Khu C");
+    areaCombo->addItem("Khu D");
     areaCombo->setEnabled(false);
     areaCombo->setMinimumWidth(200);
     areaCombo->setMaximumWidth(200);
@@ -342,8 +344,9 @@ void TimelineTab::setupFormPanel()
     gridLayout->addWidget(statusLabel, row, 3); // Col 3
 
     statusCombo = new QComboBox(formPanel);
-    statusCombo->addItem("Chờ xác nhận");
-    statusCombo->addItem("Đã xác nhận");
+    statusCombo->addItem("Đã đặt");
+    statusCombo->addItem("Hoàn thành");
+    statusCombo->addItem("Đã hủy");
     statusCombo->setEnabled(false);
     statusCombo->setMinimumWidth(200);
     statusCombo->setMaximumWidth(200);
@@ -671,8 +674,10 @@ void TimelineTab::clearForm()
     if (fieldCombo->count() > 0)
     {
         fieldCombo->setCurrentIndex(0);
+        // Force update area for the first field
+        onFieldChanged(0);
     }
-    statusCombo->setCurrentIndex(0);
+    statusCombo->setCurrentIndex(0); // Default to "Đã đặt"
     typeCombo->setCurrentIndex(0);
     dateEdit->setDate(selectedDate);
     fromTimeEdit->setTime(QTime(0, 0));
@@ -753,6 +758,24 @@ void TimelineTab::populateForm(DatSan *booking)
                 break;
             }
         }
+
+        // Update Area combo explicitly (though onFieldChanged might handle it, better safe)
+        QComboBox *areaCombo = formPanel->findChild<QComboBox *>("areaCombo");
+        if (areaCombo)
+        {
+            int areaIndex = static_cast<int>(san->layKhuVuc());
+            if (areaIndex >= 0 && areaIndex < areaCombo->count())
+            {
+                areaCombo->setCurrentIndex(areaIndex);
+            }
+        }
+    }
+
+    // Status
+    int statusIndex = static_cast<int>(booking->getTrangThai());
+    if (statusIndex >= 0 && statusIndex < statusCombo->count())
+    {
+        statusCombo->setCurrentIndex(statusIndex);
     }
 
     // Date & Time
@@ -908,6 +931,19 @@ void TimelineTab::onFieldChanged(int index)
         else
         {
             typeCombo->setCurrentIndex(1); // 7 a side
+        }
+
+        // Update Area combo
+        QComboBox *areaCombo = formPanel->findChild<QComboBox *>("areaCombo");
+        if (areaCombo)
+        {
+            // Map KhuVuc enum to combo index
+            // KhuVuc::A = 0, B = 1, C = 2, D = 3
+            int areaIndex = static_cast<int>(san->layKhuVuc());
+            if (areaIndex >= 0 && areaIndex < areaCombo->count())
+            {
+                areaCombo->setCurrentIndex(areaIndex);
+            }
         }
 
         // Update duration and price

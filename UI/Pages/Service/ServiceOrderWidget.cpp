@@ -10,9 +10,8 @@
 #include <QHeaderView>
 #include <QFont>
 #include <QDateTime>
-#include <QPixmap>
-#include <QFile>
 #include <QDebug>
+#include <QFile>
 
 ServiceOrderWidget::ServiceOrderWidget(QWidget *parent)
     : QWidget(parent),
@@ -25,586 +24,305 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget *parent)
     setupUI();
     setupConnections();
     applyStyles();
-    loadServices();
+    loadCustomers();
 }
 
 ServiceOrderWidget::~ServiceOrderWidget()
 {
 }
 
+
+
 void ServiceOrderWidget::setupUI()
 {
-    // Main horizontal layout (Left 60% + Right 40%)
-    mainLayout = new QHBoxLayout(this);
+    // Main Scroll Area to prevent layout issues on small screens
+    QScrollArea *scrollArea = new QScrollArea(this);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setStyleSheet("QScrollArea { background-color: transparent; }");
+
+    QWidget *contentWidget = new QWidget();
+    contentWidget->setStyleSheet("background-color: transparent;");
+    
+    // Main Horizontal Layout (7|3 Split)
+    mainLayout = new QHBoxLayout(contentWidget);
     mainLayout->setContentsMargins(20, 20, 20, 20);
     mainLayout->setSpacing(20);
 
-    setupLeftPanel();
-    setupRightPanel();
+    // --- LEFT COLUMN (70%) ---
+    QWidget *leftWidget = new QWidget();
+    leftColumnLayout = new QVBoxLayout(leftWidget);
+    leftColumnLayout->setContentsMargins(0, 0, 0, 0);
+    leftColumnLayout->setSpacing(20);
+    
+    // 1. Customer Section
+    setupCustomerSection();
 
-    setLayout(mainLayout);
+    // 2. Select Service Button
+    selectServiceBtn = new QPushButton("🛒 CHỌN / THÊM DỊCH VỤ", this);
+    selectServiceBtn->setObjectName("selectServiceBtn");
+    selectServiceBtn->setCursor(Qt::PointingHandCursor);
+    selectServiceBtn->setFixedHeight(60);
+    selectServiceBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #16a34a;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        QPushButton:hover {
+            background-color: #15803d;
+        }
+    )");
+    leftColumnLayout->addWidget(selectServiceBtn);
+
+    // 3. Cart Section (Table)
+    setupCartSection();
+
+    // Add Left Widget to Main Layout with Stretch Factor 7
+    mainLayout->addWidget(leftWidget, 7);
+
+
+    // --- RIGHT COLUMN (30%) ---
+    QWidget *rightWidget = new QWidget();
+    rightColumnLayout = new QVBoxLayout(rightWidget);
+    rightColumnLayout->setContentsMargins(0, 0, 0, 0);
+    rightColumnLayout->setSpacing(20);
+
+    // 4. Payment Section
+    setupPaymentSection();
+    
+    // Add spacer to push payment section to top if needed, or let it expand
+    rightColumnLayout->addStretch();
+
+    // Add Right Widget to Main Layout with Stretch Factor 3
+    mainLayout->addWidget(rightWidget, 3);
+
+    // Set scroll area widget
+    scrollArea->setWidget(contentWidget);
+
+    // Main layout for the widget itself
+    QVBoxLayout *outerLayout = new QVBoxLayout(this);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+    outerLayout->addWidget(scrollArea);
 }
 
-void ServiceOrderWidget::setupLeftPanel()
+void ServiceOrderWidget::setupCustomerSection()
 {
-    // Left container (60%)
-    QWidget *leftWidget = new QWidget(this);
-    leftLayout = new QVBoxLayout(leftWidget);
-    leftLayout->setSpacing(15);
-    leftLayout->setContentsMargins(0, 0, 0, 0);
+    customerFrame = new QFrame(this);
+    customerFrame->setObjectName("infoFrame");
+    QVBoxLayout *layout = new QVBoxLayout(customerFrame);
+    layout->setSpacing(15);
 
-    // ===== TOP 40%: CART TABLE =====
-    cartFrame = new QFrame(this);
-    cartFrame->setObjectName("cartFrame");
-    cartLayout = new QVBoxLayout(cartFrame);
-    cartLayout->setSpacing(10);
-    cartLayout->setContentsMargins(15, 15, 15, 15);
+    QLabel *title = new QLabel("👤 THÔNG TIN KHÁCH HÀNG", this);
+    title->setObjectName("sectionTitle");
+    layout->addWidget(title);
 
-    // Cart title
-    QLabel *cartTitle = new QLabel("🛒 GIỎ HÀNG (Cart)", this);
+    QGridLayout *formLayout = new QGridLayout();
+    formLayout->setColumnStretch(1, 1);
+
+    // Phone Search
+    QLabel *phoneLbl = new QLabel("Số điện thoại:", this);
+    QHBoxLayout *phoneLayout = new QHBoxLayout();
+    phoneLineEdit = new QLineEdit(this);
+    phoneLineEdit->setPlaceholderText("Nhập SĐT để tìm...");
+    QPushButton *addCustomerBtn = new QPushButton("+", this);
+    addCustomerBtn->setFixedSize(30, 30);
+    addCustomerBtn->setToolTip("Thêm khách hàng mới");
+    connect(addCustomerBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onAddNewCustomerClicked);
+    
+    phoneLayout->addWidget(phoneLineEdit);
+    phoneLayout->addWidget(addCustomerBtn);
+
+    // Customer Dropdown
+    QLabel *nameLbl = new QLabel("Khách hàng:", this);
+    customerComboBox = new QComboBox(this);
+    customerComboBox->setEditable(true);
+
+    // Info Labels
+    customerNameLabel = new QLabel("---", this);
+    membershipLabel = new QLabel("Hạng: ---", this);
+    membershipLabel->setStyleSheet("color: #6b7280; font-style: italic;");
+
+    formLayout->addWidget(phoneLbl, 0, 0);
+    formLayout->addLayout(phoneLayout, 0, 1);
+    formLayout->addWidget(nameLbl, 1, 0);
+    formLayout->addWidget(customerComboBox, 1, 1);
+    formLayout->addWidget(new QLabel("Hạng thành viên:", this), 2, 0);
+    formLayout->addWidget(membershipLabel, 2, 1);
+
+    layout->addLayout(formLayout);
+    
+    // Add to Left Column
+    leftColumnLayout->addWidget(customerFrame);
+}
+
+void ServiceOrderWidget::setupCartSection()
+{
+    QLabel *cartTitle = new QLabel("📋 GIỎ HÀNG", this);
     cartTitle->setObjectName("sectionTitle");
-    QFont titleFont = cartTitle->font();
-    titleFont.setPointSize(14);
-    titleFont.setBold(true);
-    cartTitle->setFont(titleFont);
-    cartLayout->addWidget(cartTitle);
+    leftColumnLayout->addWidget(cartTitle);
 
-    // Cart table
     cartTable = new QTableWidget(0, 6, this);
     cartTable->setObjectName("dataTable");
-    cartTable->setHorizontalHeaderLabels({"Ảnh", "Tên dịch vụ", "Đơn vị", "Đơn giá", "SL", "Xóa"});
-    cartTable->horizontalHeader()->setStretchLastSection(false);
-    cartTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
-    cartTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
-    cartTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
-    cartTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
-    cartTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
-    cartTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);
-    cartTable->setColumnWidth(0, 60);  // Image
-    cartTable->setColumnWidth(2, 70);  // Unit
-    cartTable->setColumnWidth(3, 100); // Price
-    cartTable->setColumnWidth(4, 50);  // Quantity
+    cartTable->setHorizontalHeaderLabels({"Ảnh", "Thông tin dịch vụ", "Đơn giá", "Số lượng", "Thành tiền", ""});
+    
+    // Column widths
+    cartTable->setColumnWidth(0, 80);  // Image
+    cartTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch); // Name
+    cartTable->setColumnWidth(2, 100); // Price
+    cartTable->setColumnWidth(3, 150); // Quantity
+    cartTable->setColumnWidth(4, 120); // Total
     cartTable->setColumnWidth(5, 50);  // Delete
-    cartTable->setRowHeight(0, 55);    // Row height for images
+    
     cartTable->verticalHeader()->setVisible(false);
     cartTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     cartTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    cartTable->setMaximumHeight(200);
-    cartLayout->addWidget(cartTable);
-
-    // Cart total
-    cartTotalLabel = new QLabel("Tổng: 0 đ", this);
-    cartTotalLabel->setObjectName("cartTotal");
-    QFont totalFont = cartTotalLabel->font();
-    totalFont.setPointSize(12);
-    totalFont.setBold(true);
-    cartTotalLabel->setFont(totalFont);
-    cartTotalLabel->setAlignment(Qt::AlignRight);
-    cartLayout->addWidget(cartTotalLabel);
-
-    leftLayout->addWidget(cartFrame, 4); // 40% of left panel
-
-    // ===== BOTTOM 60%: SERVICE GRID =====
-    serviceFrame = new QFrame(this);
-    serviceFrame->setObjectName("serviceFrame");
-    serviceLayout = new QVBoxLayout(serviceFrame);
-    serviceLayout->setSpacing(10);
-    serviceLayout->setContentsMargins(15, 15, 15, 15);
-
-    // Search & filter row
-    QHBoxLayout *searchLayout = new QHBoxLayout();
-    searchLayout->setSpacing(10);
-
-    searchEdit = new QLineEdit(this);
-    searchEdit->setPlaceholderText("🔍 Tìm dịch vụ...");
-    searchEdit->setObjectName("searchEdit");
-    searchEdit->setMinimumHeight(40);
-    searchLayout->addWidget(searchEdit, 3);
-
-    categoryCombo = new QComboBox(this);
-    categoryCombo->setObjectName("filterCombo");
-    categoryCombo->addItem("🔽 Tất cả", "ALL");
-    categoryCombo->addItem("Đồ uống", "DO_UONG");
-    categoryCombo->addItem("Thiết bị", "THIET_BI");
-    categoryCombo->addItem("Khác", "KHAC");
-    categoryCombo->setMinimumHeight(40);
-    searchLayout->addWidget(categoryCombo, 1);
-
-    reloadBtn = new QPushButton("🔄", this);
-    reloadBtn->setObjectName("iconButton");
-    reloadBtn->setMinimumHeight(40);
-    reloadBtn->setMaximumWidth(50);
-    reloadBtn->setToolTip("Tải lại danh sách dịch vụ");
-    searchLayout->addWidget(reloadBtn);
-
-    serviceLayout->addLayout(searchLayout);
-
-    // Service grid scroll area
-    serviceScrollArea = new QScrollArea(this);
-    serviceScrollArea->setWidgetResizable(true);
-    serviceScrollArea->setObjectName("serviceScrollArea");
-    serviceScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    serviceGridWidget = new QWidget();
-    serviceGridLayout = new QGridLayout(serviceGridWidget);
-    serviceGridLayout->setSpacing(15);
-    serviceGridLayout->setContentsMargins(10, 10, 10, 10);
-
-    serviceScrollArea->setWidget(serviceGridWidget);
-    serviceLayout->addWidget(serviceScrollArea);
-
-    leftLayout->addWidget(serviceFrame, 6); // 60% of left panel
-
-    mainLayout->addWidget(leftWidget, 6); // 60% of main layout
+    cartTable->setAlternatingRowColors(true);
+    cartTable->setShowGrid(false);
+    cartTable->setStyleSheet("QTableWidget { border: 1px solid #e5e7eb; border-radius: 8px; background-color: white; } QTableWidget::item { border-bottom: 1px solid #f3f4f6; }");
+    
+    // Minimum height for cart
+    cartTable->setMinimumHeight(400); // Increased height
+    
+    leftColumnLayout->addWidget(cartTable);
 }
 
-void ServiceOrderWidget::setupRightPanel()
+void ServiceOrderWidget::setupPaymentSection()
 {
-    // Right container (40%)
-    QWidget *rightWidget = new QWidget(this);
-    rightWidget->setFixedWidth(480);
-    rightLayout = new QVBoxLayout(rightWidget);
-    rightLayout->setSpacing(15);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
+    paymentFrame = new QFrame(this);
+    paymentFrame->setObjectName("infoFrame");
+    QVBoxLayout *layout = new QVBoxLayout(paymentFrame);
+    layout->setSpacing(15);
 
-    // ===== SCROLL AREA FOR CUSTOMER & PAYMENT INFORMATION =====
-    QScrollArea *customerScrollArea = new QScrollArea(this);
-    customerScrollArea->setWidgetResizable(true);
-    customerScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    customerScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    customerScrollArea->setFrameShape(QFrame::NoFrame);
-    customerScrollArea->setStyleSheet("QScrollArea { background-color: transparent; border: none; }");
+    QLabel *title = new QLabel("💰 THÔNG TIN THANH TOÁN", this);
+    title->setObjectName("sectionTitle");
+    layout->addWidget(title);
 
-    // ===== COMBINED CUSTOMER & PAYMENT INFORMATION =====
-    customerFrame = new QFrame();
-    customerFrame->setObjectName("formFrame");
-    customerLayout = new QVBoxLayout(customerFrame);
-    customerLayout->setSpacing(8);
-    customerLayout->setContentsMargins(15, 15, 15, 15);
+    QGridLayout *grid = new QGridLayout();
+    
+    totalPriceLabel = new QLabel("0 đ", this);
+    totalPriceLabel->setAlignment(Qt::AlignRight);
+    
+    discountLabel = new QLabel("0 đ", this);
+    discountLabel->setAlignment(Qt::AlignRight);
+    discountLabel->setStyleSheet("color: #16a34a;");
+    
+    finalAmountLabel = new QLabel("0 đ", this);
+    finalAmountLabel->setAlignment(Qt::AlignRight);
+    finalAmountLabel->setStyleSheet("color: #dc2626; font-weight: bold; font-size: 20px;"); // Bigger font
 
-    // Title
-    QLabel *customerTitle = new QLabel("📋 THÔNG TIN KHÁCH HÀNG", this);
-    customerTitle->setObjectName("sectionTitle");
-    QFont custTitleFont = customerTitle->font();
-    custTitleFont.setPointSize(12);
-    custTitleFont.setBold(true);
-    customerTitle->setFont(custTitleFont);
-    customerLayout->addWidget(customerTitle);
+    grid->addWidget(new QLabel("Tổng tiền hàng:", this), 0, 0);
+    grid->addWidget(totalPriceLabel, 0, 1);
+    grid->addWidget(new QLabel("Giảm giá:", this), 1, 0);
+    grid->addWidget(discountLabel, 1, 1);
+    grid->addWidget(new QLabel("THÀNH TIỀN:", this), 2, 0);
+    grid->addWidget(finalAmountLabel, 2, 1);
 
-    // Customer list with search
-    QLabel *selectLabel = new QLabel("Chọn khách hàng (click để chọn):", this);
-    selectLabel->setObjectName("fieldLabel");
-    customerLayout->addWidget(selectLabel);
+    layout->addLayout(grid);
 
-    // Search box
-    QLineEdit *customerSearchEdit = new QLineEdit(this);
-    customerSearchEdit->setPlaceholderText("Tìm theo SĐT hoặc tên...");
-    customerSearchEdit->setObjectName("formInput");
-    customerSearchEdit->setMinimumHeight(38);
-    customerLayout->addWidget(customerSearchEdit);
-
-    // Customer list
-    customerComboBox = new QComboBox(this);
-    customerComboBox->setObjectName("formInput");
-    customerComboBox->setMinimumHeight(40);
-    customerComboBox->setEditable(false);
-    customerLayout->addWidget(customerComboBox);
-
-    // Add new customer button
-    QPushButton *addNewCustomerBtn = new QPushButton("+ Thêm khách hàng mới", this);
-    addNewCustomerBtn->setObjectName("secondaryButton");
-    addNewCustomerBtn->setMinimumHeight(36);
-    customerLayout->addWidget(addNewCustomerBtn);
-    connect(addNewCustomerBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onAddNewCustomerClicked);
-
-    // Search connection
-    connect(customerSearchEdit, &QLineEdit::textChanged, [this, customerSearchEdit]()
-            { filterCustomers(customerSearchEdit->text()); });
-
-    // Spacing
-    customerLayout->addSpacing(10);
-
-    // Selected customer display (read-only)
-    QLabel *selectedLabel = new QLabel("Khách hàng đã chọn:", this);
-    selectedLabel->setObjectName("fieldLabel");
-    customerLayout->addWidget(selectedLabel);
-
-    QHBoxLayout *phoneLayout = new QHBoxLayout();
-    QLabel *phoneLabelText = new QLabel("SĐT:", this);
-    phoneLabelText->setObjectName("fieldLabel");
-    phoneLayout->addWidget(phoneLabelText);
-
-    phoneLineEdit = new QLineEdit(this);
-    phoneLineEdit->setPlaceholderText("-");
-    phoneLineEdit->setObjectName("formInput");
-    phoneLineEdit->setMinimumHeight(38);
-    phoneLineEdit->setReadOnly(true);
-    phoneLayout->addWidget(phoneLineEdit, 2);
-
-    customerLayout->addLayout(phoneLayout);
-
-    // Customer name (auto-fill after select) - on same row
-    QHBoxLayout *nameLayout = new QHBoxLayout();
-    QLabel *nameLabel = new QLabel("Tên khách hàng:", this);
-    nameLabel->setObjectName("fieldLabel");
-    nameLabel->setMinimumWidth(100);
-    nameLayout->addWidget(nameLabel);
-
-    nameLineEdit = new QLineEdit(this);
-    nameLineEdit->setPlaceholderText("Tự động điền sau khi chọn");
-    nameLineEdit->setObjectName("formInput");
-    nameLineEdit->setReadOnly(true);
-    nameLineEdit->setMinimumHeight(38);
-    nameLayout->addWidget(nameLineEdit, 1);
-
-    customerLayout->addLayout(nameLayout);
-
-    // Divider line
-    QFrame *divider = new QFrame(this);
-    divider->setFrameShape(QFrame::HLine);
-    divider->setFrameShadow(QFrame::Sunken);
-    divider->setStyleSheet("background-color: #e5e7eb; max-height: 1px;");
-    customerLayout->addWidget(divider);
-
-    // Payment info title
-    QLabel *paymentTitle = new QLabel("💳 THÔNG TIN THANH TOÁN", this);
-    paymentTitle->setObjectName("sectionTitle");
-    QFont payTitleFont = paymentTitle->font();
-    payTitleFont.setPointSize(12);
-    payTitleFont.setBold(true);
-    paymentTitle->setFont(payTitleFont);
-    customerLayout->addWidget(paymentTitle);
-
-    // Customer display (read-only) - on same row
-    QHBoxLayout *custLayout = new QHBoxLayout();
-    QLabel *custLabel = new QLabel("Khách hàng:", this);
-    custLabel->setObjectName("fieldLabel");
-    custLabel->setFixedWidth(120);
-    custLayout->addWidget(custLabel);
-    customerNameLabel = new QLabel("(Chưa chọn)", this);
-    customerNameLabel->setObjectName("infoLabel");
-    custLayout->addWidget(customerNameLabel, 1);
-    customerLayout->addLayout(custLayout);
-
-    // Phone display - on same row
-    QHBoxLayout *phoneDispLayout = new QHBoxLayout();
-    QLabel *phoneDispLabel = new QLabel("SĐT:", this);
-    phoneDispLabel->setObjectName("fieldLabel");
-    phoneDispLabel->setFixedWidth(120);
-    phoneDispLayout->addWidget(phoneDispLabel);
-    phoneLabel = new QLabel("-", this);
-    phoneLabel->setObjectName("infoLabel");
-    phoneDispLayout->addWidget(phoneLabel, 1);
-    customerLayout->addLayout(phoneDispLayout);
-
-    // Membership - on same row
-    QHBoxLayout *memberLayout = new QHBoxLayout();
-    QLabel *memberLabel = new QLabel("Hạng thành viên:", this);
-    memberLabel->setObjectName("fieldLabel");
-    memberLabel->setFixedWidth(120);
-    memberLayout->addWidget(memberLabel);
-    membershipLabel = new QLabel("-", this);
-    membershipLabel->setObjectName("infoLabel");
-    memberLayout->addWidget(membershipLabel, 1);
-    customerLayout->addLayout(memberLayout);
-
-    // Note - on same row with compact textarea
-    QHBoxLayout *noteLayout = new QHBoxLayout();
-    QLabel *noteLabel = new QLabel("Ghi chú:", this);
-    noteLabel->setObjectName("fieldLabel");
-    noteLabel->setFixedWidth(120);
-    noteLabel->setAlignment(Qt::AlignTop);
-    noteLayout->addWidget(noteLabel);
+    // Note
+    layout->addWidget(new QLabel("Ghi chú:", this));
     noteTextEdit = new QTextEdit(this);
-    noteTextEdit->setPlaceholderText("Nhập ghi chú (không bắt buộc)");
-    noteTextEdit->setObjectName("formTextArea");
-    noteTextEdit->setFixedHeight(50);
-    noteLayout->addWidget(noteTextEdit, 1);
-    customerLayout->addLayout(noteLayout);
+    noteTextEdit->setPlaceholderText("Ghi chú đơn hàng...");
+    noteTextEdit->setFixedHeight(80);
+    layout->addWidget(noteTextEdit);
 
-    // Totals
-    customerLayout->addSpacing(5);
-    totalPriceLabel = new QLabel("Tổng tiền: 0 đ", this);
-    totalPriceLabel->setObjectName("totalLabel");
-    customerLayout->addWidget(totalPriceLabel);
-
-    discountLabel = new QLabel("Giảm giá: 0 đ", this);
-    discountLabel->setObjectName("discountLabel");
-    customerLayout->addWidget(discountLabel);
-
-    finalAmountLabel = new QLabel("Thành tiền: 0 đ", this);
-    finalAmountLabel->setObjectName("finalLabel");
-    QFont finalFont = finalAmountLabel->font();
-    finalFont.setPointSize(14);
-    finalFont.setBold(true);
-    finalAmountLabel->setFont(finalFont);
-    customerLayout->addWidget(finalAmountLabel);
-
-    // Set customerFrame as scroll area widget
-    customerScrollArea->setWidget(customerFrame);
-    rightLayout->addWidget(customerScrollArea, 1); // Take available space with stretch
-
-    // ===== ACTION BUTTONS =====
-    actionFrame = new QFrame(this);
-    actionLayout = new QHBoxLayout(actionFrame);
-    actionLayout->setSpacing(10);
-    actionLayout->setContentsMargins(0, 0, 0, 0);
-
-    clearBtn = new QPushButton("Xóa", this);
-    clearBtn->setObjectName("secondaryButton");
-    clearBtn->setMinimumHeight(45);
-    actionLayout->addWidget(clearBtn);
-
-    paymentBtn = new QPushButton("Thanh toán", this);
-    paymentBtn->setObjectName("primaryButton");
-    paymentBtn->setMinimumHeight(45);
-    actionLayout->addWidget(paymentBtn);
-
-    exportBtn = new QPushButton("Xuất", this);
-    exportBtn->setObjectName("secondaryButton");
-    exportBtn->setMinimumHeight(45);
-    actionLayout->addWidget(exportBtn);
-
-    rightLayout->addWidget(actionFrame, 0); // Fixed height, no stretch
-
-    mainLayout->addWidget(rightWidget, 4); // 40% of main layout
+    // Buttons
+    QPushButton *clearBtn = new QPushButton("🗑️ Xóa giỏ hàng", this);
+    clearBtn->setFixedHeight(40);
+    clearBtn->setCursor(Qt::PointingHandCursor);
+    clearBtn->setStyleSheet("QPushButton { background-color: white; border: 1px solid #ef4444; color: #ef4444; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #fee2e2; }");
+    connect(clearBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onClearCartClicked);
+    layout->addWidget(clearBtn);
+    
+    paymentBtn = new QPushButton("💳 THANH TOÁN\n& IN HÓA ĐƠN", this);
+    paymentBtn->setObjectName("paymentBtn");
+    paymentBtn->setCursor(Qt::PointingHandCursor);
+    paymentBtn->setFixedHeight(80); // Bigger button
+    paymentBtn->setStyleSheet("QPushButton { background-color: #16a34a; color: white; font-weight: bold; font-size: 16px; border-radius: 8px; border: none; } QPushButton:hover { background-color: #15803d; }");
+    
+    layout->addWidget(paymentBtn);
+    
+    // Add to Right Column
+    rightColumnLayout->addWidget(paymentFrame);
 }
 
 void ServiceOrderWidget::setupConnections()
 {
-    // Search & Filter
-    connect(searchEdit, &QLineEdit::textChanged, this, &ServiceOrderWidget::onSearchTextChanged);
-    connect(categoryCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &ServiceOrderWidget::onCategoryFilterChanged);
-    connect(reloadBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onReloadClicked);
-
-    // Customer - use activated instead of currentIndexChanged (only fires on user click)
+    // Customer
     connect(customerComboBox, QOverload<int>::of(&QComboBox::activated),
             this, &ServiceOrderWidget::onCustomerSelected);
+    
+    // Service Selection
+    connect(selectServiceBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onSelectServiceClicked);
 
-    // Actions
-    connect(clearBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onClearCartClicked);
+    // Payment Actions
     connect(paymentBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onPaymentClicked);
-    connect(exportBtn, &QPushButton::clicked, this, &ServiceOrderWidget::onExportClicked);
 }
 
 void ServiceOrderWidget::applyStyles()
 {
-    // Use light green-white theme consistent with other pages
     setStyleSheet(R"(
         QWidget {
             background-color: #f9fafb;
             color: #1f2937;
         }
-        
-        #cartFrame, #serviceFrame, #formFrame {
+        QFrame {
             background-color: white;
-            border-radius: 8px;
             border: 1px solid #e5e7eb;
+            border-radius: 8px;
         }
-        
-        #sectionTitle {
-            color: #1f2937;
-            font-size: 14px;
-            font-weight: bold;
-            padding: 5px 0px;
-        }
-        
-        #searchEdit, #filterCombo, #formInput {
-            background-color: white;
+        QLineEdit, QComboBox, QTextEdit {
             border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 8px 12px;
-            color: #1f2937;
-            font-size: 14px;
-        }
-        
-        #searchEdit:focus, #formInput:focus {
-            border: 2px solid #16a34a;
-            outline: none;
-        }
-        
-        #dataTable {
+            border-radius: 2px;
+            padding: 8px;
             background-color: white;
+        }
+        QLineEdit:focus, QComboBox:focus, QTextEdit:focus {
+            border: 2px solid #16a34a;
+        }
+        QTableWidget {
             border: 1px solid #e5e7eb;
-            border-radius: 8px;
             gridline-color: #f3f4f6;
+            background-color: white;
         }
-        
-        #dataTable::item {
-            padding: 10px;
-            color: #1f2937;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        
-        #dataTable::item:selected {
-            background-color: #f0fdf4;
-            color: #16a34a;
-        }
-        
-        #dataTable QHeaderView::section {
+        QHeaderView::section {
             background-color: #f9fafb;
-            color: #6b7280;
-            padding: 12px 10px;
+            padding: 8px;
             border: none;
             border-bottom: 2px solid #e5e7eb;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 12px;
+            font-weight: bold;
         }
-        
-        #serviceCard {
-            background-color: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 12px;
-        }
-        
-        #serviceCard:hover {
-            background-color: #f0fdf4;
-            border: 2px solid #16a34a;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-        
-        #primaryButton {
+        #selectServiceBtn {
             background-color: #16a34a;
             color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 10px 20px;
-            font-weight: 600;
+            font-weight: bold;
             font-size: 14px;
+            border-radius: 6px;
+            text-align: left;
+            padding-left: 15px;
         }
-        
-        #primaryButton:hover {
+        #selectServiceBtn:hover {
             background-color: #15803d;
         }
-        
-        #primaryButton:pressed {
-            background-color: #14532d;
-        }
-        
-        #secondaryButton {
-            background-color: white;
-            color: #6b7280;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 10px 20px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        #secondaryButton:hover {
-            background-color: #f9fafb;
-            border-color: #9ca3af;
-        }
-        
-        #iconButton {
-            background-color: white;
-            color: #ef4444;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            font-size: 16px;
-            padding: 5px 10px;
-        }
-        
-        #iconButton:hover {
-            background-color: #fef2f2;
-            border: 1px solid #ef4444;
-        }
-        
-        #cartTotal {
-            color: #1f2937;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 8px 0px;
-        }
-        
-        #fieldLabel {
-            color: #1f2937;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 2px 0px;
-        }
-        
-        #infoLabel {
-            color: #1f2937;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 2px 0px;
-        }
-        
-        #totalLabel {
-            color: #1f2937;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 2px 0px;
-        }
-        
-        #discountLabel {
-            color: #16a34a;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 2px 0px;
-        }
-        
-        #finalLabel {
-            color: #16a34a;
-            font-size: 16px;
+        #paymentBtn {
+            background-color: #16a34a;
+            color: white;
             font-weight: bold;
-            padding: 4px 0px;
-        }
-        
-        #formTextArea {
-            background-color: white;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 8px;
-            color: #1f2937;
-            font-size: 14px;
-        }
-        
-        #formTextArea:focus {
-            border: 2px solid #16a34a;
-            outline: none;
-        }
-        
-        QScrollArea {
-            border: none;
-            background-color: transparent;
-        }
-        
-        QScrollBar:vertical {
-            background-color: #f9fafb;
-            width: 12px;
+            font-size: 16px;
             border-radius: 6px;
         }
-        
-        QScrollBar::handle:vertical {
-            background-color: #d1d5db;
-            border-radius: 6px;
-            min-height: 20px;
-        }
-        
-        QScrollBar::handle:vertical:hover {
-            background-color: #9ca3af;
+        #paymentBtn:hover {
+            background-color: #15803d;
         }
     )");
 }
 
 void ServiceOrderWidget::loadServices()
 {
-    allServices.clear();
-    filteredServices.clear();
-
-    const MangDong<DichVu *> &services = system->layDanhSachDichVu();
-    for (int i = 0; i < services.size(); i++)
-    {
-        allServices.append(services[i]);
-        filteredServices.append(services[i]);
-    }
-
-    createServiceCards();
     loadCustomers();
 }
 
@@ -612,7 +330,7 @@ void ServiceOrderWidget::loadCustomers()
 {
     customerComboBox->blockSignals(true);
     customerComboBox->clear();
-    customerComboBox->addItem("-- Click để chọn khách hàng --", "");
+    customerComboBox->addItem("-- Chọn khách hàng --", "");
 
     const MangDong<KhachHang *> &customers = system->layDanhSachKhachHang();
     for (int i = 0; i < customers.size(); i++)
@@ -634,647 +352,343 @@ void ServiceOrderWidget::loadCustomers()
     customerComboBox->blockSignals(false);
 }
 
-void ServiceOrderWidget::filterCustomers(const QString &searchText)
+void ServiceOrderWidget::onCustomerSelected(int index)
 {
-    customerComboBox->blockSignals(true);
-    customerComboBox->clear();
-    customerComboBox->addItem("-- Click để chọn khách hàng --", "");
+    if (index <= 0) {
+        selectedCustomer = nullptr;
+        updateCustomerInfo();
+        updateTotals();
+        return;
+    }
 
-    const MangDong<KhachHang *> &customers = system->layDanhSachKhachHang();
-    for (int i = 0; i < customers.size(); i++)
+    QString phone = customerComboBox->itemData(index).toString();
+    if (phone.isEmpty()) return;
+
+    KhachHang *customer = system->timKhachHangTheoSDT(phone.toStdString());
+    if (customer)
     {
-        KhachHang *cust = customers[i];
-        if (cust)
+        selectedCustomer = customer;
+        
+        // Update UI fields
+        phoneLineEdit->setText(QString::fromStdString(customer->laySoDienThoai()));
+        
+        updateCustomerInfo();
+        updateTotals();
+    }
+}
+
+void ServiceOrderWidget::onAddNewCustomerClicked()
+{
+    AddCustomerDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        KhachHang *newCustomer = dialog.getNewCustomer();
+        if (newCustomer && system->themKhachHang(newCustomer))
         {
-            std::string phone = cust->laySoDienThoai();
-            std::string name = cust->layHoTen();
+            system->luuHeThong("D:/PBL2-/Data/data.bin");
+            loadCustomers();
+            
+            // Select the new customer
+            QString newPhone = QString::fromStdString(newCustomer->laySoDienThoai());
+            int index = customerComboBox->findData(newPhone);
+            if (index >= 0) {
+                customerComboBox->setCurrentIndex(index);
+                onCustomerSelected(index);
+            }
+            
+            QMessageBox::information(this, "Thành công", "Đã thêm khách hàng mới!");
+        }
+    }
+}
 
-            if (!phone.empty())
-            {
-                QString qPhone = QString::fromStdString(phone);
-                QString qName = QString::fromStdString(name);
-
-                // Filter
-                if (searchText.isEmpty() ||
-                    qPhone.contains(searchText, Qt::CaseInsensitive) ||
-                    qName.contains(searchText, Qt::CaseInsensitive))
-                {
-                    QString displayText = qPhone + " - " + qName;
-                    customerComboBox->addItem(displayText, qPhone);
+void ServiceOrderWidget::onSelectServiceClicked()
+{
+    ServiceSelectionDialog dialog(this);
+    
+    // Pass current cart quantities to dialog to calculate available stock
+    QMap<QString, int> currentQuantities;
+    for(const auto& item : cartItems) {
+        currentQuantities[item.maDichVu] = item.soLuong;
+    }
+    dialog.setExistingCart(currentQuantities);
+    
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        QList<ServiceSelectionItem> selectedItems = dialog.getSelectedServices();
+        
+        for (const auto& item : selectedItems) {
+            if (!item.service) continue;
+            
+            QString maDV = QString::fromStdString(item.service->layMaDichVu());
+            
+            // Check if exists in cart
+            bool found = false;
+            for (int i = 0; i < cartItems.size(); i++) {
+                if (cartItems[i].maDichVu == maDV) {
+                    cartItems[i].soLuong += item.quantity;
+                    cartItems[i].thanhTien = cartItems[i].donGia * cartItems[i].soLuong;
+                    found = true;
+                    break;
                 }
             }
+            
+            if (!found) {
+                CartItem newItem;
+                newItem.maDichVu = maDV;
+                newItem.tenDichVu = QString::fromStdString(item.service->layTenDichVu());
+                newItem.donVi = "Cái"; // Default
+                newItem.donGia = item.service->layDonGia();
+                newItem.soLuong = item.quantity;
+                newItem.thanhTien = newItem.donGia * newItem.soLuong;
+                cartItems.append(newItem);
+            }
         }
+        
+        updateCartTable();
     }
-
-    customerComboBox->blockSignals(false);
 }
 
-void ServiceOrderWidget::createServiceCards()
+void ServiceOrderWidget::onRemoveFromCartClicked(int row)
 {
-    // Clear existing cards
-    QLayoutItem *item;
-    while ((item = serviceGridLayout->takeAt(0)) != nullptr)
-    {
-        if (item->widget())
-        {
-            delete item->widget();
-        }
-        delete item;
+    if (row >= 0 && row < cartItems.size()) {
+        cartItems.removeAt(row);
+        updateCartTable();
     }
-
-    // Create cards in grid (3 columns for better fit)
-    int row = 0;
-    int col = 0;
-    const int columns = 3;
-
-    for (DichVu *service : filteredServices)
-    {
-        QWidget *card = createServiceCard(service);
-        serviceGridLayout->addWidget(card, row, col);
-
-        col++;
-        if (col >= columns)
-        {
-            col = 0;
-            row++;
-        }
-    }
-
-    // Add stretch to push cards to top
-    serviceGridLayout->setRowStretch(row + 1, 1);
 }
 
-QWidget *ServiceOrderWidget::createServiceCard(DichVu *service)
+void ServiceOrderWidget::onClearCartClicked()
 {
-    QFrame *card = new QFrame();
-    card->setObjectName("serviceCard");
-    card->setFixedSize(180, 230);
-    card->setCursor(Qt::PointingHandCursor);
-
-    QVBoxLayout *cardLayout = new QVBoxLayout(card);
-    cardLayout->setSpacing(8);
-    cardLayout->setContentsMargins(12, 12, 12, 12);
-
-    // Image placeholder (square)
-    QLabel *imageLabel = new QLabel(card);
-    imageLabel->setFixedSize(140, 140);
-    imageLabel->setAlignment(Qt::AlignCenter);
-    imageLabel->setStyleSheet("background-color: #4C4C4C; border-radius: 5px;");
-
-    QString imagePath = QString::fromStdString(service->layHinhAnh());
-    if (!imagePath.isEmpty())
-    {
-        // Try with absolute path first
-        QString fullPath = "D:/QT_PBL2/Data/" + imagePath;
-        if (QFile::exists(fullPath))
-        {
-            QPixmap pixmap(fullPath);
-            imageLabel->setPixmap(pixmap.scaled(138, 138, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        }
-        else if (QFile::exists(imagePath))
-        {
-            QPixmap pixmap(imagePath);
-            imageLabel->setPixmap(pixmap.scaled(138, 138, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        }
-        else
-        {
-            imageLabel->setStyleSheet("background-color: #4C4C4C; border-radius: 5px; font-size: 48px;");
-            imageLabel->setText("📦");
-        }
-    }
-    else
-    {
-        imageLabel->setStyleSheet("background-color: #4C4C4C; border-radius: 5px; font-size: 48px;");
-        imageLabel->setText("📦");
-    }
-    cardLayout->addWidget(imageLabel, 0, Qt::AlignCenter);
-
-    // Service name
-    QLabel *nameLabel = new QLabel(QString::fromStdString(service->layTenDichVu()), card);
-    nameLabel->setWordWrap(true);
-    nameLabel->setAlignment(Qt::AlignCenter);
-    nameLabel->setStyleSheet("font-size: 13px; font-weight: bold; color: #1f2937;");
-    nameLabel->setMaximumHeight(40);
-    cardLayout->addWidget(nameLabel);
-
-    // Price
-    QLabel *priceLabel = new QLabel(
-        QString::number(service->layDonGia(), 'f', 0) + " đ",
-        card);
-    priceLabel->setAlignment(Qt::AlignCenter);
-    priceLabel->setStyleSheet("font-size: 12px; font-weight: bold; color: #16a34a;");
-    cardLayout->addWidget(priceLabel);
-
-    // Add button
-    QPushButton *addBtn = new QPushButton("+ Thêm", card);
-    addBtn->setObjectName("primaryButton");
-    addBtn->setFixedHeight(32);
-    addBtn->setCursor(Qt::PointingHandCursor);
-    cardLayout->addWidget(addBtn);
-
-    // Connect click event
-    connect(addBtn, &QPushButton::clicked, [this, service]()
-            { onServiceCardClicked(service); });
-
-    return card;
-}
-
-void ServiceOrderWidget::onServiceCardClicked(DichVu *service)
-{
-    if (!service)
-        return;
-    addToCart(service);
-}
-
-void ServiceOrderWidget::addToCart(DichVu *service)
-{
-    QString maDV = QString::fromStdString(service->layMaDichVu());
-
-    // Check if already in cart
-    for (int i = 0; i < cartItems.size(); i++)
-    {
-        if (cartItems[i].maDichVu == maDV)
-        {
-            // Increase quantity
-            cartItems[i].soLuong++;
-            cartItems[i].thanhTien = cartItems[i].donGia * cartItems[i].soLuong;
-            updateCart();
-            return;
-        }
-    }
-
-    // Add new item
-    CartItem item;
-    item.maDichVu = maDV;
-    item.tenDichVu = QString::fromStdString(service->layTenDichVu());
-    item.donVi = "Cái"; // TODO: Get from service if available
-    item.donGia = service->layDonGia();
-    item.soLuong = 1;
-    item.thanhTien = item.donGia;
-
-    cartItems.append(item);
-    updateCart();
+    if (cartItems.isEmpty()) return;
     
-    // Show quick notification
-    QMessageBox::information(this, "Thêm vào giỏ",
-        QString("✅ Đã thêm %1 x %2\n💰 Giá: %3 đ")
-        .arg(item.soLuong)
-        .arg(item.tenDichVu)
-        .arg(QString::number(item.thanhTien, 'f', 0)));
+    if (QMessageBox::question(this, "Xác nhận", "Xóa toàn bộ giỏ hàng?") == QMessageBox::Yes) {
+        cartItems.clear();
+        updateCartTable();
+    }
 }
 
-void ServiceOrderWidget::updateCart()
+void ServiceOrderWidget::onPaymentClicked()
+{
+    if (cartItems.isEmpty()) {
+        QMessageBox::warning(this, "Thông báo", "Giỏ hàng trống!");
+        return;
+    }
+    
+    // Create order
+    DonHangDichVu *order = system->taoDonHangDichVu(selectedCustomer);
+    if (!order) {
+        QMessageBox::critical(this, "Lỗi", "Không thể tạo đơn hàng!");
+        return;
+    }
+    
+    // Add items and update stock
+    for (const CartItem &item : cartItems) {
+        DichVu *dv = system->timDichVu(item.maDichVu.toStdString());
+        if (dv) {
+            DichVuDat dvDat(dv, item.soLuong);
+            order->themDichVu(dvDat);
+            
+            // Update stock and sold count
+            int currentStock = dv->laySoLuongTon();
+            int currentSold = dv->laySoLuongBan();
+            
+            dv->datSoLuongTon(currentStock - item.soLuong);
+            dv->datSoLuongBan(currentSold + item.soLuong);
+        }
+    }
+    
+    // Calculate
+    order->tinhTongTien();
+    order->tinhGiamGia();
+    order->tinhThanhTien();
+    
+    if (!noteTextEdit->toPlainText().isEmpty()) {
+        order->setGhiChu(noteTextEdit->toPlainText().toStdString());
+    }
+    
+    // Confirm
+    QString msg = QString("Xác nhận thanh toán đơn hàng?\nTổng tiền: %1 đ")
+                    .arg(QString::number(order->getThanhTien(), 'f', 0));
+                    
+    if (QMessageBox::question(this, "Thanh toán", msg) == QMessageBox::Yes) {
+        order->setTrangThai(TrangThaiDonHang::HOAN_THANH);
+        
+        // Save system state (including updated stock)
+        system->luuHeThong("D:/PBL2-/Data/data.bin");
+        // Also save to CSV to persist changes
+        system->luuDichVuCSV("D:/PBL2-/Data/dichvu.csv");
+        
+        QMessageBox::information(this, "Thành công", "Thanh toán thành công!");
+        emit orderCreated(QString::fromStdString(order->getMaDonHang()));
+        
+        // Clear
+        cartItems.clear();
+        updateCartTable();
+        noteTextEdit->clear();
+    }
+}
+
+void ServiceOrderWidget::updateCartTable()
 {
     cartTable->setRowCount(0);
-
-    for (int i = 0; i < cartItems.size(); i++)
-    {
+    
+    for (int i = 0; i < cartItems.size(); i++) {
         const CartItem &item = cartItems[i];
         int row = cartTable->rowCount();
         cartTable->insertRow(row);
-        cartTable->setRowHeight(row, 55);
-
-        // Image - load from service with centered widget
+        cartTable->setRowHeight(row, 80); // Taller rows for cart look
+        
+        // 0. Image
         DichVu *service = system->timDichVu(item.maDichVu.toStdString());
-
         QWidget *imgContainer = new QWidget();
         QHBoxLayout *imgLayout = new QHBoxLayout(imgContainer);
-        imgLayout->setContentsMargins(5, 2, 5, 2);
+        imgLayout->setContentsMargins(5, 5, 5, 5);
         imgLayout->setAlignment(Qt::AlignCenter);
-
         QLabel *imgLabel = new QLabel();
-        imgLabel->setFixedSize(50, 50);
-        imgLabel->setAlignment(Qt::AlignCenter);
-        imgLabel->setScaledContents(false);
-
-        if (service)
-        {
-            std::string imgPath = service->layHinhAnh();
-            if (!imgPath.empty())
-            {
-                QString fullPath = "D:/QT_PBL2/Data/" + QString::fromStdString(imgPath);
-                if (QFile::exists(fullPath))
-                {
-                    QPixmap pixmap(fullPath);
-                    imgLabel->setPixmap(pixmap.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-                }
-                else
-                {
-                    imgLabel->setStyleSheet("background-color: #e5e7eb; border-radius: 3px; font-size: 20px;");
-                    imgLabel->setText("📦");
-                }
-            }
-            else
-            {
-                imgLabel->setStyleSheet("background-color: #e5e7eb; border-radius: 3px; font-size: 20px;");
+        imgLabel->setFixedSize(60, 60);
+        imgLabel->setScaledContents(true);
+        imgLabel->setStyleSheet("background-color: #f3f4f6; border-radius: 4px;");
+        
+        if (service && !service->layHinhAnh().empty()) {
+            QString fullPath = "D:/PBL2-/Data/" + QString::fromStdString(service->layHinhAnh());
+            if (QFile::exists(fullPath)) {
+                imgLabel->setPixmap(QPixmap(fullPath));
+            } else {
                 imgLabel->setText("📦");
+                imgLabel->setAlignment(Qt::AlignCenter);
             }
+        } else {
+            imgLabel->setText("📦");
+            imgLabel->setAlignment(Qt::AlignCenter);
         }
-        else
-        {
-            imgLabel->setStyleSheet("background-color: #e5e7eb; border-radius: 3px; font-size: 20px;");
-            imgLabel->setText("❌");
-        }
-
         imgLayout->addWidget(imgLabel);
         cartTable->setCellWidget(row, 0, imgContainer);
 
-        // Name
-        cartTable->setItem(row, 1, new QTableWidgetItem(item.tenDichVu));
+        // 1. Info (Name + Unit)
+        QWidget *infoWidget = new QWidget();
+        QVBoxLayout *infoLayout = new QVBoxLayout(infoWidget);
+        infoLayout->setContentsMargins(10, 5, 5, 5);
+        infoLayout->setSpacing(2);
+        infoLayout->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+        
+        QLabel *nameLabel = new QLabel(item.tenDichVu);
+        nameLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #1f2937;");
+        nameLabel->setWordWrap(true);
+        
+        QLabel *unitLabel = new QLabel("Đơn vị: " + item.donVi);
+        unitLabel->setStyleSheet("color: #6b7280; font-size: 12px;");
+        
+        infoLayout->addWidget(nameLabel);
+        infoLayout->addWidget(unitLabel);
+        cartTable->setCellWidget(row, 1, infoWidget);
 
-        // Unit
-        cartTable->setItem(row, 2, new QTableWidgetItem(item.donVi));
+        // 2. Price
+        QLabel *priceLabel = new QLabel(QString::number(item.donGia, 'f', 0) + " đ");
+        priceLabel->setAlignment(Qt::AlignCenter);
+        priceLabel->setStyleSheet("font-weight: 500; color: #374151;");
+        cartTable->setCellWidget(row, 2, priceLabel);
 
-        // Price
-        cartTable->setItem(row, 3, new QTableWidgetItem(QString::number(item.donGia, 'f', 0) + " đ"));
+        // 3. Quantity Control
+        QWidget *qtyWidget = new QWidget();
+        QHBoxLayout *qtyLayout = new QHBoxLayout(qtyWidget);
+        qtyLayout->setContentsMargins(5, 5, 5, 5);
+        qtyLayout->setSpacing(0);
+        qtyLayout->setAlignment(Qt::AlignCenter);
+        
+        QPushButton *minusBtn = new QPushButton("-");
+        minusBtn->setFixedSize(30, 30);
+        minusBtn->setCursor(Qt::PointingHandCursor);
+        minusBtn->setStyleSheet("QPushButton { border: 1px solid #d1d5db; border-top-left-radius: 4px; border-bottom-left-radius: 4px; background-color: #f3f4f6; color: #374151; font-weight: bold; font-size: 18px; } QPushButton:hover { background-color: #e5e7eb; }");
+        connect(minusBtn, &QPushButton::clicked, [this, i]() { onDecreaseQuantity(i); });
+        
+        QLabel *qtyLabel = new QLabel(QString::number(item.soLuong));
+        qtyLabel->setFixedSize(60, 30);
+        qtyLabel->setAlignment(Qt::AlignCenter);
+        qtyLabel->setStyleSheet("border-top: 1px solid #d1d5db; border-bottom: 1px solid #d1d5db; background-color: white; color: #1f2937; font-weight: bold; font-size: 14px;");
+        
+        QPushButton *plusBtn = new QPushButton("+");
+        plusBtn->setFixedSize(30, 30);
+        plusBtn->setCursor(Qt::PointingHandCursor);
+        plusBtn->setStyleSheet("QPushButton { border: 1px solid #d1d5db; border-top-right-radius: 4px; border-bottom-right-radius: 4px; background-color: #f3f4f6; color: #374151; font-weight: bold; font-size: 18px; } QPushButton:hover { background-color: #e5e7eb; }");
+        connect(plusBtn, &QPushButton::clicked, [this, i]() { onIncreaseQuantity(i); });
+        
+        qtyLayout->addWidget(minusBtn);
+        qtyLayout->addWidget(qtyLabel);
+        qtyLayout->addWidget(plusBtn);
+        cartTable->setCellWidget(row, 3, qtyWidget);
 
-        // Quantity
-        cartTable->setItem(row, 4, new QTableWidgetItem(QString::number(item.soLuong)));
-
-        // Delete button - centered red box with X text only
-        QWidget *deleteContainer = new QWidget();
-        QHBoxLayout *deleteLayout = new QHBoxLayout(deleteContainer);
-        deleteLayout->setContentsMargins(5, 2, 5, 2);
-        deleteLayout->setAlignment(Qt::AlignCenter);
-
-        QPushButton *deleteBtn = new QPushButton("X");
-        deleteBtn->setFixedSize(35, 30);
-        deleteBtn->setStyleSheet(R"(
-            QPushButton {
-                background-color: #DC3545;
-                color: #FFFFFF;
-                border: none;
-                border-radius: 4px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #C82333;
-            }
-        )");
-        deleteBtn->setCursor(Qt::PointingHandCursor);
-        connect(deleteBtn, &QPushButton::clicked, [this, i]()
-                { onRemoveFromCartClicked(i); });
-
-        deleteLayout->addWidget(deleteBtn);
-        cartTable->setCellWidget(row, 5, deleteContainer);
+        // 4. Total
+        QLabel *totalLabel = new QLabel(QString::number(item.thanhTien, 'f', 0) + " đ");
+        totalLabel->setAlignment(Qt::AlignCenter);
+        totalLabel->setStyleSheet("font-weight: bold; color: #16a34a; font-size: 14px;");
+        cartTable->setCellWidget(row, 4, totalLabel);
+        
+        // 5. Delete
+        QWidget *delContainer = new QWidget();
+        QHBoxLayout *delLayout = new QHBoxLayout(delContainer);
+        delLayout->setContentsMargins(0,0,0,0);
+        delLayout->setAlignment(Qt::AlignCenter);
+        
+        QPushButton *delBtn = new QPushButton("🗑️");
+        delBtn->setFixedSize(30, 30);
+        delBtn->setCursor(Qt::PointingHandCursor);
+        delBtn->setToolTip("Xóa khỏi giỏ hàng");
+        delBtn->setStyleSheet("QPushButton { border: none; background-color: transparent; color: #ef4444; font-size: 16px; } QPushButton:hover { background-color: #fee2e2; border-radius: 4px; }");
+        connect(delBtn, &QPushButton::clicked, [this, i]() {
+            onRemoveFromCartClicked(i);
+        });
+        
+        delLayout->addWidget(delBtn);
+        cartTable->setCellWidget(row, 5, delContainer);
     }
-
+    
     updateTotals();
 }
 
-void ServiceOrderWidget::onRemoveFromCartClicked(int index)
+void ServiceOrderWidget::onIncreaseQuantity(int row)
 {
-    if (index >= 0 && index < cartItems.size())
-    {
-        cartItems.removeAt(index);
-        updateCart();
+    if (row >= 0 && row < cartItems.size()) {
+        cartItems[row].soLuong++;
+        cartItems[row].thanhTien = cartItems[row].donGia * cartItems[row].soLuong;
+        updateCartTable();
+    }
+}
+
+void ServiceOrderWidget::onDecreaseQuantity(int row)
+{
+    if (row >= 0 && row < cartItems.size()) {
+        if (cartItems[row].soLuong > 1) {
+            cartItems[row].soLuong--;
+            cartItems[row].thanhTien = cartItems[row].donGia * cartItems[row].soLuong;
+            updateCartTable();
+        } else {
+            // Ask to remove if quantity becomes 0
+            onRemoveFromCartClicked(row);
+        }
     }
 }
 
 void ServiceOrderWidget::updateTotals()
 {
     totalPrice = 0;
-    for (const CartItem &item : cartItems)
-    {
+    for (const CartItem &item : cartItems) {
         totalPrice += item.thanhTien;
     }
-
-    // Calculate discount (TODO: based on membership)
-    discount = 0;
-    if (selectedCustomer != nullptr)
-    {
-        // TODO: Implement discount logic based on membership tier
-        // For now, no discount
-        discount = 0;
-    }
-
+    
+    discount = 0; // Implement discount logic if needed
     finalAmount = totalPrice - discount;
-
-    // Update labels
-    cartTotalLabel->setText(QString("Tổng: %1 đ")
-                                .arg(QString::number(totalPrice, 'f', 0)));
-
-    totalPriceLabel->setText(QString("Tổng tiền: %1 đ")
-                                 .arg(QString::number(totalPrice, 'f', 0)));
-
-    discountLabel->setText(QString("Giảm giá: %1 đ")
-                               .arg(QString::number(discount, 'f', 0)));
-
-    finalAmountLabel->setText(QString("Thành tiền: %1 đ")
-                                  .arg(QString::number(finalAmount, 'f', 0)));
-}
-
-void ServiceOrderWidget::onSearchTextChanged(const QString &text)
-{
-    filteredServices.clear();
-
-    QString searchLower = text.toLower();
-    LoaiDichVu selectedCategory = LoaiDichVu::DO_UONG; // Default
-    QString categoryData = categoryCombo->currentData().toString();
-
-    for (DichVu *service : allServices)
-    {
-        // Filter by search text
-        QString name = QString::fromStdString(service->layTenDichVu()).toLower();
-        bool matchSearch = searchLower.isEmpty() || name.contains(searchLower);
-
-        // Filter by category
-        bool matchCategory = (categoryData == "ALL");
-        if (!matchCategory)
-        {
-            if (categoryData == "DO_UONG")
-                matchCategory = (service->layLoaiDichVu() == LoaiDichVu::DO_UONG);
-            else if (categoryData == "THIET_BI")
-                matchCategory = (service->layLoaiDichVu() == LoaiDichVu::THIET_BI);
-            else if (categoryData == "KHAC")
-                matchCategory = (service->layLoaiDichVu() == LoaiDichVu::KHAC);
-        }
-
-        if (matchSearch && matchCategory)
-        {
-            filteredServices.append(service);
-        }
-    }
-
-    createServiceCards();
-}
-
-void ServiceOrderWidget::onCategoryFilterChanged(int index)
-{
-    Q_UNUSED(index);
-    onSearchTextChanged(searchEdit->text());
-}
-
-void ServiceOrderWidget::onCustomerSelected(int index)
-{
-    if (index <= 0)
-        return;
-
-    QString phone = customerComboBox->itemData(index).toString();
-    if (phone.isEmpty())
-        return;
-
-    KhachHang *customer = system->timKhachHangTheoSDT(phone.toStdString());
-    if (customer)
-    {
-        selectCustomer(customer);
-    }
-}
-
-void ServiceOrderWidget::onAddNewCustomerClicked()
-{
-    try
-    {
-        qDebug() << "Opening AddCustomerDialog...";
-        AddCustomerDialog dialog(this);
-
-        if (dialog.exec() == QDialog::Accepted)
-        {
-            qDebug() << "Dialog accepted, getting new customer...";
-            KhachHang *newCustomer = dialog.getNewCustomer();
-
-            if (!newCustomer)
-            {
-                qDebug() << "Error: newCustomer is null";
-                QMessageBox::warning(this, "Lỗi", "Không thể tạo khách hàng mới!");
-                return;
-            }
-
-            qDebug() << "Adding customer:" << QString::fromStdString(newCustomer->layHoTen());
-
-            if (system->themKhachHang(newCustomer))
-            {
-                qDebug() << "Customer added successfully, saving to CSV...";
-                system->luuHeThong("D:/QT_PBL2/Data/data.bin");
-
-                qDebug() << "Reloading customer list...";
-                loadCustomers();
-
-                qDebug() << "Auto-selecting new customer...";
-                // Auto select new customer by phone
-                QString newPhone = QString::fromStdString(newCustomer->laySoDienThoai());
-                for (int i = 1; i < customerComboBox->count(); i++)
-                {
-                    QString phone = customerComboBox->itemData(i).toString();
-                    if (phone == newPhone)
-                    {
-                        customerComboBox->blockSignals(true);
-                        customerComboBox->setCurrentIndex(i);
-                        customerComboBox->blockSignals(false);
-
-                        // Manually trigger selection
-                        selectCustomer(newCustomer);
-                        break;
-                    }
-                }
-
-                QMessageBox::information(this, "Thành công",
-                                         "Đã thêm khách hàng: " + QString::fromStdString(newCustomer->layHoTen()));
-            }
-            else
-            {
-                qDebug() << "Failed to add customer to system";
-                QMessageBox::warning(this, "Lỗi", "Không thể thêm khách hàng vào hệ thống!");
-            }
-        }
-        else
-        {
-            qDebug() << "Dialog cancelled";
-        }
-    }
-    catch (const std::exception &e)
-    {
-        qDebug() << "Error in onAddNewCustomerClicked:" << e.what();
-        QMessageBox::critical(this, "Lỗi", QString("Lỗi thêm khách hàng: %1").arg(e.what()));
-    }
-    catch (...)
-    {
-        qDebug() << "Unknown error in onAddNewCustomerClicked";
-        QMessageBox::critical(this, "Lỗi", "Lỗi không xác định khi thêm khách hàng!");
-    }
-}
-
-void ServiceOrderWidget::onPaymentClicked()
-{
-    // Validate cart
-    if (cartItems.isEmpty())
-    {
-        QMessageBox::warning(this, "Cảnh báo", "Giỏ hàng trống!\nVui lòng chọn dịch vụ.");
-        return;
-    }
-
-    // Create order
-    DonHangDichVu *order = system->taoDonHangDichVu(selectedCustomer);
-    if (!order)
-    {
-        QMessageBox::critical(this, "Lỗi", "Không thể tạo đơn hàng!");
-        return;
-    }
-
-    // Add services to order
-    for (const CartItem &item : cartItems)
-    {
-        DichVu *dv = system->timDichVu(item.maDichVu.toStdString());
-        if (dv)
-        {
-            DichVuDat dvDat(dv, item.soLuong);
-            order->themDichVu(dvDat);
-        }
-    }
-
-    // Calculate totals
-    order->tinhTongTien();
-    order->tinhGiamGia();
-    order->tinhThanhTien();
-
-    // Set note
-    if (!noteTextEdit->toPlainText().isEmpty())
-    {
-        order->setGhiChu(noteTextEdit->toPlainText().toStdString());
-    }
-
-    // Save immediately after creating order (critical data)
-    system->luuHeThong("D:/QT_PBL2/Data/data.bin");
-
-    // Confirm payment
-    QString msg = QString(
-                      "💳 XÁC NHẬN THANH TOÁN\n\n"
-                      "📋 Mã đơn: %1\n"
-                      "👤 Khách hàng: %2\n"
-                      "📦 Số sản phẩm: %3\n"
-                      "💰 Tổng tiền: %4 đ\n"
-                      "🎁 Giảm giá: %5 đ\n"
-                      "💳 Thành tiền: %6 đ\n\n"
-                      "Xác nhận thanh toán?")
-                      .arg(QString::fromStdString(order->getMaDonHang()))
-                      .arg(QString::fromStdString(order->getKhachHang() ? order->getKhachHang()->layHoTen() : "Khách vãng lai"))
-                      .arg(order->getDanhSachDichVu().size())
-                      .arg(QString::number(order->getTongTien(), 'f', 0))
-                      .arg(QString::number(order->getGiamGia(), 'f', 0))
-                      .arg(QString::number(order->getThanhTien(), 'f', 0));
-
-    int ret = QMessageBox::question(this, "Xác nhận thanh toán", msg);
-
-    if (ret == QMessageBox::Yes)
-    {
-        order->setTrangThai(TrangThaiDonHang::HOAN_THANH);
-
-        // Save immediately (critical data)
-        system->luuHeThong("D:/QT_PBL2/Data/data.bin");
-
-        // Detailed success message
-        QString successMsg = QString(
-            "✅ THANH TOÁN THÀNH CÔNG\n\n"
-            "📋 Mã đơn hàng: %1\n"
-            "👤 Khách hàng: %2\n"
-            "📦 Số lượng sản phẩm: %3\n"
-            "💰 Tổng tiền: %4 đ\n"
-            "🎁 Giảm giá: %5 đ\n"
-            "💳 Thanh toán: %6 đ\n\n"
-            "📅 Thời gian: %7\n\n"
-            "Cảm ơn quý khách đã sử dụng dịch vụ!")
-            .arg(QString::fromStdString(order->getMaDonHang()))
-            .arg(QString::fromStdString(order->getKhachHang() ? order->getKhachHang()->layHoTen() : "Khách vãng lai"))
-            .arg(order->getDanhSachDichVu().size())
-            .arg(QString::number(order->getTongTien(), 'f', 0))
-            .arg(QString::number(order->getGiamGia(), 'f', 0))
-            .arg(QString::number(order->getThanhTien(), 'f', 0))
-            .arg(QString::fromStdString(order->getNgayTao().toString()));
-        
-        QMessageBox::information(this, "✅ Thanh toán thành công", successMsg);
-
-        emit orderCreated(QString::fromStdString(order->getMaDonHang()));
-
-        // Clear cart
-        clearCart();
-    }
-}
-
-void ServiceOrderWidget::onClearCartClicked()
-{
-    if (cartItems.isEmpty())
-        return;
-
-    int ret = QMessageBox::question(this, "Xác nhận",
-                                    "Bạn có chắc muốn xóa toàn bộ giỏ hàng?");
-
-    if (ret == QMessageBox::Yes)
-    {
-        clearCart();
-    }
-}
-
-void ServiceOrderWidget::clearCart()
-{
-    cartItems.clear();
-    selectedCustomer = nullptr;
-    phoneLineEdit->clear();
-    nameLineEdit->clear();
-    noteTextEdit->clear();
-    customerNameLabel->setText("(Chưa chọn)");
-    phoneLabel->setText("-");
-    membershipLabel->setText("-");
-    updateCart();
-}
-
-void ServiceOrderWidget::onExportClicked()
-{
-    QMessageBox::information(this, "Xuất hóa đơn",
-                             "Tính năng xuất hóa đơn PDF sẽ được thêm sau.");
-}
-
-void ServiceOrderWidget::onReloadClicked()
-{
-    loadServices();
-    QMessageBox::information(this, "Thông báo", "Đã tải lại danh sách dịch vụ!");
-}
-
-void ServiceOrderWidget::selectCustomer(KhachHang *customer)
-{
-    if (!customer)
-    {
-        return;
-    }
-
-    selectedCustomer = customer;
-
-    // Fill customer info with safety checks
-    std::string phone = customer->laySoDienThoai();
-    std::string name = customer->layHoTen();
-
-    if (!phone.empty())
-    {
-        phoneLineEdit->setText(QString::fromStdString(phone));
-    }
-
-    if (!name.empty())
-    {
-        nameLineEdit->setText(QString::fromStdString(name));
-    }
-
-    // Update payment info display
-    updateCustomerInfo();
-
-    // Recalculate totals with discount
-    updateTotals();
+    
+    totalPriceLabel->setText(QString("%1 đ").arg(QString::number(totalPrice, 'f', 0)));
+    discountLabel->setText(QString("%1 đ").arg(QString::number(discount, 'f', 0)));
+    finalAmountLabel->setText(QString("%1 đ").arg(QString::number(finalAmount, 'f', 0)));
 }
 
 void ServiceOrderWidget::updateCustomerInfo()
 {
-    if (!selectedCustomer)
-    {
-        customerNameLabel->setText("(Chưa chọn)");
-        phoneLabel->setText("-");
-        membershipLabel->setText("-");
-        return;
+    if (selectedCustomer) {
+        customerNameLabel->setText(QString::fromStdString(selectedCustomer->layHoTen()));
+        membershipLabel->setText(QString::fromStdString(selectedCustomer->layTenHang()));
+    } else {
+        customerNameLabel->setText("---");
+        membershipLabel->setText("---");
     }
-
-    std::string name = selectedCustomer->layHoTen();
-    std::string phone = selectedCustomer->laySoDienThoai();
-    std::string rank = selectedCustomer->layTenHang();
-
-    customerNameLabel->setText(name.empty() ? "(Không rõ)" : QString::fromStdString(name));
-    phoneLabel->setText(phone.empty() ? "-" : QString::fromStdString(phone));
-    membershipLabel->setText(rank.empty() ? "-" : QString::fromStdString(rank));
 }

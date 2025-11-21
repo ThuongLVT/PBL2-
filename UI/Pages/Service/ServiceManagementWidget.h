@@ -90,6 +90,7 @@ private:
     QComboBox *categoryEdit;
     QLineEdit *priceEdit;
     QLineEdit *unitEdit;
+    QLineEdit *stockEdit; // Added stock edit field
     QCheckBox *availableCheckBox;
     QTextEdit *descriptionEdit;
 

@@ -19,10 +19,10 @@ if not exist "build\bin\FootballFieldManager.exe" (
 )
 
 REM Check if Data folder exists
-if not exist "D:\QT_PBL2\Data" (
+if not exist "D:\PBL2-\Data" (
     echo WARNING: Data folder not found!
     echo Creating Data directory...
-    mkdir "D:\QT_PBL2\Data"
+    mkdir "D:\PBL2-\Data"
 )
 
 REM Run the application
@@ -31,5 +31,5 @@ echo.
 start "" "build\bin\FootballFieldManager.exe"
 
 echo Application launched!
-echo Data location: D:\QT_PBL2\Data
+echo Data location: D:\PBL2-\Data
 echo.

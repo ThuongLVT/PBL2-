@@ -216,7 +216,7 @@ bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
     {
         const auto &row = rows[i];
 
-        // Parse CSV line: MaDichVu,TenDichVu,LoaiDichVu,DonGia,DonVi,SoLuongBan,TrangThai,HinhAnh,MoTa
+        // Parse CSV line: MaDichVu,TenDichVu,LoaiDichVu,DonGia,DonVi,SoLuongBan,TrangThai,HinhAnh,MoTa,SoLuongTon
         if (row.size() < 9)
         {
             cerr << "Invalid CSV row at line " << (i + 2) << ": insufficient columns" << endl;
@@ -234,6 +234,11 @@ bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
             bool trangThai = (row[6] == "1");
             string hinhAnh = row[7];
             string moTa = row[8];
+            int soLuongTon = 50; // Default
+            
+            if (row.size() >= 10) {
+                soLuongTon = stoi(row[9]);
+            }
 
             // Convert loaiStr to LoaiDichVu
             LoaiDichVu loai = LoaiDichVu::KHAC;
@@ -251,6 +256,7 @@ bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
             dv->datConHang(trangThai);
             dv->datHinhAnh(hinhAnh);
             dv->datMoTa(moTa);
+            dv->datSoLuongTon(soLuongTon);
 
             // Don't auto-save when loading from CSV (avoid infinite loop)
             danhSachDichVu.push_back(dv);
@@ -269,7 +275,7 @@ bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
 
 bool QuanLyDichVu::luuDuLieuRaCSV(const std::string &filePath) const
 {
-    vector<string> headers = {"MaDichVu", "TenDichVu", "LoaiDichVu", "DonGia", "DonVi", "SoLuongBan", "TrangThai", "HinhAnh", "MoTa"};
+    vector<string> headers = {"MaDichVu", "TenDichVu", "LoaiDichVu", "DonGia", "DonVi", "SoLuongBan", "TrangThai", "HinhAnh", "MoTa", "SoLuongTon"};
     vector<vector<string>> rows;
 
     for (int i = 0; i < danhSachDichVu.size(); i++)
@@ -304,6 +310,7 @@ bool QuanLyDichVu::luuDuLieuRaCSV(const std::string &filePath) const
         row.push_back(dv->coConHang() ? "1" : "0");
         row.push_back(dv->layHinhAnh());
         row.push_back(dv->layMoTa());
+        row.push_back(to_string(dv->laySoLuongTon()));
 
         rows.push_back(row);
     }

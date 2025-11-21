@@ -271,7 +271,7 @@ void AccountPage::onEditPersonalInfoClicked()
         }
 
         // Save to binary file
-        if (hethong->luuHeThong("D:/QT_PBL2/Data/data.bin"))
+        if (hethong->luuHeThong("D:/PBL2-/Data/data.bin"))
         {
             QMessageBox::information(this, "Thành công", "Đã cập nhật thông tin cá nhân!");
             loadUserData(); // Refresh display
@@ -307,7 +307,7 @@ void AccountPage::onChangePasswordClicked()
 
         // Save to file
         HeThongQuanLy *hethong = HeThongQuanLy::getInstance();
-        if (hethong->luuHeThong("D:/QT_PBL2/Data/data.bin"))
+        if (hethong->luuHeThong("D:/PBL2-/Data/data.bin"))
         {
             QMessageBox::information(this, "Thành công", "Đã đổi mật khẩu thành công!");
             loadUserData(); // Refresh display with new password

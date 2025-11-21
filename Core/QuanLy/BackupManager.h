@@ -38,9 +38,9 @@ public:
 
     /**
      * @brief Constructor - khởi tạo với thư mục backup
-     * @param thuMuc Thư mục backup (mặc định: "D:/QT_PBL2/Data/backup/")
+     * @param thuMuc Thư mục backup (mặc định: "D:/PBL2-/Data/backup/")
      */
-    BackupManager(const std::string &thuMuc = "D:/QT_PBL2/Data/backup/");
+    BackupManager(const std::string &thuMuc = "D:/PBL2-/Data/backup/");
 
     /**
      * @brief Destructor

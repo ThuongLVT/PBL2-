@@ -578,7 +578,7 @@ void CustomerManagementPage::onSaveCustomerClicked()
         currentCustomer->datHoTen(name.toStdString());
         currentCustomer->datSoDienThoai(phone.toStdString());
 
-        system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+        system->luuHeThong("D:/PBL2-/Data/data.bin");
 
         QMessageBox::information(this, "Thành công",
                                  "Cập nhật thông tin khách hàng thành công!");
@@ -612,7 +612,7 @@ void CustomerManagementPage::onSaveCustomerClicked()
 
         if (added)
         {
-            bool saved = system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+            bool saved = system->luuHeThong("D:/PBL2-/Data/data.bin");
             qDebug() << "Data saved to CSV:" << saved;
 
             QMessageBox::information(this, "Thành công",
@@ -649,7 +649,7 @@ void CustomerManagementPage::onDeleteCustomerClicked()
         std::string maKH = currentCustomer->layMaKhachHang();
         if (system->xoaKhachHang(maKH))
         {
-            system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+            system->luuHeThong("D:/PBL2-/Data/data.bin");
             QMessageBox::information(this, "Thành công",
                                      "Xoá khách hàng thành công!");
             clearCustomerForm();

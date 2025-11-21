@@ -1037,7 +1037,7 @@ void TimelineTab::onSaveClicked()
             // Save system immediately to persist customer
             try
             {
-                system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+                system->luuHeThong("D:/PBL2-/Data/data.bin");
             }
             catch (...)
             {
@@ -1128,7 +1128,7 @@ void TimelineTab::onSaveClicked()
                 // ===== SAVE DATA TO FILE =====
                 try
                 {
-                    system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+                    system->luuHeThong("D:/PBL2-/Data/data.bin");
                 }
                 catch (...)
                 {
@@ -1222,7 +1222,7 @@ void TimelineTab::onDeleteClicked()
                     // ===== SAVE DATA TO FILE =====
                     try
                     {
-                        system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+                        system->luuHeThong("D:/PBL2-/Data/data.bin");
                     }
                     catch (...)
                     {
@@ -1383,7 +1383,7 @@ void TimelineTab::onAddCustomerClicked()
                 qlkh->themKhachHang(newCustomer);
                 
                 // Save to binary file
-                HeThongQuanLy::getInstance()->luuHeThong("D:/QT_PBL2/Data/data.bin");
+                HeThongQuanLy::getInstance()->luuHeThong("D:/PBL2-/Data/data.bin");
                 
                 QMessageBox::information(dialog, "Thành công", "Đã thêm khách hàng!");
                 

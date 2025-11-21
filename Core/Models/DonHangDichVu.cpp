@@ -4,10 +4,13 @@
  */
 
 #include "DonHangDichVu.h"
+#include "../QuanLy/QuanLyKhachHang.h"
+#include "../QuanLy/QuanLyDichVu.h"
 #include <iostream>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
+#include "../Utils/FileHelper.h"
 
 using namespace std;
 
@@ -83,6 +86,7 @@ void DonHangDichVu::setMaDonHang(const std::string &ma) { maDonHang = ma; }
 void DonHangDichVu::setKhachHang(KhachHang *kh) { khachHang = kh; }
 void DonHangDichVu::setTrangThai(TrangThaiDonHang tt) { trangThai = tt; }
 void DonHangDichVu::setGhiChu(const std::string &gc) { ghiChu = gc; }
+void DonHangDichVu::setNgayTao(const NgayGio &nt) { ngayTao = nt; }
 
 // ========== METHODS ==========
 
@@ -181,6 +185,7 @@ void DonHangDichVu::hienThi() const
     }
 }
 
+// File I/O
 void DonHangDichVu::ghiFile(FILE *f) const
 {
     if (f == nullptr)
@@ -276,6 +281,86 @@ void DonHangDichVu::docFile(FILE *f)
     buffer[len] = '\0';
     ghiChu = string(buffer);
     delete[] buffer;
+}
+
+// Stream I/O
+void DonHangDichVu::ghiFile(std::ofstream &file) const
+{
+    if (!file.is_open()) return;
+
+    // Ghi mã đơn hàng
+    FileHelper::ghiString(file, maDonHang);
+
+    // Ghi mã khách hàng
+    std::string maKH = getMaKhachHang();
+    FileHelper::ghiString(file, maKH);
+
+    // Ghi số lượng dịch vụ
+    int soLuongDV = danhSachDichVu.size();
+    file.write(reinterpret_cast<const char *>(&soLuongDV), sizeof(soLuongDV));
+
+    // Ghi từng dịch vụ
+    for (int i = 0; i < soLuongDV; i++)
+    {
+        danhSachDichVu[i].ghiFile(file);
+    }
+
+    // Ghi các trường khác
+    file.write(reinterpret_cast<const char *>(&tongTien), sizeof(tongTien));
+    file.write(reinterpret_cast<const char *>(&giamGia), sizeof(giamGia));
+    file.write(reinterpret_cast<const char *>(&thanhTien), sizeof(thanhTien));
+    file.write(reinterpret_cast<const char *>(&trangThai), sizeof(trangThai));
+
+    // Ghi ngày tạo
+    ngayTao.ghiFile(file);
+
+    // Ghi ghi chú
+    FileHelper::ghiString(file, ghiChu);
+}
+
+void DonHangDichVu::docFile(std::ifstream &file, QuanLyKhachHang *qlkh, QuanLyDichVu *qldv)
+{
+    if (!file.is_open()) return;
+
+    // Đọc mã đơn hàng
+    FileHelper::docString(file, maDonHang);
+
+    // Đọc mã khách hàng
+    std::string maKH;
+    FileHelper::docString(file, maKH);
+    if (qlkh != nullptr && maKH != "GUEST")
+    {
+        khachHang = qlkh->timKhachHang(maKH);
+    }
+    else
+    {
+        khachHang = nullptr;
+    }
+
+    // Đọc số lượng dịch vụ
+    int soLuongDV;
+    file.read(reinterpret_cast<char *>(&soLuongDV), sizeof(soLuongDV));
+
+    // Đọc từng dịch vụ
+    danhSachDichVu.clear();
+    for (int i = 0; i < soLuongDV; i++)
+    {
+        DichVuDat dv;
+        dv.docFile(file, qldv);
+        danhSachDichVu.push_back(dv);
+    }
+
+    // Đọc các trường khác
+    file.read(reinterpret_cast<char *>(&tongTien), sizeof(tongTien));
+    file.read(reinterpret_cast<char *>(&giamGia), sizeof(giamGia));
+    file.read(reinterpret_cast<char *>(&thanhTien), sizeof(thanhTien));
+    file.read(reinterpret_cast<char *>(&trangThai), sizeof(trangThai));
+
+    // Đọc ngày tạo
+    ngayTao.docFile(file);
+
+    // Đọc ghi chú
+    FileHelper::docString(file, ghiChu);
 }
 
 // ========== HELPER ==========

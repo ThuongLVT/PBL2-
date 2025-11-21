@@ -10,7 +10,7 @@ using namespace std;
 
 // Constructor mặc định
 FileManager::FileManager()
-    : duongDanData("D:/QT_PBL2/Data/"), duongDanBackup("D:/QT_PBL2/Data/backup/")
+    : duongDanData("D:/PBL2-/Data/"), duongDanBackup("D:/PBL2-/Data/backup/")
 {
     // Tạo thư mục nếu chưa tồn tại
     taoThuMuc(duongDanData);

@@ -16,6 +16,11 @@
 #include "../CauTrucDuLieu/MangDong.h"
 #include "../CauTrucDuLieu/NgayGio.h"
 #include <string>
+#include <fstream>
+
+// Forward declarations
+class QuanLyKhachHang;
+class QuanLyDichVu;
 
 /**
  * @enum TrangThaiDonHang
@@ -173,6 +178,12 @@ public:
      */
     void setGhiChu(const std::string &gc);
 
+    /**
+     * @brief Đặt ngày tạo (dùng cho load dữ liệu)
+     * @param nt Ngày tạo mới
+     */
+    void setNgayTao(const NgayGio &nt);
+
     // ========== METHODS ==========
     
     /**
@@ -226,6 +237,10 @@ public:
      * @param f File pointer
      */
     void docFile(FILE *f);
+
+    // Stream I/O
+    void ghiFile(std::ofstream &file) const;
+    void docFile(std::ifstream &file, QuanLyKhachHang *qlkh, QuanLyDichVu *qldv);
 
     // ========== HELPER ==========
     

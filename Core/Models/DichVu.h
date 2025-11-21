@@ -48,6 +48,7 @@ protected:
     bool conHang;          ///< Trạng thái còn hàng
     std::string donVi;       ///< Đơn vị (Lon, Chai, Cái, Đôi, Bộ...)
     int soLuongBan;        ///< Số lượng đã bán
+    int soLuongTon;        ///< Số lượng tồn kho
     std::string hinhAnh;     ///< Đường dẫn file hình ảnh
 
 public:
@@ -136,6 +137,12 @@ public:
     int laySoLuongBan() const;
 
     /**
+     * @brief Lấy số lượng tồn kho
+     * @return Số lượng tồn kho
+     */
+    int laySoLuongTon() const;
+
+    /**
      * @brief Lấy đường dẫn hình ảnh
      * @return Đường dẫn hình ảnh
      */
@@ -178,6 +185,12 @@ public:
      * @param sl Số lượng đã bán
      */
     void datSoLuongBan(int sl);
+
+    /**
+     * @brief Đặt số lượng tồn kho
+     * @param sl Số lượng tồn kho
+     */
+    void datSoLuongTon(int sl);
 
     /**
      * @brief Đặt đường dẫn hình ảnh

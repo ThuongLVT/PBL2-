@@ -551,7 +551,8 @@ void BookingDetailDialog::onCancelBookingClicked()
 
         currentBooking->huyBooking(refundDeposit, reason.toStdString());
 
-        if (system->luuHeThong("D:/QT_PBL2/Data/booking.dat"))
+        // Lưu hệ thống
+        if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
         {
             QMessageBox::information(this, "Thành công", "Đã hủy lịch đặt sân!");
             accept();
@@ -580,7 +581,7 @@ void BookingDetailDialog::onPaymentClicked()
     {
         currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
 
-        if (system->luuHeThong("D:/QT_PBL2/Data/booking.dat"))
+        if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
         {
             QMessageBox::information(this, "Thành công", "Thanh toán thành công!");
             accept();

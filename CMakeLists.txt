@@ -184,6 +184,7 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/FieldDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/MaintenanceDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/AddCustomerDialog.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Dialogs/ServiceSelectionDialog.cpp
 )
 
 set(UI_HEADERS
@@ -211,6 +212,7 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/FieldDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/MaintenanceDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/AddCustomerDialog.h
+    ${CMAKE_SOURCE_DIR}/UI/Dialogs/ServiceSelectionDialog.h
 )
 
 # Resources (Week 1 Day 1)

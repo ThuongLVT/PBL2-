@@ -2,6 +2,7 @@
 #include "Core/QuanLy/HeThongQuanLy.h"
 #include <QDateTime>
 #include <QHeaderView>
+#include <QDebug>
 
 InvoicePage::InvoicePage(QWidget *parent)
     : QWidget(parent)
@@ -154,6 +155,7 @@ void InvoicePage::loadServiceData()
 {
     m_serviceTable->setRowCount(0);
     auto orders = HeThongQuanLy::getInstance()->layQuanLyDonHangDichVu()->layDanhSachDonHang();
+    qDebug() << "[DEBUG] InvoicePage::loadServiceData - Found" << orders.size() << "orders";
 
     for (int i = 0; i < orders.size(); ++i)
     {

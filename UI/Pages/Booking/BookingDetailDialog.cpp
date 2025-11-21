@@ -560,7 +560,7 @@ void BookingDetailDialog::onSaveClicked()
     currentBooking->setGhiChu(noteEdit->toPlainText().toStdString());
 
     // Save to system
-    if (system->luuHeThong("D:/QT_PBL2/Data/booking.dat"))
+    if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
     {
         QMessageBox::information(this, "Thành công", "Đã cập nhật thông tin đặt sân!");
         accept(); // Close dialog with success
@@ -595,7 +595,7 @@ void BookingDetailDialog::onCancelBookingClicked()
         currentBooking->huyBooking(refundDeposit, reason.toStdString());
 
         // Lưu hệ thống
-        if (system->luuHeThong("D:/QT_PBL2/Data/booking.dat"))
+        if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
         {
             QString resultMsg = "✅ Đã hủy lịch đặt sân!\n\n";
             if (refundDeposit)
@@ -636,7 +636,7 @@ void BookingDetailDialog::onPaymentClicked()
     {
         currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
 
-        if (system->luuHeThong("D:/QT_PBL2/Data/booking.dat"))
+        if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
         {
             QMessageBox::information(this, "Thành công",
                                      "Thanh toán thành công!\n\nĐơn đặt sân đã hoàn thành.");

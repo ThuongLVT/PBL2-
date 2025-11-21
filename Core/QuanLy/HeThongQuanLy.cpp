@@ -9,6 +9,7 @@
 
 #include "HeThongQuanLy.h"
 #include "../Utils/CSVHelper.h"
+#include "../Utils/CSVManager.h" // Add this include
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -367,12 +368,15 @@ bool HeThongQuanLy::luuHeThong(const string &tenFile)
     // Save each manager to separate CSV files
     bool success = true;
 
-    success &= luuKhachHangCSV("khachhang.csv");
-    success &= luuSanCSV("san.csv");
-    success &= luuDichVuCSV("dichvu.csv");
-    success &= luuDatSanCSV("datsan.csv");
-    success &= quanLyDonHangDichVu->luuCSV("donhangdichvu.csv");
-    success &= luuQuanTriVienCSV("admin.csv");
+    if (!luuKhachHangCSV("khachhang.csv")) { cout << "Failed to save khachhang.csv" << endl; success = false; }
+    if (!luuSanCSV("san.csv")) { cout << "Failed to save san.csv" << endl; success = false; }
+    if (!luuDichVuCSV("dichvu.csv")) { cout << "Failed to save dichvu.csv" << endl; success = false; }
+    if (!luuDatSanCSV("datsan.csv")) { cout << "Failed to save datsan.csv" << endl; success = false; }
+    
+    // Use CSV for DonHangDichVu
+    if (!quanLyDonHangDichVu->luuCSV("donhangdichvu.csv")) { cout << "Failed to save donhangdichvu.csv" << endl; success = false; }
+
+    if (!luuQuanTriVienCSV("admin.csv")) { cout << "Failed to save admin.csv" << endl; success = false; }
 
     if (success)
     {
@@ -397,7 +401,10 @@ bool HeThongQuanLy::docHeThong(const string &tenFile)
     success &= docDichVuCSV("dichvu.csv");
     success &= docNhanVienCSV("nhanvien.csv");
     success &= docDatSanCSV("datsan.csv");
+    
+    // Use CSV for DonHangDichVu
     success &= quanLyDonHangDichVu->docCSV("donhangdichvu.csv");
+
     success &= docQuanTriVienCSV("admin.csv");
 
     if (success)

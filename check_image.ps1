@@ -1,5 +1,5 @@
 Add-Type -AssemblyName System.Drawing
-$imgPath = "D:\QT_PBL2\UI\Resources\images\peakpx.jpg"
+$imgPath = "D:\PBL2-\UI\Resources\images\peakpx.jpg"
 $img = [System.Drawing.Image]::FromFile($imgPath)
 $file = Get-Item $imgPath
 

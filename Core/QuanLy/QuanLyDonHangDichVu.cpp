@@ -4,6 +4,7 @@
  */
 
 #include "QuanLyDonHangDichVu.h"
+#include "HeThongQuanLy.h" // Add this include
 #include "../Utils/CSVManager.h"
 #include <iostream>
 #include <sstream>
@@ -220,14 +221,12 @@ bool QuanLyDonHangDichVu::ghiFile(std::ofstream &file) const
     file.write(reinterpret_cast<const char *>(&soLuong), sizeof(int));
 
     // Ghi từng đơn hàng
-    // TODO: Implement proper binary file I/O for DonHangDichVu
     for (int i = 0; i < soLuong; i++)
     {
-        // Temporary: Skip writing individual orders until file I/O is properly implemented
-        // danhSachDonHang[i]->ghiFile(f);
+        danhSachDonHang[i]->ghiFile(file);
     }
 
-    cout << "Da ghi " << soLuong << " don hang vao file (chi so luong)." << endl;
+    cout << "Da ghi " << soLuong << " don hang vao file." << endl;
     return true;
 }
 
@@ -249,17 +248,20 @@ bool QuanLyDonHangDichVu::docFile(std::ifstream &file)
     int soLuong;
     file.read(reinterpret_cast<char *>(&soLuong), sizeof(int));
 
+    // Lấy các manager cần thiết để resolve pointer
+    HeThongQuanLy *ht = HeThongQuanLy::getInstance();
+    QuanLyKhachHang *qlkh = ht->layQuanLyKhachHang();
+    QuanLyDichVu *qldv = ht->layQuanLyDichVu();
+
     // Đọc từng đơn hàng
-    // TODO: Implement proper binary file I/O for DonHangDichVu
     for (int i = 0; i < soLuong; i++)
     {
-        // Temporary: Skip reading individual orders until file I/O is properly implemented
-        // DonHangDichVu *donHang = new DonHangDichVu();
-        // donHang->docFile(f);
-        // danhSachDonHang.push_back(donHang);
+        DonHangDichVu *donHang = new DonHangDichVu();
+        donHang->docFile(file, qlkh, qldv);
+        danhSachDonHang.push_back(donHang);
     }
 
-    cout << "Da doc thong tin don hang tu file (chi so luong: " << soLuong << ")." << endl;
+    cout << "Da doc " << soLuong << " don hang tu file." << endl;
     return true;
 }
 
@@ -314,10 +316,98 @@ bool QuanLyDonHangDichVu::luuCSV(const string &filePath) const
 
 bool QuanLyDonHangDichVu::docCSV(const string &filePath)
 {
-    // Note: Đọc CSV phức tạp vì 1 đơn hàng có nhiều dịch vụ (nhiều dòng)
-    // Cần group theo MaDonHang
-    // Tạm thời chỉ implement lưu, đọc sẽ implement sau nếu cần
-    // Vì dữ liệu chính vẫn lưu trong file binary
-    cout << "Doc CSV don hang dich vu: Chua implement (dung file binary)" << endl;
+    cout << "[DEBUG] QuanLyDonHangDichVu::docCSV - Loading from: " << filePath << endl;
+    vector<vector<string>> rows = CSVManager::readCSV(filePath);
+    if (rows.empty()) {
+        cout << "[DEBUG] QuanLyDonHangDichVu::docCSV - File empty or read failed." << endl;
+        return false;
+    }
+
+    xoaTatCa();
+    
+    HeThongQuanLy *ht = HeThongQuanLy::getInstance();
+    QuanLyKhachHang *qlkh = ht->layQuanLyKhachHang();
+    QuanLyDichVu *qldv = ht->layQuanLyDichVu();
+
+    for (const auto& row : rows) {
+        if (row.size() < 9) continue;
+        
+        string maDH = row[0];
+        string maDV = row[1];
+        // string tenDV = row[2]; // Unused
+        int soLuong = 0;
+        try { soLuong = stoi(row[3]); } catch (...) {}
+        
+        // double donGia = stod(row[4]); // Unused
+        // double thanhTien = stod(row[5]); // Unused
+        string ngayTaoStr = row[6];
+        string maKH = row[7];
+        string trangThaiStr = row[8];
+        
+        // Find if order already exists
+        DonHangDichVu* currentOrder = nullptr;
+        for (int i = 0; i < danhSachDonHang.size(); i++) {
+            DonHangDichVu* dh = danhSachDonHang[i];
+            if (dh->getMaDonHang() == maDH) {
+                currentOrder = dh;
+                break;
+            }
+        }
+        
+        if (!currentOrder) {
+            // Create new order
+            KhachHang* kh = nullptr;
+            if (qlkh && maKH != "GUEST") {
+                kh = qlkh->timKhachHang(maKH);
+            }
+            
+            currentOrder = new DonHangDichVu(maDH, kh);
+            
+            // Parse date "DD/MM/YYYY HH:MM:SS"
+            int d=1, m=1, y=2000, h=0, min=0, s=0;
+            char sep;
+            stringstream ss(ngayTaoStr);
+            // Format: 21/11/2025 18:10:05
+            // ss >> d >> sep >> m >> sep >> y; // Reads date part
+            // ss >> h >> sep >> min >> sep >> s; // Reads time part (skipping space automatically)
+            
+            ss >> d >> sep >> m >> sep >> y >> h >> sep >> min >> sep >> s;
+            
+            NgayGio ng;
+            ng.setNgayGio(d, m, y, h, min, s);
+            currentOrder->setNgayTao(ng);
+            
+            // Parse status
+            TrangThaiDonHang tt = TrangThaiDonHang::CHO_XU_LY;
+            if (trangThaiStr == "Dang chuan bi") tt = TrangThaiDonHang::DANG_CHUAN_BI;
+            else if (trangThaiStr == "Hoan thanh") tt = TrangThaiDonHang::HOAN_THANH;
+            else if (trangThaiStr == "Da huy") tt = TrangThaiDonHang::DA_HUY;
+            currentOrder->setTrangThai(tt);
+            
+            danhSachDonHang.push_back(currentOrder);
+            
+            // Update maxOrderId
+            try {
+                if (maDH.length() > 3) {
+                    string numPart = maDH.substr(3);
+                    int id = stoi(numPart);
+                    if (id > maxOrderId) maxOrderId = id;
+                }
+            } catch (...) {}
+        }
+        
+        // Add service
+        if (qldv) {
+            DichVu* dv = qldv->timDichVu(maDV);
+            if (dv) {
+                DichVuDat dvDat(dv, soLuong);
+                currentOrder->themDichVu(dvDat);
+            } else {
+                cout << "[DEBUG] Service not found: " << maDV << endl;
+            }
+        }
+    }
+    
+    cout << "Da doc " << danhSachDonHang.size() << " don hang tu CSV." << endl;
     return true;
 }

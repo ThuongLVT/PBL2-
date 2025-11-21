@@ -270,6 +270,20 @@ void ServiceManagementWidget::setupUI()
     formLayout->addLayout(unitLayout);
     formLayout->addSpacing(10);
 
+    // Stock - horizontal layout
+    QHBoxLayout *stockLayout = new QHBoxLayout();
+    stockLayout->setSpacing(10);
+    QLabel *stockLabel = new QLabel("Tồn kho:", this);
+    stockLabel->setObjectName("formLabel");
+    stockLabel->setFixedWidth(90);
+    stockLayout->addWidget(stockLabel);
+    stockEdit = new QLineEdit(this);
+    stockEdit->setPlaceholderText("50");
+    stockEdit->setObjectName("formInput");
+    stockLayout->addWidget(stockEdit, 1);
+    formLayout->addLayout(stockLayout);
+    formLayout->addSpacing(10);
+
     // Available checkbox
     availableCheckBox = new QCheckBox("✓ Có sẵn", this);
     availableCheckBox->setObjectName("formCheckbox");
@@ -423,8 +437,8 @@ void ServiceManagementWidget::loadServices()
         // Column 5: Giá
         serviceTable->setItem(i, 5, new QTableWidgetItem(QString::number(service->layDonGia(), 'f', 0) + "đ"));
 
-        // Column 6: Số lượng (giả sử có 50)
-        serviceTable->setItem(i, 6, new QTableWidgetItem("50"));
+        // Column 6: Số lượng
+        serviceTable->setItem(i, 6, new QTableWidgetItem(QString::number(service->laySoLuongTon())));
 
         // Column 7: Đã bán
         serviceTable->setItem(i, 7, new QTableWidgetItem(QString::number(service->laySoLuongBan())));
@@ -447,6 +461,7 @@ void ServiceManagementWidget::loadServiceToForm(DichVu *service)
     nameEdit->setText(QString::fromStdString(service->layTenDichVu()));
     priceEdit->setText(QString::number(service->layDonGia(), 'f', 0));
     unitEdit->setText(QString::fromStdString(service->layDonVi()));
+    stockEdit->setText(QString::number(service->laySoLuongTon()));
     descriptionEdit->setPlainText(QString::fromStdString(service->layMoTa()));
     availableCheckBox->setChecked(service->coConHang());
 
@@ -472,6 +487,7 @@ void ServiceManagementWidget::clearForm()
     nameEdit->clear();
     priceEdit->clear();
     unitEdit->clear();
+    stockEdit->clear();
     descriptionEdit->clear();
     availableCheckBox->setChecked(true);
     categoryEdit->setCurrentIndex(0);
@@ -479,6 +495,7 @@ void ServiceManagementWidget::clearForm()
     nameEdit->setEnabled(false);
     priceEdit->setEnabled(false);
     unitEdit->setEnabled(false);
+    stockEdit->setEnabled(false);
     descriptionEdit->setEnabled(false);
     availableCheckBox->setEnabled(false);
     categoryEdit->setEnabled(false);
@@ -571,6 +588,7 @@ void ServiceManagementWidget::onAddNewClicked()
     nameEdit->setEnabled(true);
     priceEdit->setEnabled(true);
     unitEdit->setEnabled(true);
+    stockEdit->setEnabled(true);
     descriptionEdit->setEnabled(true);
     availableCheckBox->setEnabled(true);
     categoryEdit->setEnabled(true);
@@ -592,6 +610,7 @@ void ServiceManagementWidget::onTableRowClicked(int row)
     nameEdit->setEnabled(true);
     priceEdit->setEnabled(true);
     unitEdit->setEnabled(true);
+    stockEdit->setEnabled(true);
     descriptionEdit->setEnabled(true);
     availableCheckBox->setEnabled(true);
     categoryEdit->setEnabled(true);
@@ -605,11 +624,13 @@ void ServiceManagementWidget::onSaveClicked()
     QString name = nameEdit->text().trimmed();
     QString priceStr = priceEdit->text().trimmed();
     QString unit = unitEdit->text().trimmed();
+    QString stockStr = stockEdit->text().trimmed();
     QString description = descriptionEdit->toPlainText().trimmed();
     bool available = availableCheckBox->isChecked();
     LoaiDichVu category = static_cast<LoaiDichVu>(categoryEdit->currentData().toInt());
 
     double price = priceStr.toDouble();
+    int stock = stockStr.toInt();
 
     if (isEditMode && currentService)
     {
@@ -617,11 +638,14 @@ void ServiceManagementWidget::onSaveClicked()
         currentService->datTenDichVu(name.toStdString());
         currentService->datDonGia(price);
         currentService->datDonVi(unit.toStdString());
+        currentService->datSoLuongTon(stock);
         currentService->datMoTa(description.toStdString());
         currentService->datConHang(available);
 
         // Save to binary file
-        system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+        system->luuHeThong("D:/PBL2-/Data/data.bin");
+        // Also save to CSV
+        system->luuDichVuCSV("D:/PBL2-/Data/dichvu.csv");
 
         QMessageBox::information(this, "Thành công",
                                  "Cập nhật dịch vụ thành công!");
@@ -639,6 +663,7 @@ void ServiceManagementWidget::onSaveClicked()
             category);
 
         newService->datDonVi(unit.toStdString());
+        newService->datSoLuongTon(stock);
         newService->datMoTa(description.toStdString());
         newService->datConHang(available);
         newService->datSoLuongBan(0);
@@ -649,7 +674,9 @@ void ServiceManagementWidget::onSaveClicked()
         if (added)
         {
             // Save to binary file
-            system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+            system->luuHeThong("D:/PBL2-/Data/data.bin");
+            // Also save to CSV
+            system->luuDichVuCSV("D:/PBL2-/Data/dichvu.csv");
 
             QMessageBox::information(this, "Thành công",
                                      QString("Thêm dịch vụ mới thành công!\nMã DV: %1").arg(maDV));
@@ -684,7 +711,7 @@ void ServiceManagementWidget::onDeleteClicked()
         if (system->layQuanLyDichVu()->xoaDichVu(maDV))
         {
             // Save to binary file
-            system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+            system->luuHeThong("D:/PBL2-/Data/data.bin");
 
             QMessageBox::information(this, "Thành công", "Xóa dịch vụ thành công!");
             clearForm();

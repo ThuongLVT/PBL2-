@@ -13,7 +13,7 @@ using namespace std;
 DichVu::DichVu()
     : maDichVu(""), tenDichVu(""), donGia(0.0),
       loaiDichVu(LoaiDichVu::KHAC), moTa(""), conHang(true),
-      donVi(""), soLuongBan(0), hinhAnh("")
+      donVi(""), soLuongBan(0), soLuongTon(50), hinhAnh("")
 {
 }
 
@@ -21,7 +21,7 @@ DichVu::DichVu(const std::string &maDV, const std::string &tenDV,
                double gia, LoaiDichVu loai)
     : maDichVu(maDV), tenDichVu(tenDV), donGia(gia),
       loaiDichVu(loai), moTa(""), conHang(true),
-      donVi(""), soLuongBan(0), hinhAnh("")
+      donVi(""), soLuongBan(0), soLuongTon(50), hinhAnh("")
 {
 }
 
@@ -30,6 +30,7 @@ DichVu::DichVu(const DichVu &other)
       donGia(other.donGia), loaiDichVu(other.loaiDichVu),
       moTa(other.moTa), conHang(other.conHang),
       donVi(other.donVi), soLuongBan(other.soLuongBan),
+      soLuongTon(other.soLuongTon),
       hinhAnh(other.hinhAnh)
 {
 }
@@ -98,6 +99,11 @@ int DichVu::laySoLuongBan() const
     return soLuongBan;
 }
 
+int DichVu::laySoLuongTon() const
+{
+    return soLuongTon;
+}
+
 std::string DichVu::layHinhAnh() const
 {
     return hinhAnh;
@@ -136,6 +142,11 @@ void DichVu::datDonVi(const std::string &dv)
 void DichVu::datSoLuongBan(int sl)
 {
     soLuongBan = sl;
+}
+
+void DichVu::datSoLuongTon(int sl)
+{
+    soLuongTon = sl;
 }
 
 void DichVu::datHinhAnh(const std::string &ha)
@@ -183,6 +194,7 @@ bool DichVu::ghiFile(std::ofstream &file) const
     if (!FileHelper::ghiString(file, moTa))
         return false;
     file.write(reinterpret_cast<const char *>(&conHang), sizeof(conHang));
+    file.write(reinterpret_cast<const char *>(&soLuongTon), sizeof(soLuongTon));
 
     return file.good();
 }
@@ -205,6 +217,14 @@ bool DichVu::docFile(std::ifstream &file)
     if (!FileHelper::docString(file, moTa))
         return false;
     file.read(reinterpret_cast<char *>(&conHang), sizeof(conHang));
+    
+    // Try to read soLuongTon, if fail (old file format), set default
+    if (file.peek() != EOF) {
+        file.read(reinterpret_cast<char *>(&soLuongTon), sizeof(soLuongTon));
+    } else {
+        soLuongTon = 50; // Default for old files
+        file.clear(); // Clear EOF flag
+    }
 
     return file.good();
 }

@@ -26,6 +26,7 @@
 #include <QMessageBox>
 #include "../../Core/QuanLy/HeThongQuanLy.h"
 #include "../../Core/Models/DonHangDichVu.h"
+#include "../../Dialogs/ServiceSelectionDialog.h"
 
 /**
  * @struct CartItem
@@ -50,7 +51,7 @@ struct CartItem
 
 /**
  * @class ServiceOrderWidget
- * @brief Widget for ordering services (standalone - not related to field booking)
+ * @brief Widget for ordering services (Redesigned)
  */
 class ServiceOrderWidget : public QWidget
 {
@@ -60,143 +61,76 @@ public:
     explicit ServiceOrderWidget(QWidget *parent = nullptr);
     ~ServiceOrderWidget();
 
-    /**
-     * @brief Load all services from Core
-     */
-    void loadServices();
+    void loadServices(); // Keep for compatibility, though dialog handles loading now
 
 signals:
-    /**
-     * @brief Emitted when an order is created successfully
-     */
     void orderCreated(const QString &orderId);
 
 private slots:
-    /**
-     * @brief Search services
-     */
-    void onSearchTextChanged(const QString &text);
-
-    /**
-     * @brief Filter by service category
-     */
-    void onCategoryFilterChanged(int index);
-
-    /**
-     * @brief Service card clicked - add to cart
-     */
-    void onServiceCardClicked(DichVu *service);
-
-    /**
-     * @brief Remove item from cart
-     */
-    void onRemoveFromCartClicked(int row);
-
-    /**
-     * @brief Customer selected from dropdown
-     */
+    // Customer slots
     void onCustomerSelected(int index);
-
-    /**
-     * @brief Add new customer clicked
-     */
     void onAddNewCustomerClicked();
-
-    /**
-     * @brief Payment button clicked
-     */
+    
+    // Selection slots
+    void onSelectServiceClicked();
+    
+    // Cart slots
+    void onRemoveFromCartClicked(int row);
+    void onClearCartClicked();
+    
+    // Payment slots
     void onPaymentClicked();
 
-    /**
-     * @brief Clear cart
-     */
-    void onClearCartClicked();
-
-    /**
-     * @brief Export order to PDF
-     */
-    void onExportClicked();
-
-    /**
-     * @brief Reload services
-     */
-    void onReloadClicked();
+    // Cart modification slots
+    void onIncreaseQuantity(int row);
+    void onDecreaseQuantity(int row);
 
 private:
     // ===== SETUP METHODS =====
     void setupUI();
-    void setupLeftPanel();
-    void setupRightPanel();
+    void setupCustomerSection();
+    void setupCartSection();
+    void setupPaymentSection();
     void setupConnections();
     void applyStyles();
 
-    // ===== CART METHODS =====
-    void addToCart(DichVu *service);
-    void updateCart();
-    void clearCart();
+    // ===== LOGIC METHODS =====
+    void updateCartTable();
     void updateTotals();
-
-    // ===== SERVICE GRID METHODS =====
-    void createServiceCards();
-    QWidget *createServiceCard(DichVu *service);
-
-    // ===== CUSTOMER METHODS =====
     void loadCustomers();
-    void filterCustomers(const QString &searchText);
-    void selectCustomer(KhachHang *customer);
     void updateCustomerInfo();
 
-    // ===== LAYOUTS =====
+    // ===== UI COMPONENTS =====
     QHBoxLayout *mainLayout;
-    QVBoxLayout *leftLayout;
-    QVBoxLayout *rightLayout;
+    QVBoxLayout *leftColumnLayout;
+    QVBoxLayout *rightColumnLayout;
 
-    // ===== LEFT PANEL (60%) =====
-    // Top 40%: Cart Table
-    QFrame *cartFrame;
-    QVBoxLayout *cartLayout;
-    QTableWidget *cartTable;
-    QLabel *cartTotalLabel;
-
-    // Bottom 60%: Service Grid
-    QFrame *serviceFrame;
-    QVBoxLayout *serviceLayout;
-    QLineEdit *searchEdit;
-    QComboBox *categoryCombo;
-    QPushButton *reloadBtn;
-    QScrollArea *serviceScrollArea;
-    QWidget *serviceGridWidget;
-    QGridLayout *serviceGridLayout;
-
-    // ===== RIGHT PANEL (40%) =====
-    // Customer & Payment Info (Combined)
+    // 1. Customer Section
     QFrame *customerFrame;
-    QVBoxLayout *customerLayout;
     QLineEdit *phoneLineEdit;
     QComboBox *customerComboBox;
-    QLineEdit *nameLineEdit;
     QLabel *customerNameLabel;
-    QLabel *phoneLabel;
     QLabel *membershipLabel;
-    QTextEdit *noteTextEdit;
+    
+    // 2. Selection Button
+    QPushButton *selectServiceBtn;
+
+    // 3. Cart Section
+    QTableWidget *cartTable;
+    
+    // 4. Payment Section
+    QFrame *paymentFrame;
     QLabel *totalPriceLabel;
     QLabel *discountLabel;
     QLabel *finalAmountLabel;
-
-    // Action Buttons
-    QFrame *actionFrame;
-    QHBoxLayout *actionLayout;
-    QPushButton *clearBtn;
+    QTextEdit *noteTextEdit;
     QPushButton *paymentBtn;
-    QPushButton *exportBtn;
 
     // ===== DATA =====
     HeThongQuanLy *system;
     QList<CartItem> cartItems;
     KhachHang *selectedCustomer;
-    QList<DichVu *> allServices;
-    QList<DichVu *> filteredServices;
-
+    
     // Totals
     double totalPrice;
     double discount;

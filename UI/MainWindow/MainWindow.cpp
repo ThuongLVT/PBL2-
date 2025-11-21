@@ -41,7 +41,7 @@ MainWindow::~MainWindow()
     if (system)
     {
         // Auto save system data
-        system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+        system->luuHeThong("D:/PBL2-/Data/data.bin");
     }
 }
 
@@ -52,7 +52,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     HeThongQuanLy *system = HeThongQuanLy::getInstance();
     if (system)
     {
-        bool saved = system->luuHeThong("D:/QT_PBL2/Data/data.bin");
+        bool saved = system->luuHeThong("D:/PBL2-/Data/data.bin");
         if (saved)
         {
             cout << "✅ Data saved successfully!" << endl;
@@ -232,7 +232,7 @@ void MainWindow::onLogoutClicked()
         if (heThong)
         {
             cout << "\n=== SAVING DATA ON LOGOUT ===" << endl;
-            heThong->luuHeThong("D:/QT_PBL2/Data/data.bin");
+            heThong->luuHeThong("D:/PBL2-/Data/data.bin");
 
             // Save admin and staff CSV
             QuanLyNhanVien *staffMgr = heThong->layQuanLyNhanVien();

@@ -1,5 +1,5 @@
 # Script tao anh minh hoa don gian cho cac dich vu
-$imageDir = "d:\QT_PBL2\Data\images"
+$imageDir = "d:\PBL2-\Data\images"
 
 if (-not (Test-Path $imageDir)) {
     New-Item -ItemType Directory -Path $imageDir | Out-Null

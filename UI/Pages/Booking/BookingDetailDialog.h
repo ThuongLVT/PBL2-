@@ -20,8 +20,9 @@
 #include <QDateEdit>
 #include <QTimeEdit>
 #include <QTextEdit>
-#include <QListWidget>
+#include <QTableWidget>
 #include <QGroupBox>
+#include <QFrame>
 #include "../../../Core/QuanLy/HeThongQuanLy.h"
 #include "../../../Core/Models/DatSan.h"
 #include "../../../Core/Models/KhachHang.h"
@@ -49,9 +50,10 @@ private slots:
 
 private:
     void setupUI();
+    void setupHeader(QVBoxLayout *parentLayout);
     void setupInfoSection(QVBoxLayout *parentLayout);
     void setupServicesSection(QVBoxLayout *parentLayout);
-    void setupActionButtons();
+    void setupPaymentSection(QVBoxLayout *parentLayout);
     void populateForm();
     void loadServices();
     void updateTotalPrice();
@@ -63,33 +65,32 @@ private:
     HeThongQuanLy *system;
     MangDong<San *> fields;
 
-    // Main layout
-    QVBoxLayout *mainLayout;
+    // Header
+    QLabel *headerIdLabel;
+    QLabel *headerDateLabel;
+    QLabel *headerStatusLabel;
 
     // Info section
-    QLabel *bookingIdLabel;
-    QLabel *customerLabel;
-    QLabel *phoneLabel;
-    QComboBox *fieldCombo;
-    QDateEdit *dateEdit;
-    QTimeEdit *fromTimeEdit;
-    QTimeEdit *toTimeEdit;
-    QComboBox *statusCombo;
-    QTextEdit *noteEdit;
-    QLabel *totalPriceLabel;
-    QLabel *depositAmountLabel;
-    QLabel *depositStatusLabel;
-    QPushButton *payDepositBtn;
+    QLabel *customerNameLabel;
+    QLabel *customerPhoneLabel;
+    QLabel *fieldNameLabel;
+    QLabel *dateLabel;
+    QLabel *timeLabel;
+    QLabel *noteLabel;
+    QPushButton *rescheduleBtn;
+    QPushButton *cancelBtn;
 
     // Services section
-    QListWidget *serviceList;
+    QTableWidget *serviceTable;
     QPushButton *addServiceBtn;
-    QPushButton *removeServiceBtn;
 
-    // Action buttons
-    QPushButton *saveBtn;
-    QPushButton *cancelBookingBtn;
-    QPushButton *paymentBtn;
+    // Payment section
+    QLabel *fieldPriceLabel;
+    QLabel *servicePriceLabel;
+    QLabel *depositLabel;
+    QLabel *totalLabel;
+    QLabel *toPayLabel;
+    QPushButton *payNowBtn;
     QPushButton *closeBtn;
 };
 

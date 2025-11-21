@@ -5,6 +5,7 @@
 
 #include "BookingDetailDialog.h"
 #include "CancelBookingDialog.h"
+#include "../../../Core/QuanLy/QuanLyThanhToan.h"
 #include <QMessageBox>
 #include <QSpinBox>
 #include <QDialog>
@@ -22,7 +23,7 @@ BookingDetailDialog::BookingDetailDialog(DatSan *booking, QWidget *parent)
     fields = system->layDanhSachSan();
 
     setWindowTitle("Chi tiết đặt sân");
-    setMinimumSize(900, 600);
+    setMinimumSize(1100, 600);
     setModal(true);
 
     setupUI();
@@ -67,8 +68,8 @@ void BookingDetailDialog::setupUI()
     rightWidget->setLayout(rightLayout);
 
     // Add to content layout (Ratio 4:6)
-    contentLayout->addWidget(leftWidget, 4);
-    contentLayout->addWidget(rightWidget, 6);
+    contentLayout->addWidget(leftWidget, 40);
+    contentLayout->addWidget(rightWidget, 60);
 
     mainLayout->addLayout(contentLayout);
 
@@ -121,16 +122,12 @@ void BookingDetailDialog::setupHeader(QVBoxLayout *parentLayout)
     QHBoxLayout *headerLayout = new QHBoxLayout(headerFrame);
     headerLayout->setContentsMargins(20, 15, 20, 15);
 
-    // Left: ID and Date
+    // Left: ID
     QVBoxLayout *idLayout = new QVBoxLayout();
     headerIdLabel = new QLabel("BK000");
     headerIdLabel->setStyleSheet("font-size: 24px; font-weight: bold; color: #111827;");
 
-    headerDateLabel = new QLabel("Tạo ngày: --/--/----");
-    headerDateLabel->setStyleSheet("color: #6b7280; font-size: 13px;");
-
     idLayout->addWidget(headerIdLabel);
-    idLayout->addWidget(headerDateLabel);
 
     // Right: Status Badge
     headerStatusLabel = new QLabel("Trạng thái");
@@ -182,17 +179,19 @@ void BookingDetailDialog::setupInfoSection(QVBoxLayout *parentLayout)
 
     addRow(0, "Khách hàng:", customerNameLabel, true);
     addRow(1, "SĐT:", customerPhoneLabel);
+    addRow(2, "Hạng TV:", customerTierLabel);
 
     // Divider
     QFrame *line = new QFrame();
     line->setFrameShape(QFrame::HLine);
     line->setStyleSheet("background-color: #e5e7eb;");
-    grid->addWidget(line, 2, 0, 1, 2);
+    grid->addWidget(line, 3, 0, 1, 2);
 
-    addRow(3, "Sân bóng:", fieldNameLabel, true);
-    addRow(4, "Ngày đá:", dateLabel);
-    addRow(5, "Khung giờ:", timeLabel, true); // Blue color applied in populate
-    addRow(6, "Ghi chú:", noteLabel);
+    addRow(4, "Sân bóng:", fieldNameLabel, true);
+    addRow(5, "Ngày đá:", dateLabel);
+    addRow(6, "Khung giờ:", timeLabel, true); // Blue color applied in populate
+    addRow(7, "Ghi chú:", noteLabel);
+    noteLabel->setWordWrap(true);
 
     layout->addLayout(grid);
     layout->addStretch();
@@ -330,6 +329,7 @@ void BookingDetailDialog::setupPaymentSection(QVBoxLayout *parentLayout)
 
     addRow("Tiền sân:", fieldPriceLabel);
     addRow("Tiền dịch vụ:", servicePriceLabel);
+    addRow("Giảm giá:", discountLabel, "#10b981");
     addRow("Đã cọc:", depositLabel, "#f59e0b", true);
 
     // Divider
@@ -388,11 +388,6 @@ void BookingDetailDialog::populateForm()
 
     // Header
     headerIdLabel->setText(QString::fromStdString(currentBooking->getMaDatSan()));
-    // Assuming we don't have creation date in model, using booking date for now or placeholder
-    // If you have created_at, use it. For now, I'll use current date as placeholder or booking date
-    headerDateLabel->setText("Ngày đá: " + QString::number(currentBooking->getThoiGianDat().getNgay()) + "/" +
-                             QString::number(currentBooking->getThoiGianDat().getThang()) + "/" +
-                             QString::number(currentBooking->getThoiGianDat().getNam()));
 
     // Status Badge
     TrangThaiDatSan status = currentBooking->getTrangThai();
@@ -401,7 +396,7 @@ void BookingDetailDialog::populateForm()
     switch (status)
     {
     case TrangThaiDatSan::DA_DAT:
-        statusText = "Đang đặt";
+        statusText = "Đã đặt";
         statusColor = "#3b82f6";
         break;
     case TrangThaiDatSan::HOAN_THANH:
@@ -425,13 +420,45 @@ void BookingDetailDialog::populateForm()
     customerNameLabel->setText(kh ? QString::fromStdString(kh->getHoTen()) : "N/A");
     customerPhoneLabel->setText(kh ? QString::fromStdString(kh->getSoDienThoai()) : "N/A");
 
+    if (kh)
+    {
+        QString tierName;
+        switch (kh->layHang())
+        {
+        case HangKhachHang::THUONG:
+            tierName = "Thường";
+            break;
+        case HangKhachHang::DONG:
+            tierName = "Đồng";
+            break;
+        case HangKhachHang::BAC:
+            tierName = "Bạc";
+            break;
+        case HangKhachHang::VANG:
+            tierName = "Vàng";
+            break;
+        case HangKhachHang::KIM_CUONG:
+            tierName = "Kim Cương";
+            break;
+        default:
+            tierName = "Không xác định";
+            break;
+        }
+        int discount = kh->layPhanTramGiamGia();
+        customerTierLabel->setText(QString("%1 (-%2%)").arg(tierName).arg(discount));
+    }
+    else
+    {
+        customerTierLabel->setText("Khách vãng lai");
+    }
+
     San *san = currentBooking->getSan();
     fieldNameLabel->setText(san ? QString::fromStdString(san->getTenSan()) : "N/A");
 
     NgayGio tg = currentBooking->getThoiGianDat();
     dateLabel->setText(QString("%1/%2/%3").arg(tg.getNgay()).arg(tg.getThang()).arg(tg.getNam()));
 
-    QString timeStr = QString("%1:00:00 - %2:00:00").arg(tg.getGio()).arg(tg.getGio() + 1);
+    QString timeStr = QString("%1:00 - %2:00").arg(tg.getGio()).arg(tg.getGio() + 1);
     timeLabel->setText(timeStr);
     timeLabel->setStyleSheet("color: #2563eb; font-weight: bold;");
 
@@ -498,10 +525,23 @@ void BookingDetailDialog::loadServices()
     // Update Payment Totals
     servicePriceLabel->setText(formatCurrency(totalServicePrice));
 
-    double total = currentBooking->getTongTien(); // Should include service + field
+    double fieldPrice = currentBooking->getSan() ? currentBooking->getSan()->getGiaThue() : 0;
+    double subTotal = fieldPrice + totalServicePrice;
+
+    double discountAmount = 0;
+    KhachHang *kh = currentBooking->getKhachHang();
+    if (kh)
+    {
+        discountAmount = subTotal * kh->layPhanTramGiamGia() / 100.0;
+    }
+    discountLabel->setText("-" + formatCurrency(discountAmount));
+
+    double total = subTotal - discountAmount;
     totalLabel->setText(formatCurrency(total));
 
     double toPay = total - currentBooking->getTienCoc();
+    if (toPay < 0)
+        toPay = 0;
     toPayLabel->setText(formatCurrency(toPay));
 }
 
@@ -579,16 +619,41 @@ void BookingDetailDialog::onPaymentClicked()
 
     if (reply == QMessageBox::Yes)
     {
-        currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
-
-        if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
+        // Sử dụng QuanLyThanhToan để tạo thanh toán và cập nhật chi tiêu
+        QuanLyThanhToan *qltt = system->layQuanLyThanhToan();
+        if (qltt)
         {
-            QMessageBox::information(this, "Thành công", "Thanh toán thành công!");
-            accept();
+            // Mặc định thanh toán tiền mặt
+            ThanhToan *tt = qltt->taoThanhToan(currentBooking, PhuongThucThanhToan::TIEN_MAT);
+
+            if (tt)
+            {
+                currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
+
+                if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
+                {
+                    // Lưu thêm dữ liệu thanh toán nếu cần (tùy thuộc vào implementation của system)
+                    // system->luuHeThong("D:/PBL2-/Data/thanhtoan.dat"); // Giả sử có file này
+
+                    QMessageBox::information(this, "Thành công", "Thanh toán thành công!");
+                    accept();
+                }
+                else
+                {
+                    QMessageBox::critical(this, "Lỗi", "Không thể lưu dữ liệu!");
+                }
+            }
+            else
+            {
+                QMessageBox::critical(this, "Lỗi", "Không thể tạo thanh toán (có thể đã thanh toán rồi)!");
+            }
         }
         else
         {
-            QMessageBox::critical(this, "Lỗi", "Không thể xử lý thanh toán!");
+            // Fallback nếu không lấy được quản lý thanh toán
+            currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
+            system->luuHeThong("D:/PBL2-/Data/booking.dat");
+            accept();
         }
     }
 }

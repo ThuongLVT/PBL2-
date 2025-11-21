@@ -1,10 +1,3 @@
-/**
- * @file ServiceManagementWidget.cpp
- * @brief Implementation of Service Management Widget (CRUD) - Tab 2
- * @author khninh22 - Service Module
- * @date 2025-11-14
- */
-
 #include "ServiceManagementWidget.h"
 #include <QHeaderView>
 #include <QFont>
@@ -14,6 +7,31 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QFileInfo>
+#include <QDir>
+#include <QStandardPaths>
+#include <QCompleter>
+#include <QStringListModel>
+#include <QScrollBar>
+#include <algorithm>
+#include <QStyledItemDelegate>
+
+// Delegate to keep Price column Green even when selected
+class PriceDelegate : public QStyledItemDelegate
+{
+public:
+    PriceDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
+
+    void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override
+    {
+        QStyledItemDelegate::initStyleOption(option, index);
+        if (index.column() == 3) // Price column
+        {
+            // Force text color to be Green (#059669) in all states (Normal & Selected)
+            option->palette.setColor(QPalette::Text, QColor("#059669"));
+            option->palette.setColor(QPalette::HighlightedText, QColor("#059669"));
+        }
+    }
+};
 
 ServiceManagementWidget::ServiceManagementWidget(QWidget *parent)
     : QWidget(parent),
@@ -23,9 +41,7 @@ ServiceManagementWidget::ServiceManagementWidget(QWidget *parent)
 {
     setupUI();
     setupConnections();
-    applyStyles();
     loadServices();
-    updateStatsCards();
 }
 
 ServiceManagementWidget::~ServiceManagementWidget()
@@ -34,426 +50,553 @@ ServiceManagementWidget::~ServiceManagementWidget()
 
 void ServiceManagementWidget::setupUI()
 {
-    // Main horizontal layout (Left 70% + Right 30%)
+    // Main horizontal layout
     mainLayout = new QHBoxLayout(this);
-    mainLayout->setContentsMargins(20, 20, 20, 20);
-    mainLayout->setSpacing(20);
+    mainLayout->setContentsMargins(15, 15, 15, 15);
+    mainLayout->setSpacing(20); // Gap between panels
 
-    // ===== LEFT PANEL (70%) =====
-    QWidget *leftWidget = new QWidget(this);
-    leftLayout = new QVBoxLayout(leftWidget);
+    // ================= LEFT PANEL (70%) =================
+    QFrame *leftPanel = new QFrame(this);
+    leftPanel->setStyleSheet("background-color: white; border-radius: 10px; border: 1px solid #e5e7eb;");
+    QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
     leftLayout->setSpacing(15);
-    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setContentsMargins(20, 20, 20, 20);
 
-    // Search & Filters Row
+    // --- Header: Search & Filters ---
     QHBoxLayout *filterLayout = new QHBoxLayout();
     filterLayout->setSpacing(10);
 
+    // Search
     searchEdit = new QLineEdit(this);
-    searchEdit->setPlaceholderText("🔍 Tìm theo tên dịch vụ...");
-    searchEdit->setObjectName("searchEdit");
-    searchEdit->setMinimumHeight(40);
+    searchEdit->setPlaceholderText("Tìm theo tên dịch vụ...");
+    searchEdit->setMinimumHeight(35);
+    searchEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    searchEdit->setStyleSheet("border: 1px solid #d1d5db; border-radius: 5px; padding: 5px;");
+
+    // Search Button
+    searchBtn = new QPushButton(this);
+    searchBtn->setIcon(style()->standardIcon(QStyle::SP_FileDialogContentsView));
+    searchBtn->setFixedWidth(35);
+    searchBtn->setMinimumHeight(35);
+    searchBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    searchBtn->setCursor(Qt::PointingHandCursor);
+    searchBtn->setStyleSheet("QPushButton { border: 1px solid #d1d5db; border-radius: 5px; background-color: #f3f4f6; } QPushButton:hover { background-color: #e5e7eb; }");
+
+    // Search Completer
+    searchCompleter = new QCompleter(this);
+    searchCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    searchCompleter->setFilterMode(Qt::MatchContains);
+    searchEdit->setCompleter(searchCompleter);
+
     filterLayout->addWidget(searchEdit, 3);
+    filterLayout->addWidget(searchBtn);
 
-    categoryCombo = new QComboBox(this);
-    categoryCombo->setObjectName("filterCombo");
-    categoryCombo->addItem("Loại: Tất cả", "ALL");
-    categoryCombo->addItem("Đồ uống", "DO_UONG");
-    categoryCombo->addItem("Thiết bị", "THIET_BI");
-    categoryCombo->addItem("Khác", "KHAC");
-    categoryCombo->setMinimumHeight(40);
-    filterLayout->addWidget(categoryCombo, 1);
-
-    priceCombo = new QComboBox(this);
-    priceCombo->setObjectName("filterCombo");
-    priceCombo->addItem("Giá: Tất cả", "ALL");
-    priceCombo->addItem("< 20,000đ", "LT_20K");
-    priceCombo->addItem("20K - 50K", "20K_50K");
-    priceCombo->addItem("50K - 100K", "50K_100K");
-    priceCombo->addItem("> 100,000đ", "GT_100K");
-    priceCombo->setMinimumHeight(40);
-    filterLayout->addWidget(priceCombo, 1);
-
-    reloadBtn = new QPushButton("🔄 Làm mới", this);
-    reloadBtn->setObjectName("secondaryButton");
-    reloadBtn->setMinimumHeight(40);
+    // Reload Button
+    reloadBtn = new QPushButton(this);
+    reloadBtn->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));
+    reloadBtn->setToolTip("Làm mới dữ liệu");
+    reloadBtn->setFixedWidth(35);
+    reloadBtn->setMinimumHeight(35);
+    reloadBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    reloadBtn->setStyleSheet("QPushButton { border: 1px solid #d1d5db; border-radius: 5px; background-color: #f3f4f6; } QPushButton:hover { background-color: #e5e7eb; }");
     filterLayout->addWidget(reloadBtn);
+
+    // Filter 1: Status (Moved to first)
+    statusFilterCombo = new QComboBox(this);
+    statusFilterCombo->addItem("Tất cả", "ALL");
+    statusFilterCombo->addItem("Hoạt động", "ACTIVE");
+    statusFilterCombo->addItem("Ngừng bán", "INACTIVE");
+    statusFilterCombo->setMinimumHeight(35);
+    statusFilterCombo->setStyleSheet("border: 1px solid #d1d5db; border-radius: 5px; padding: 5px;");
+    filterLayout->addWidget(statusFilterCombo, 1);
+
+    // Filter 2: Sort By (Price, Stock, Sold)
+    sortByCombo = new QComboBox(this);
+    sortByCombo->addItem("Mặc định", -1);
+    sortByCombo->addItem("Giá", 0);
+    sortByCombo->addItem("Tồn kho", 1);
+    sortByCombo->addItem("Đã bán", 2);
+    sortByCombo->setMinimumHeight(35);
+    sortByCombo->setStyleSheet("border: 1px solid #d1d5db; border-radius: 5px; padding: 5px;");
+    filterLayout->addWidget(sortByCombo, 1);
+
+    // Filter 3: Sort Order (Asc/Desc)
+    sortOrderCombo = new QComboBox(this);
+    sortOrderCombo->addItem("Tăng dần", 0);
+    sortOrderCombo->addItem("Giảm dần", 1);
+    sortOrderCombo->setMinimumHeight(35);
+    sortOrderCombo->setStyleSheet("border: 1px solid #d1d5db; border-radius: 5px; padding: 5px;");
+    filterLayout->addWidget(sortOrderCombo, 1);
+
+    // Filter 4: Unit
+    unitFilterCombo = new QComboBox(this);
+    unitFilterCombo->addItem("Tất cả", "ALL");
+    unitFilterCombo->setMinimumHeight(35);
+    unitFilterCombo->setStyleSheet("border: 1px solid #d1d5db; border-radius: 5px; padding: 5px;");
+    filterLayout->addWidget(unitFilterCombo, 1);
 
     leftLayout->addLayout(filterLayout);
 
-    // Stats Cards
-    QFrame *statsFrame = new QFrame(this);
-    statsFrame->setObjectName("statsContainer");
-    QHBoxLayout *statsLayout = new QHBoxLayout(statsFrame);
-    statsLayout->setSpacing(15);
-    statsLayout->setContentsMargins(0, 0, 0, 0);
-
-    // Total card
-    QFrame *totalCard = new QFrame(this);
-    totalCard->setObjectName("statCard");
-    QVBoxLayout *totalCardLayout = new QVBoxLayout(totalCard);
-    QLabel *totalTitle = new QLabel("📦 Tổng dịch vụ", this);
-    totalTitle->setObjectName("statTitle");
-    totalServicesLabel = new QLabel("0", this);
-    totalServicesLabel->setObjectName("statValue");
-    totalCardLayout->addWidget(totalTitle);
-    totalCardLayout->addWidget(totalServicesLabel);
-    statsLayout->addWidget(totalCard);
-
-    // Drink card
-    QFrame *drinkCard = new QFrame(this);
-    drinkCard->setObjectName("statCard");
-    QVBoxLayout *drinkCardLayout = new QVBoxLayout(drinkCard);
-    QLabel *drinkTitle = new QLabel("🍹 Đồ uống", this);
-    drinkTitle->setObjectName("statTitle");
-    drinkServicesLabel = new QLabel("0", this);
-    drinkServicesLabel->setObjectName("statValue");
-    drinkCardLayout->addWidget(drinkTitle);
-    drinkCardLayout->addWidget(drinkServicesLabel);
-    statsLayout->addWidget(drinkCard);
-
-    // Equipment card
-    QFrame *equipCard = new QFrame(this);
-    equipCard->setObjectName("statCard");
-    QVBoxLayout *equipCardLayout = new QVBoxLayout(equipCard);
-    QLabel *equipTitle = new QLabel("⚽ Thiết bị", this);
-    equipTitle->setObjectName("statTitle");
-    equipmentServicesLabel = new QLabel("0", this);
-    equipmentServicesLabel->setObjectName("statValue");
-    equipCardLayout->addWidget(equipTitle);
-    equipCardLayout->addWidget(equipmentServicesLabel);
-    statsLayout->addWidget(equipCard);
-
-    leftLayout->addWidget(statsFrame);
-
-    // Service Table
+    // --- Table ---
     serviceTable = new QTableWidget(0, 9, this);
-    serviceTable->setObjectName("dataTable");
-    serviceTable->setHorizontalHeaderLabels({"Ảnh", "Mã DV", "Tên DV", "Loại", "Đơn vị", "Giá", "Số lượng", "Đã bán", "Trạng thái"});
-    serviceTable->horizontalHeader()->setStretchLastSection(false);
-    serviceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);   // Ảnh
-    serviceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);   // Mã
-    serviceTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch); // Tên
-    serviceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);   // Loại
-    serviceTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);   // Đơn vị
-    serviceTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);   // Giá
-    serviceTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed);   // Số lượng
-    serviceTable->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);   // Đã bán
-    serviceTable->horizontalHeader()->setSectionResizeMode(8, QHeaderView::Fixed);   // Trạng thái
-    serviceTable->setColumnWidth(0, 60);                                             // Ảnh
-    serviceTable->setColumnWidth(1, 80);                                             // Mã DV
-    serviceTable->setColumnWidth(3, 90);                                             // Loại
-    serviceTable->setColumnWidth(4, 80);                                             // Đơn vị
-    serviceTable->setColumnWidth(5, 90);                                             // Giá
-    serviceTable->setColumnWidth(6, 80);                                             // Số lượng
-    serviceTable->setColumnWidth(7, 80);                                             // Đã bán
-    serviceTable->setColumnWidth(8, 100);                                            // Trạng thái
-    serviceTable->verticalHeader()->setVisible(false);
-    serviceTable->verticalHeader()->setDefaultSectionSize(70); // Chiều cao hàng 70px cho ảnh
+    serviceTable->setHorizontalHeaderLabels({"Ảnh", "Mã DV", "Tên dịch vụ", "Giá", "Đơn vị", "Kho", "Bán", "Trạng thái", "Mô tả"});
+
+    // Table Styling
+    serviceTable->setShowGrid(false);                                       // Hide all grid lines first
+    serviceTable->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel); // Smooth scrolling
+    serviceTable->verticalScrollBar()->setStyleSheet(
+        "QScrollBar:vertical { border: none; background: #f1f1f1; width: 8px; margin: 0px; }"
+        "QScrollBar::handle:vertical { background: #c1c1c1; min-height: 20px; border-radius: 4px; }"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
+        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }");
+    serviceTable->setStyleSheet(
+        "QTableWidget { border: none; selection-background-color: #e0f2fe; selection-color: #000; background-color: white; }"
+        "QHeaderView::section { background-color: white; padding: 8px; border: none; border-bottom: 2px solid #f3f4f6; font-weight: bold; color: #6b7280; }"
+        "QTableWidget::item { border-bottom: 1px solid #f3f4f6; padding: 5px; }");
+    serviceTable->setFocusPolicy(Qt::NoFocus);
     serviceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     serviceTable->setSelectionMode(QAbstractItemView::SingleSelection);
     serviceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    serviceTable->verticalHeader()->setVisible(false);
+    serviceTable->verticalHeader()->setDefaultSectionSize(80); // Height for 64x64 image
+
+    // Column Sizing & Alignment
+    serviceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed); // Image
+    serviceTable->setColumnWidth(0, 80);
+    serviceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed); // Code
+    serviceTable->setColumnWidth(1, 80);
+    serviceTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed); // Name
+    serviceTable->setColumnWidth(2, 150);
+    serviceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed); // Price
+    serviceTable->setColumnWidth(3, 100);
+    serviceTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed); // Unit
+    serviceTable->setColumnWidth(4, 80);
+    serviceTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed); // Stock
+    serviceTable->setColumnWidth(5, 80);
+    serviceTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed); // Sold
+    serviceTable->setColumnWidth(6, 80);
+    serviceTable->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed); // Status
+    serviceTable->setColumnWidth(7, 120);
+    serviceTable->horizontalHeader()->setSectionResizeMode(8, QHeaderView::Stretch); // Description
+
+    // Header Alignment
+    serviceTable->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    // Apply Price Delegate
+    serviceTable->setItemDelegateForColumn(3, new PriceDelegate(serviceTable));
+
+    // Set specific header alignments
+    // Note: QTableWidget headers are items. We need to ensure they exist or use a delegate.
+    // But setHorizontalHeaderLabels creates items.
+    if (serviceTable->horizontalHeaderItem(0))
+        serviceTable->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignCenter); // Image
+    if (serviceTable->horizontalHeaderItem(1))
+        serviceTable->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignCenter); // Code
+    if (serviceTable->horizontalHeaderItem(2))
+        serviceTable->horizontalHeaderItem(2)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter); // Name
+    if (serviceTable->horizontalHeaderItem(3))
+        serviceTable->horizontalHeaderItem(3)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter); // Price
+    if (serviceTable->horizontalHeaderItem(4))
+        serviceTable->horizontalHeaderItem(4)->setTextAlignment(Qt::AlignCenter); // Unit
+    if (serviceTable->horizontalHeaderItem(5))
+        serviceTable->horizontalHeaderItem(5)->setTextAlignment(Qt::AlignCenter); // Stock
+    if (serviceTable->horizontalHeaderItem(6))
+        serviceTable->horizontalHeaderItem(6)->setTextAlignment(Qt::AlignCenter); // Sold
+    if (serviceTable->horizontalHeaderItem(7))
+        serviceTable->horizontalHeaderItem(7)->setTextAlignment(Qt::AlignCenter); // Status
+    if (serviceTable->horizontalHeaderItem(8))
+        serviceTable->horizontalHeaderItem(8)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter); // Desc
 
     leftLayout->addWidget(serviceTable);
+    mainLayout->addWidget(leftPanel, 7); // 70%
 
-    mainLayout->addWidget(leftWidget, 7); // 70%
+    // ================= RIGHT PANEL (30%) =================
+    QFrame *rightPanel = new QFrame(this);
+    rightPanel->setStyleSheet("background-color: white; border-radius: 10px; border: 1px solid #e5e7eb;");
+    QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
+    rightLayout->setSpacing(15);
+    rightLayout->setContentsMargins(20, 20, 20, 20);
 
-    // ===== RIGHT PANEL (30%) =====
-    QWidget *rightWidget = new QWidget(this);
-    rightWidget->setMinimumWidth(350);
-    rightWidget->setMaximumWidth(450);
-    rightLayout = new QVBoxLayout(rightWidget);
-    rightLayout->setSpacing(0);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
+    // --- Image Upload Area ---
+    QVBoxLayout *imageLayout = new QVBoxLayout();
 
-    // Scroll area for form
-    QScrollArea *scrollArea = new QScrollArea(this);
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    imagePreviewLabel = new QLabel("Chưa có ảnh", this);
+    imagePreviewLabel->setAlignment(Qt::AlignCenter);
+    imagePreviewLabel->setFixedSize(120, 120);
+    imagePreviewLabel->setStyleSheet("border: 2px dashed #d1d5db; border-radius: 8px; color: #9ca3af; margin-bottom: 10px;");
 
-    formFrame = new QFrame();
-    formFrame->setObjectName("formFrame");
-    QVBoxLayout *formLayout = new QVBoxLayout(formFrame);
-    formLayout->setSpacing(8);
-    formLayout->setContentsMargins(15, 15, 15, 15);
+    uploadImageBtn = new QPushButton("📷 Tải ảnh lên", this);
+    uploadImageBtn->setCursor(Qt::PointingHandCursor);
+    uploadImageBtn->setStyleSheet("QPushButton { border: 1px solid #d1d5db; border-radius: 5px; padding: 5px 15px; background-color: white; } QPushButton:hover { background-color: #f9fafb; border-color: #9ca3af; }");
 
-    // Title
-    QLabel *formTitle = new QLabel("📝 THÔNG TIN DỊCH VỤ", this);
-    formTitle->setObjectName("sectionTitle");
-    formTitle->setWordWrap(true);
-    QFont titleFont = formTitle->font();
-    titleFont.setPointSize(11);
-    titleFont.setBold(true);
-    formTitle->setFont(titleFont);
-    formLayout->addWidget(formTitle);
+    imageLayout->addWidget(imagePreviewLabel, 0, Qt::AlignCenter);
+    imageLayout->addWidget(uploadImageBtn, 0, Qt::AlignCenter);
 
-    // Add New Button
-    addNewBtn = new QPushButton("+ Thêm dịch vụ mới", this);
-    addNewBtn->setObjectName("primaryButton");
-    addNewBtn->setFixedHeight(38);
-    formLayout->addWidget(addNewBtn);
+    rightLayout->addLayout(imageLayout);
+    rightLayout->addSpacing(10);
 
-    formLayout->addSpacing(15);
+    // --- Form Fields ---
+    QVBoxLayout *formLayout = new QVBoxLayout();
+    formLayout->setSpacing(12);
 
-    // Service Code - horizontal layout
-    QHBoxLayout *codeLayout = new QHBoxLayout();
-    codeLayout->setSpacing(10);
-    QLabel *codeLabel = new QLabel("Mã:", this);
-    codeLabel->setObjectName("formLabel");
-    codeLabel->setFixedWidth(90);
-    codeLayout->addWidget(codeLabel);
+    // Helper lambda for row layout
+    auto addRow = [&](const QString &label, QWidget *widget)
+    {
+        QHBoxLayout *row = new QHBoxLayout();
+        QLabel *lbl = new QLabel(label, this);
+        lbl->setFixedWidth(70);
+        lbl->setStyleSheet("font-weight: bold; color: #374151; border: none;"); // No border for labels
+
+        // Style inputs
+        if (qobject_cast<QLineEdit *>(widget))
+        {
+            widget->setStyleSheet("QLineEdit { border: 1px solid #d1d5db; border-radius: 5px; padding: 5px; } QLineEdit:focus { border-color: #3b82f6; }");
+        }
+        else if (qobject_cast<QComboBox *>(widget))
+        {
+            widget->setStyleSheet("QComboBox { border: 1px solid #d1d5db; border-radius: 5px; padding: 5px; }");
+        }
+        else if (qobject_cast<QTextEdit *>(widget))
+        {
+            widget->setStyleSheet("QTextEdit { border: 1px solid #d1d5db; border-radius: 5px; padding: 5px; }");
+        }
+
+        row->addWidget(lbl);
+        row->addWidget(widget);
+        formLayout->addLayout(row);
+    };
+
+    // Code (Hidden from UI but initialized)
     codeEdit = new QLineEdit(this);
-    codeEdit->setObjectName("formInput");
-    codeEdit->setReadOnly(true);
-    codeEdit->setEnabled(false);
-    codeLayout->addWidget(codeEdit, 1);
-    formLayout->addLayout(codeLayout);
-    formLayout->addSpacing(10);
+    codeEdit->setVisible(false);
 
-    // Service Name - horizontal layout
-    QHBoxLayout *nameLayout = new QHBoxLayout();
-    nameLayout->setSpacing(10);
-    QLabel *nameLabel = new QLabel("Tên:", this);
-    nameLabel->setObjectName("formLabel");
-    nameLabel->setFixedWidth(90);
-    nameLayout->addWidget(nameLabel);
+    // Name
     nameEdit = new QLineEdit(this);
-    nameEdit->setPlaceholderText("Nhập tên dịch vụ");
-    nameEdit->setObjectName("formInput");
-    nameLayout->addWidget(nameEdit, 1);
-    formLayout->addLayout(nameLayout);
-    formLayout->addSpacing(10);
+    nameEdit->setPlaceholderText("Nhập tên dịch vụ...");
+    addRow("Tên:", nameEdit);
 
-    // Category - horizontal layout
-    QHBoxLayout *categoryLayout = new QHBoxLayout();
-    categoryLayout->setSpacing(10);
-    QLabel *categoryLabel = new QLabel("Loại:", this);
-    categoryLabel->setObjectName("formLabel");
-    categoryLabel->setFixedWidth(90);
-    categoryLayout->addWidget(categoryLabel);
+    // Category
     categoryEdit = new QComboBox(this);
-    categoryEdit->setObjectName("formInput");
     categoryEdit->addItem("Đồ uống", static_cast<int>(LoaiDichVu::DO_UONG));
+    categoryEdit->addItem("Đồ ăn", static_cast<int>(LoaiDichVu::DO_AN));
     categoryEdit->addItem("Thiết bị", static_cast<int>(LoaiDichVu::THIET_BI));
-    categoryEdit->addItem("Khác", static_cast<int>(LoaiDichVu::KHAC));
-    categoryLayout->addWidget(categoryEdit, 1);
-    formLayout->addLayout(categoryLayout);
-    formLayout->addSpacing(10);
+    addRow("Loại:", categoryEdit);
 
-    // Price - horizontal layout
-    QHBoxLayout *priceLayout = new QHBoxLayout();
-    priceLayout->setSpacing(10);
-    QLabel *priceLabel = new QLabel("Giá (đ):", this);
-    priceLabel->setObjectName("formLabel");
-    priceLabel->setFixedWidth(90);
-    priceLayout->addWidget(priceLabel);
+    // Price
     priceEdit = new QLineEdit(this);
-    priceEdit->setPlaceholderText("15000");
-    priceEdit->setObjectName("formInput");
-    priceLayout->addWidget(priceEdit, 1);
-    formLayout->addLayout(priceLayout);
-    formLayout->addSpacing(10);
+    priceEdit->setPlaceholderText("0");
+    addRow("Giá (đ):", priceEdit);
 
-    // Unit - horizontal layout
-    QHBoxLayout *unitLayout = new QHBoxLayout();
-    unitLayout->setSpacing(10);
-    QLabel *unitLabel = new QLabel("Đơn vị:", this);
-    unitLabel->setObjectName("formLabel");
-    unitLabel->setFixedWidth(90);
-    unitLayout->addWidget(unitLabel);
+    // Unit
     unitEdit = new QLineEdit(this);
-    unitEdit->setPlaceholderText("Lon, Chai...");
-    unitEdit->setObjectName("formInput");
-    unitLayout->addWidget(unitEdit, 1);
-    formLayout->addLayout(unitLayout);
-    formLayout->addSpacing(10);
+    unitEdit->setPlaceholderText("Lon, Chai, Cái...");
+    addRow("Đơn vị:", unitEdit);
 
-    // Stock - horizontal layout
-    QHBoxLayout *stockLayout = new QHBoxLayout();
-    stockLayout->setSpacing(10);
-    QLabel *stockLabel = new QLabel("Tồn kho:", this);
-    stockLabel->setObjectName("formLabel");
-    stockLabel->setFixedWidth(90);
-    stockLayout->addWidget(stockLabel);
+    // Stock
     stockEdit = new QLineEdit(this);
-    stockEdit->setPlaceholderText("50");
-    stockEdit->setObjectName("formInput");
-    stockLayout->addWidget(stockEdit, 1);
-    formLayout->addLayout(stockLayout);
-    formLayout->addSpacing(10);
+    stockEdit->setPlaceholderText("0");
+    addRow("Kho:", stockEdit);
 
-    // Available checkbox
-    availableCheckBox = new QCheckBox("✓ Có sẵn", this);
-    availableCheckBox->setObjectName("formCheckbox");
-    availableCheckBox->setChecked(true);
-    formLayout->addWidget(availableCheckBox);
-    formLayout->addSpacing(10);
+    // Status (Replaces Available Checkbox)
+    statusEdit = new QComboBox(this);
+    statusEdit->addItem("Hoạt động", true);
+    statusEdit->addItem("Ngừng bán", false);
+    addRow("Trạng thái:", statusEdit);
 
     // Description
-    QLabel *descLabel = new QLabel("Mô tả:", this);
-    descLabel->setObjectName("fieldLabel");
-    descLabel->setWordWrap(true);
-    formLayout->addWidget(descLabel);
     descriptionEdit = new QTextEdit(this);
-    descriptionEdit->setPlaceholderText("Mô tả...");
-    descriptionEdit->setObjectName("formTextArea");
-    descriptionEdit->setFixedHeight(45);
-    formLayout->addWidget(descriptionEdit);
+    descriptionEdit->setPlaceholderText("Mô tả chi tiết...");
+    descriptionEdit->setFixedHeight(60);
+    descriptionEdit->setStyleSheet("QTextEdit { border: 1px solid #9ca3af; border-radius: 5px; padding: 5px; }");
+    addRow("Mô tả:", descriptionEdit);
 
-    formLayout->addSpacing(15);
+    rightLayout->addLayout(formLayout);
+    rightLayout->addStretch();
 
-    // Action Buttons
+    // --- Action Buttons ---
     QHBoxLayout *btnLayout = new QHBoxLayout();
-    btnLayout->setSpacing(6);
+
+    addNewBtn = new QPushButton("Thêm mới", this);
+    addNewBtn->setCursor(Qt::PointingHandCursor);
+    addNewBtn->setStyleSheet("QPushButton { background-color: #3b82f6; color: white; font-weight: bold; padding: 8px; border-radius: 5px; border: none; } QPushButton:hover { background-color: #2563eb; }");
 
     saveBtn = new QPushButton("Lưu", this);
-    saveBtn->setObjectName("primaryButton");
-    saveBtn->setFixedHeight(34);
+    saveBtn->setCursor(Qt::PointingHandCursor);
+    saveBtn->setStyleSheet("QPushButton { background-color: #10b981; color: white; font-weight: bold; padding: 8px; border-radius: 5px; border: none; } QPushButton:hover { background-color: #059669; } QPushButton:disabled { background-color: #d1d5db; }");
     saveBtn->setEnabled(false);
-    btnLayout->addWidget(saveBtn);
 
     deleteBtn = new QPushButton("Xóa", this);
-    deleteBtn->setObjectName("dangerButton");
-    deleteBtn->setFixedHeight(34);
+    deleteBtn->setCursor(Qt::PointingHandCursor);
+    deleteBtn->setStyleSheet("QPushButton { background-color: #ef4444; color: white; font-weight: bold; padding: 8px; border-radius: 5px; border: none; } QPushButton:hover { background-color: #dc2626; } QPushButton:disabled { background-color: #d1d5db; }");
     deleteBtn->setEnabled(false);
+
+    btnLayout->addWidget(addNewBtn);
+    btnLayout->addWidget(saveBtn);
     btnLayout->addWidget(deleteBtn);
 
-    formLayout->addLayout(btnLayout);
-    formLayout->addSpacing(15);
-    formLayout->addStretch();
+    rightLayout->addLayout(btnLayout);
 
-    scrollArea->setWidget(formFrame);
-    rightLayout->addWidget(scrollArea);
-    mainLayout->addWidget(rightWidget, 3); // 30%
-
-    setLayout(mainLayout);
+    mainLayout->addWidget(rightPanel, 3); // 30%
 }
 
 void ServiceManagementWidget::setupConnections()
 {
-    // Search & Filters
-    connect(searchEdit, &QLineEdit::textChanged, this, &ServiceManagementWidget::onSearchTextChanged);
-    connect(categoryCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &ServiceManagementWidget::onCategoryFilterChanged);
-    connect(priceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &ServiceManagementWidget::onPriceFilterChanged);
+    // Filters
+    // connect(searchEdit, &QLineEdit::textChanged, this, &ServiceManagementWidget::onSearchTextChanged); // Removed auto-search
+    connect(searchEdit, &QLineEdit::returnPressed, this, [this]()
+            { filterServices(); }); // Search on Enter
+    connect(searchBtn, &QPushButton::clicked, this, [this]()
+            { filterServices(); }); // Search on Button Click
+
+    connect(sortByCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ServiceManagementWidget::onSortByChanged);
+    connect(sortOrderCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ServiceManagementWidget::onSortOrderChanged);
+    connect(unitFilterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ServiceManagementWidget::onUnitFilterChanged);
+    connect(statusFilterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ServiceManagementWidget::onStatusFilterChanged);
     connect(reloadBtn, &QPushButton::clicked, this, &ServiceManagementWidget::onReloadClicked);
 
     // Table
     connect(serviceTable, &QTableWidget::cellClicked, this, &ServiceManagementWidget::onTableRowClicked);
 
-    // Form Actions
+    // Actions
+    connect(uploadImageBtn, &QPushButton::clicked, this, &ServiceManagementWidget::onUploadImageClicked);
     connect(addNewBtn, &QPushButton::clicked, this, &ServiceManagementWidget::onAddNewClicked);
     connect(saveBtn, &QPushButton::clicked, this, &ServiceManagementWidget::onSaveClicked);
     connect(deleteBtn, &QPushButton::clicked, this, &ServiceManagementWidget::onDeleteClicked);
 }
 
-void ServiceManagementWidget::applyStyles()
-{
-    // Styles already applied via global QSS (app.qss)
-    // Just need to ensure objectNames are set correctly
-}
-
 void ServiceManagementWidget::loadServices()
 {
-    // TODO: Implement loading services from system
     allServices.clear();
-    filteredServices.clear();
-
+    QStringList serviceNames;
     const MangDong<DichVu *> &services = system->layDanhSachDichVu();
     for (int i = 0; i < services.size(); i++)
     {
         allServices.append(services[i]);
-        filteredServices.append(services[i]);
+        serviceNames << QString::fromStdString(services[i]->layTenDichVu());
     }
 
-    // Update table
-    serviceTable->setRowCount(filteredServices.size());
-    for (int i = 0; i < filteredServices.size(); i++)
+    if (searchCompleter)
     {
-        DichVu *service = filteredServices[i];
+        searchCompleter->setModel(new QStringListModel(serviceNames, searchCompleter));
+    }
 
-        // Column 0: Ảnh (Image)
+    updateUnitFilter();
+    filterServices();
+}
+
+void ServiceManagementWidget::updateUnitFilter()
+{
+    QString currentUnit = unitFilterCombo->currentData().toString();
+    unitFilterCombo->blockSignals(true);
+    unitFilterCombo->clear();
+    unitFilterCombo->addItem("Tất cả", "ALL");
+
+    QStringList units;
+    for (DichVu *dv : allServices)
+    {
+        QString u = QString::fromStdString(dv->layDonVi()).trimmed();
+        if (!u.isEmpty() && !units.contains(u))
+        {
+            units.append(u);
+        }
+    }
+    units.sort();
+
+    for (const QString &u : units)
+    {
+        unitFilterCombo->addItem(u, u);
+    }
+
+    int idx = unitFilterCombo->findData(currentUnit);
+    if (idx != -1)
+        unitFilterCombo->setCurrentIndex(idx);
+    unitFilterCombo->blockSignals(false);
+}
+
+void ServiceManagementWidget::filterServices()
+{
+    displayedServices.clear();
+    QString searchText = searchEdit->text().trimmed().toLower();
+    QString unitFilter = unitFilterCombo->currentData().toString();
+    QString statusFilter = statusFilterCombo->currentData().toString();
+
+    for (DichVu *dv : allServices)
+    {
+        // Search Filter
+        if (!searchText.isEmpty())
+        {
+            if (!QString::fromStdString(dv->layTenDichVu()).toLower().contains(searchText))
+            {
+                continue;
+            }
+        }
+
+        // Unit Filter
+        if (unitFilter != "ALL")
+        {
+            if (QString::fromStdString(dv->layDonVi()) != unitFilter)
+            {
+                continue;
+            }
+        }
+
+        // Status Filter
+        if (statusFilter != "ALL")
+        {
+            bool isActive = dv->coConHang();
+            if (statusFilter == "ACTIVE" && !isActive)
+                continue;
+            if (statusFilter == "INACTIVE" && isActive)
+                continue;
+        }
+
+        displayedServices.append(dv);
+    }
+
+    sortServices();
+}
+
+void ServiceManagementWidget::sortServices()
+{
+    int sortBy = sortByCombo->currentData().toInt(); // -1: Default, 0: Price, 1: Stock, 2: Sold
+    int sortOrder = sortOrderCombo->currentIndex();  // 0: Asc, 1: Desc
+
+    if (sortBy != -1)
+    {
+        std::sort(displayedServices.begin(), displayedServices.end(), [sortBy, sortOrder](DichVu *a, DichVu *b)
+                  {
+            bool result = false;
+            if (sortBy == 0) { // Price
+                result = a->layDonGia() < b->layDonGia();
+            } else if (sortBy == 1) { // Stock
+                result = a->laySoLuongTon() < b->laySoLuongTon();
+            } else if (sortBy == 2) { // Sold
+                result = a->laySoLuongBan() < b->laySoLuongBan();
+            }
+            
+            return sortOrder == 0 ? result : !result; });
+    }
+
+    // Update Table
+    serviceTable->setRowCount(0);
+    serviceTable->setRowCount(displayedServices.size());
+
+    for (int i = 0; i < displayedServices.size(); i++)
+    {
+        DichVu *dv = displayedServices[i];
+
+        // Image
         QLabel *imgLabel = new QLabel();
         imgLabel->setAlignment(Qt::AlignCenter);
-        imgLabel->setFixedSize(50, 50);
-        imgLabel->setScaledContents(false);
-
-        QString imagePath = QString::fromStdString(service->layHinhAnh());
-        if (!imagePath.isEmpty())
+        QString imgPath = QString::fromStdString(dv->layHinhAnh());
+        if (!imgPath.isEmpty() && QFile::exists(imgPath))
         {
-            // Try with Data/ prefix
-            QString fullPath = "Data/" + imagePath;
-            if (QFile::exists(fullPath))
-            {
-                QPixmap pixmap(fullPath);
-                imgLabel->setPixmap(pixmap.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-            }
-            else if (QFile::exists(imagePath))
-            {
-                QPixmap pixmap(imagePath);
-                imgLabel->setPixmap(pixmap.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-            }
-            else
-            {
-                imgLabel->setStyleSheet("font-size: 24px;");
-                imgLabel->setText("📦");
-            }
+            QPixmap pix(imgPath);
+            imgLabel->setPixmap(pix.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         }
         else
         {
-            imgLabel->setStyleSheet("font-size: 24px;");
             imgLabel->setText("📦");
+            imgLabel->setStyleSheet("font-size: 24px; color: #ccc;");
         }
         serviceTable->setCellWidget(i, 0, imgLabel);
 
-        // Column 1: Mã DV
-        serviceTable->setItem(i, 1, new QTableWidgetItem(QString::fromStdString(service->layMaDichVu())));
+        // Code
+        QTableWidgetItem *itemCode = new QTableWidgetItem(QString::fromStdString(dv->layMaDichVu()));
+        itemCode->setTextAlignment(Qt::AlignCenter);
+        serviceTable->setItem(i, 1, itemCode);
 
-        // Column 2: Tên DV
-        serviceTable->setItem(i, 2, new QTableWidgetItem(QString::fromStdString(service->layTenDichVu())));
+        // Name
+        QTableWidgetItem *itemName = new QTableWidgetItem(QString::fromStdString(dv->layTenDichVu()));
+        itemName->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        serviceTable->setItem(i, 2, itemName);
 
-        // Column 3: Loại
-        QString category;
-        switch (service->layLoaiDichVu())
+        // Price
+        QTableWidgetItem *itemPrice = new QTableWidgetItem(QString::number(dv->layDonGia(), 'f', 0) + "đ");
+        itemPrice->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        itemPrice->setForeground(QBrush(QColor("#059669"))); // Dark Green
+        itemPrice->setFont(QFont("Segoe UI", 10, QFont::Bold));
+        serviceTable->setItem(i, 3, itemPrice);
+
+        // Unit
+        QTableWidgetItem *itemUnit = new QTableWidgetItem(QString::fromStdString(dv->layDonVi()));
+        itemUnit->setTextAlignment(Qt::AlignCenter);
+        serviceTable->setItem(i, 4, itemUnit);
+
+        // Stock
+        QTableWidgetItem *itemStock = new QTableWidgetItem(QString::number(dv->laySoLuongTon()));
+        itemStock->setTextAlignment(Qt::AlignCenter);
+        serviceTable->setItem(i, 5, itemStock);
+
+        // Sold
+        QTableWidgetItem *itemSold = new QTableWidgetItem(QString::number(dv->laySoLuongBan()));
+        itemSold->setTextAlignment(Qt::AlignCenter);
+        serviceTable->setItem(i, 6, itemSold);
+
+        // Status
+        QLabel *statusLabel = new QLabel();
+        statusLabel->setAlignment(Qt::AlignCenter);
+        if (dv->coConHang())
         {
-        case LoaiDichVu::DO_UONG:
-            category = "Đồ uống";
-            break;
-        case LoaiDichVu::THIET_BI:
-            category = "Thiết bị";
-            break;
-        case LoaiDichVu::KHAC:
-            category = "Khác";
-            break;
+            statusLabel->setText("Hoạt động");
+            statusLabel->setStyleSheet("color: #059669; font-weight: bold; background-color: #d1fae5; border-radius: 10px; padding: 2px 8px;");
         }
-        serviceTable->setItem(i, 3, new QTableWidgetItem(category));
+        else
+        {
+            statusLabel->setText("Ngừng bán");
+            statusLabel->setStyleSheet("color: #dc2626; font-weight: bold; background-color: #fee2e2; border-radius: 10px; padding: 2px 8px;");
+        }
 
-        // Column 4: Đơn vị
-        serviceTable->setItem(i, 4, new QTableWidgetItem(QString::fromStdString(service->layDonVi())));
+        // Wrap label in a widget to center it properly with padding
+        QWidget *statusWidget = new QWidget();
+        statusWidget->setStyleSheet("background-color: transparent; border: none;"); // Ensure no border on container
+        QHBoxLayout *statusLayout = new QHBoxLayout(statusWidget);
+        statusLayout->setContentsMargins(0, 0, 0, 0);
+        statusLayout->setAlignment(Qt::AlignCenter);
+        statusLayout->addWidget(statusLabel);
+        serviceTable->setCellWidget(i, 7, statusWidget);
 
-        // Column 5: Giá
-        serviceTable->setItem(i, 5, new QTableWidgetItem(QString::number(service->layDonGia(), 'f', 0) + "đ"));
-
-        // Column 6: Số lượng
-        serviceTable->setItem(i, 6, new QTableWidgetItem(QString::number(service->laySoLuongTon())));
-
-        // Column 7: Đã bán
-        serviceTable->setItem(i, 7, new QTableWidgetItem(QString::number(service->laySoLuongBan())));
-
-        // Column 8: Trạng thái
-        QString status = service->coConHang() ? "✓ Còn hàng" : "✗ Hết hàng";
-        serviceTable->setItem(i, 8, new QTableWidgetItem(status));
+        // Description
+        QTableWidgetItem *itemDesc = new QTableWidgetItem(QString::fromStdString(dv->layMoTa()));
+        itemDesc->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        serviceTable->setItem(i, 8, itemDesc);
     }
+}
+
+void ServiceManagementWidget::onSearchTextChanged(const QString &text) { filterServices(); }
+void ServiceManagementWidget::onSortByChanged(int index) { sortServices(); }
+void ServiceManagementWidget::onSortOrderChanged(int index) { sortServices(); }
+void ServiceManagementWidget::onUnitFilterChanged(int index) { filterServices(); }
+void ServiceManagementWidget::onStatusFilterChanged(int index) { filterServices(); }
+void ServiceManagementWidget::onReloadClicked()
+{
+    searchEdit->clear();
+    loadServices();
+    clearForm();
+}
+
+void ServiceManagementWidget::onAddNewClicked()
+{
+    clearForm();
+    codeEdit->setText(generateNextServiceCode());
+    nameEdit->setFocus();
+    saveBtn->setEnabled(true);
+    deleteBtn->setEnabled(false);
+}
+
+void ServiceManagementWidget::onTableRowClicked(int row)
+{
+    if (row < 0 || row >= displayedServices.size())
+        return;
+
+    DichVu *dv = displayedServices[row];
+    loadServiceToForm(dv);
 }
 
 void ServiceManagementWidget::loadServiceToForm(DichVu *service)
 {
     if (!service)
         return;
-
     currentService = service;
     isEditMode = true;
 
@@ -463,14 +606,30 @@ void ServiceManagementWidget::loadServiceToForm(DichVu *service)
     unitEdit->setText(QString::fromStdString(service->layDonVi()));
     stockEdit->setText(QString::number(service->laySoLuongTon()));
     descriptionEdit->setPlainText(QString::fromStdString(service->layMoTa()));
-    availableCheckBox->setChecked(service->coConHang());
 
-    // Set category
-    int categoryIndex = categoryEdit->findData(static_cast<int>(service->layLoaiDichVu()));
-    if (categoryIndex >= 0)
-        categoryEdit->setCurrentIndex(categoryIndex);
+    // Set Status
+    int statusIdx = statusEdit->findData(service->coConHang());
+    if (statusIdx != -1)
+        statusEdit->setCurrentIndex(statusIdx);
 
-    // Enable buttons
+    int catIdx = categoryEdit->findData(static_cast<int>(service->layLoaiDichVu()));
+    if (catIdx != -1)
+        categoryEdit->setCurrentIndex(catIdx);
+
+    // Load Image Preview
+    currentImagePath = QString::fromStdString(service->layHinhAnh());
+    if (!currentImagePath.isEmpty() && QFile::exists(currentImagePath))
+    {
+        QPixmap pix(currentImagePath);
+        imagePreviewLabel->setPixmap(pix.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        imagePreviewLabel->setText("");
+    }
+    else
+    {
+        imagePreviewLabel->clear();
+        imagePreviewLabel->setText("Chưa có ảnh");
+    }
+
     saveBtn->setEnabled(true);
     deleteBtn->setEnabled(true);
 }
@@ -479,141 +638,38 @@ void ServiceManagementWidget::clearForm()
 {
     currentService = nullptr;
     isEditMode = false;
+    currentImagePath.clear();
 
-    // Auto-generate new service code
-    QString newCode = generateNextServiceCode();
-    codeEdit->setText(newCode);
-
+    codeEdit->clear();
     nameEdit->clear();
     priceEdit->clear();
     unitEdit->clear();
     stockEdit->clear();
     descriptionEdit->clear();
-    availableCheckBox->setChecked(true);
+    statusEdit->setCurrentIndex(0); // Default Active
     categoryEdit->setCurrentIndex(0);
 
-    nameEdit->setEnabled(false);
-    priceEdit->setEnabled(false);
-    unitEdit->setEnabled(false);
-    stockEdit->setEnabled(false);
-    descriptionEdit->setEnabled(false);
-    availableCheckBox->setEnabled(false);
-    categoryEdit->setEnabled(false);
+    imagePreviewLabel->clear();
+    imagePreviewLabel->setText("Chưa có ảnh");
 
     saveBtn->setEnabled(false);
     deleteBtn->setEnabled(false);
 }
 
-void ServiceManagementWidget::updateStatsCards()
+void ServiceManagementWidget::onUploadImageClicked()
 {
-    int totalCount = allServices.size();
-    int drinkCount = 0;
-    int equipCount = 0;
-
-    for (DichVu *service : allServices)
-    {
-        switch (service->layLoaiDichVu())
-        {
-        case LoaiDichVu::DO_UONG:
-            drinkCount++;
-            break;
-        case LoaiDichVu::THIET_BI:
-            equipCount++;
-            break;
-        default:
-            break;
-        }
-    }
-
-    totalServicesLabel->setText(QString::number(totalCount));
-    drinkServicesLabel->setText(QString::number(drinkCount));
-    equipmentServicesLabel->setText(QString::number(equipCount));
-}
-
-bool ServiceManagementWidget::validateServiceData()
-{
-    if (nameEdit->text().trimmed().isEmpty())
-    {
-        QMessageBox::warning(this, "Lỗi", "Vui lòng nhập tên dịch vụ!");
-        return false;
-    }
-
-    if (priceEdit->text().trimmed().isEmpty())
-    {
-        QMessageBox::warning(this, "Lỗi", "Vui lòng nhập đơn giá!");
-        return false;
-    }
-
-    bool ok;
-    double price = priceEdit->text().toDouble(&ok);
-    if (!ok || price < 0)
-    {
-        QMessageBox::warning(this, "Lỗi", "Đơn giá không hợp lệ!");
-        return false;
-    }
-
-    return true;
-}
-
-void ServiceManagementWidget::onSearchTextChanged(const QString &text)
-{
-    // TODO: Implement search filter
-    Q_UNUSED(text);
-}
-
-void ServiceManagementWidget::onCategoryFilterChanged(int index)
-{
-    // TODO: Implement category filter
-    Q_UNUSED(index);
-}
-
-void ServiceManagementWidget::onPriceFilterChanged(int index)
-{
-    // TODO: Implement price filter
-    Q_UNUSED(index);
-}
-
-void ServiceManagementWidget::onReloadClicked()
-{
-    loadServices();
-    updateStatsCards();
-    clearForm();
-}
-
-void ServiceManagementWidget::onAddNewClicked()
-{
-    clearForm();
-
-    // Enable form for new entry
-    nameEdit->setEnabled(true);
-    priceEdit->setEnabled(true);
-    unitEdit->setEnabled(true);
-    stockEdit->setEnabled(true);
-    descriptionEdit->setEnabled(true);
-    availableCheckBox->setEnabled(true);
-    categoryEdit->setEnabled(true);
-    saveBtn->setEnabled(true);
-
-    // Focus on name field
-    nameEdit->setFocus();
-}
-
-void ServiceManagementWidget::onTableRowClicked(int row)
-{
-    if (row < 0 || row >= filteredServices.size())
+    QString fileName = QFileDialog::getOpenFileName(this, "Chọn ảnh dịch vụ", "", "Images (*.png *.jpg *.jpeg *.bmp)");
+    if (fileName.isEmpty())
         return;
 
-    DichVu *service = filteredServices[row];
-    loadServiceToForm(service);
-
-    // Enable form for editing
-    nameEdit->setEnabled(true);
-    priceEdit->setEnabled(true);
-    unitEdit->setEnabled(true);
-    stockEdit->setEnabled(true);
-    descriptionEdit->setEnabled(true);
-    availableCheckBox->setEnabled(true);
-    categoryEdit->setEnabled(true);
+    // Preview
+    QPixmap pix(fileName);
+    if (!pix.isNull())
+    {
+        imagePreviewLabel->setPixmap(pix.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        imagePreviewLabel->setText("");
+        currentImagePath = fileName; // Store temp path, will copy on save
+    }
 }
 
 void ServiceManagementWidget::onSaveClicked()
@@ -622,75 +678,88 @@ void ServiceManagementWidget::onSaveClicked()
         return;
 
     QString name = nameEdit->text().trimmed();
-    QString priceStr = priceEdit->text().trimmed();
+    double price = priceEdit->text().toDouble();
     QString unit = unitEdit->text().trimmed();
-    QString stockStr = stockEdit->text().trimmed();
-    QString description = descriptionEdit->toPlainText().trimmed();
-    bool available = availableCheckBox->isChecked();
-    LoaiDichVu category = static_cast<LoaiDichVu>(categoryEdit->currentData().toInt());
+    int stock = stockEdit->text().toInt();
+    QString desc = descriptionEdit->toPlainText().trimmed();
+    bool available = statusEdit->currentData().toBool();
+    LoaiDichVu type = static_cast<LoaiDichVu>(categoryEdit->currentData().toInt());
 
-    double price = priceStr.toDouble();
-    int stock = stockStr.toInt();
+    // Handle Image Copy
+    QString finalImagePath = "";
+    if (!currentImagePath.isEmpty())
+    {
+        QFileInfo fileInfo(currentImagePath);
+        if (fileInfo.exists())
+        {
+            // Create Data/images directory if not exists
+            QString dataDir = "Data/images";
+            QDir dir;
+            if (!dir.exists(dataDir))
+                dir.mkpath(dataDir);
+
+            QString newFileName = codeEdit->text() + "." + fileInfo.suffix();
+            QString destPath = dataDir + "/" + newFileName;
+
+            // If it's a new file or different from existing
+            if (QFileInfo(currentImagePath).absoluteFilePath() != QFileInfo(destPath).absoluteFilePath())
+            {
+                if (QFile::exists(destPath))
+                    QFile::remove(destPath);
+                QFile::copy(currentImagePath, destPath);
+            }
+            finalImagePath = destPath;
+        }
+        else
+        {
+            // Keep old path if file not found (maybe already relative)
+            finalImagePath = currentImagePath;
+        }
+    }
 
     if (isEditMode && currentService)
     {
-        // Edit existing service
         currentService->datTenDichVu(name.toStdString());
         currentService->datDonGia(price);
         currentService->datDonVi(unit.toStdString());
         currentService->datSoLuongTon(stock);
-        currentService->datMoTa(description.toStdString());
+        currentService->datMoTa(desc.toStdString());
         currentService->datConHang(available);
+        if (!finalImagePath.isEmpty())
+            currentService->datHinhAnh(finalImagePath.toStdString());
 
-        // Save to binary file
-        system->luuHeThong("D:/PBL2-/Data/data.bin");
-        // Also save to CSV
-        system->luuDichVuCSV("D:/PBL2-/Data/dichvu.csv");
-
-        QMessageBox::information(this, "Thành công",
-                                 "Cập nhật dịch vụ thành công!");
+        QMessageBox::information(this, "Thành công", "Cập nhật dịch vụ thành công!");
     }
     else
     {
-        // Add new service
-        // Generate unique service ID
-        QString maDV = QString("DV%1").arg(system->layQuanLyDichVu()->tongSoDichVu() + 1, 3, 10, QChar('0'));
-
-        DichVu *newService = new DichVu(
-            maDV.toStdString(),
-            name.toStdString(),
-            price,
-            category);
-
+        QString code = codeEdit->text();
+        DichVu *newService = new DichVu(code.toStdString(), name.toStdString(), price, type);
         newService->datDonVi(unit.toStdString());
         newService->datSoLuongTon(stock);
-        newService->datMoTa(description.toStdString());
+        newService->datMoTa(desc.toStdString());
         newService->datConHang(available);
         newService->datSoLuongBan(0);
-        newService->datHinhAnh("images/product.jpg");
+        if (!finalImagePath.isEmpty())
+            newService->datHinhAnh(finalImagePath.toStdString());
 
-        bool added = system->layQuanLyDichVu()->themDichVu(newService);
-
-        if (added)
+        if (system->layQuanLyDichVu()->themDichVu(newService))
         {
-            // Save to binary file
-            system->luuHeThong("D:/PBL2-/Data/data.bin");
-            // Also save to CSV
-            system->luuDichVuCSV("D:/PBL2-/Data/dichvu.csv");
-
-            QMessageBox::information(this, "Thành công",
-                                     QString("Thêm dịch vụ mới thành công!\nMã DV: %1").arg(maDV));
-            clearForm();
+            QMessageBox::information(this, "Thành công", "Thêm dịch vụ mới thành công!");
         }
         else
         {
             delete newService;
-            QMessageBox::warning(this, "Lỗi", "Không thể thêm dịch vụ!");
+            QMessageBox::warning(this, "Lỗi", "Không thể thêm dịch vụ (Mã trùng?)");
+            return;
         }
     }
 
+    // Save System
+    system->luuHeThong("Data/data.bin");
+    system->luuDichVuCSV("Data/dichvu.csv");
+
     loadServices();
-    updateStatsCards();
+    clearForm();
 }
 
 void ServiceManagementWidget::onDeleteClicked()
@@ -698,25 +767,19 @@ void ServiceManagementWidget::onDeleteClicked()
     if (!currentService)
         return;
 
-    QMessageBox::StandardButton reply = QMessageBox::question(this,
-                                                              "Xác nhận xóa",
-                                                              QString("Bạn có chắc muốn xóa dịch vụ '%1'?\n\n"
-                                                                      "Lưu ý: Mã dịch vụ này sẽ không được tái sử dụng.")
-                                                                  .arg(QString::fromStdString(currentService->layTenDichVu())),
-                                                              QMessageBox::Yes | QMessageBox::No);
+    QMessageBox::StandardButton reply = QMessageBox::question(this, "Xác nhận",
+                                                              "Bạn có chắc muốn xóa dịch vụ này?", QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes)
     {
-        std::string maDV = currentService->layMaDichVu();
-        if (system->layQuanLyDichVu()->xoaDichVu(maDV))
+        std::string id = currentService->layMaDichVu();
+        if (system->layQuanLyDichVu()->xoaDichVu(id))
         {
-            // Save to binary file
-            system->luuHeThong("D:/PBL2-/Data/data.bin");
-
-            QMessageBox::information(this, "Thành công", "Xóa dịch vụ thành công!");
-            clearForm();
+            system->luuHeThong("Data/data.bin");
+            system->luuDichVuCSV("Data/dichvu.csv");
+            QMessageBox::information(this, "Thành công", "Đã xóa dịch vụ!");
             loadServices();
-            updateStatsCards();
+            clearForm();
         }
         else
         {
@@ -725,24 +788,35 @@ void ServiceManagementWidget::onDeleteClicked()
     }
 }
 
+bool ServiceManagementWidget::validateServiceData()
+{
+    if (nameEdit->text().trimmed().isEmpty())
+    {
+        QMessageBox::warning(this, "Lỗi", "Tên dịch vụ không được để trống!");
+        return false;
+    }
+    bool ok;
+    double p = priceEdit->text().toDouble(&ok);
+    if (!ok || p < 0)
+    {
+        QMessageBox::warning(this, "Lỗi", "Giá không hợp lệ!");
+        return false;
+    }
+    return true;
+}
+
 QString ServiceManagementWidget::generateNextServiceCode()
 {
-    const MangDong<DichVu *> &allServices = system->layDanhSachDichVu();
-    int maxNumber = 0;
-
-    for (int i = 0; i < allServices.size(); i++)
+    int maxId = 0;
+    for (DichVu *dv : allServices)
     {
-        QString code = QString::fromStdString(allServices[i]->layMaDichVu());
+        QString code = QString::fromStdString(dv->layMaDichVu());
         if (code.startsWith("DV"))
         {
-            bool ok;
-            int num = code.mid(2).toInt(&ok);
-            if (ok && num > maxNumber)
-            {
-                maxNumber = num;
-            }
+            int id = code.mid(2).toInt();
+            if (id > maxId)
+                maxId = id;
         }
     }
-
-    return QString("DV%1").arg(maxNumber + 1, 3, 10, QChar('0'));
+    return QString("DV%1").arg(maxId + 1, 3, 10, QChar('0'));
 }

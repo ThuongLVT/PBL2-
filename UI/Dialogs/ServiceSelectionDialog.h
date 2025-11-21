@@ -2,26 +2,17 @@
 #define SERVICESELECTIONDIALOG_H
 
 #include <QDialog>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QPushButton>
-#include <QScrollArea>
-#include <QGridLayout>
-#include <QLabel>
 #include <QMap>
-#include "../../Core/Models/DichVu.h"
-#include "../../Core/QuanLy/HeThongQuanLy.h"
+#include <string>
+#include <vector>
 
-#include <QTableWidget>
-#include <QHeaderView>
-
-// Structure to hold selection data
-struct ServiceSelectionItem {
-    DichVu* service;
-    int quantity;
-};
+class DichVu;
+class QLineEdit;
+class QComboBox;
+class QGridLayout;
+class QLabel;
+class QScrollArea;
+class QTableWidget;
 
 class ServiceSelectionDialog : public QDialog
 {
@@ -31,63 +22,39 @@ public:
     explicit ServiceSelectionDialog(QWidget *parent = nullptr);
     ~ServiceSelectionDialog();
 
-    // Get the list of selected services and their quantities
-    QList<ServiceSelectionItem> getSelectedServices() const;
-
-    // Pre-fill dialog with existing cart items if needed (optional)
-    void setCurrentSelection(const QMap<QString, int>& currentQuantities);
-    
-    // Set existing cart items to calculate available stock
-    void setExistingCart(const QMap<QString, int>& existingQuantities);
+    // Get selected services: Map<ServiceCode, Quantity>
+    QMap<std::string, int> getSelectedServices() const;
 
 private slots:
     void onSearchTextChanged(const QString &text);
-    void onCategoryFilterChanged(int index);
+    void onFilterChanged(int index);
     void onServiceCardClicked(DichVu *service);
+    void onTableDoubleClicked(int row, int column);
+    void onRemoveServiceClicked();
     void onConfirmClicked();
-    void onCancelClicked();
-    
-    // Cart slots
-    void onIncreaseQuantity(int row);
-    void onDecreaseQuantity(int row);
-    void onRemoveItem(int row);
-    void onQuantityChanged(int row, int value);
 
 private:
     void setupUI();
     void loadServices();
-    void createServiceCards();
-    QWidget *createServiceCard(DichVu *service);
-    void updateSelectionSummary();
-    void updateCartTable(); // New method
-    int getAvailableStock(DichVu* service);
+    void updateGrid();
+    void updateTable();
+    void openQuantityDialog(DichVu *service, int currentQty);
 
-    // UI Components
+    // Helper to create a service card
+    QWidget *createServiceCard(DichVu *service);
+
+    // UI Elements
     QLineEdit *searchEdit;
-    QComboBox *categoryCombo;
-    QScrollArea *serviceScrollArea;
-    QWidget *serviceGridWidget;
-    QGridLayout *serviceGridLayout;
-    
-    // Cart Components
-    QTableWidget *cartTable;
-    QLabel *totalPriceLabel;
-    
-    QLabel *summaryLabel;
-    QPushButton *confirmBtn;
-    QPushButton *cancelBtn;
+    QComboBox *filterCombo;
+    QTableWidget *selectedTable; // Top Frame
+    QScrollArea *scrollArea;     // Bottom Frame
+    QWidget *gridContainer;
+    QGridLayout *gridLayout;
 
     // Data
-    HeThongQuanLy *system;
-    QList<DichVu *> allServices;
-    QList<DichVu *> filteredServices;
-    
-    // Map to track temporary selection in dialog: ServiceID -> Quantity
-    QMap<QString, int> tempSelection; 
-    // Map to hold service pointers for easy access: ServiceID -> DichVu*
-    QMap<QString, DichVu*> serviceMap;
-    // Map to hold existing quantities in main cart
-    QMap<QString, int> existingCart;
+    std::vector<DichVu *> allServices;
+    std::vector<DichVu *> displayedServices;
+    QMap<std::string, int> selectedQuantities; // ServiceID -> Quantity
 };
 
 #endif // SERVICESELECTIONDIALOG_H

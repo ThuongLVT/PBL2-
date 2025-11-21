@@ -70,17 +70,17 @@ std::string KhachHang::layTenHang() const
     switch (hang)
     {
     case HangKhachHang::THUONG:
-        return std::string("Thuong");
+        return std::string("Thường");
     case HangKhachHang::DONG:
-        return std::string("Dong");
+        return std::string("Đồng");
     case HangKhachHang::BAC:
-        return std::string("Bac");
+        return std::string("Bạc");
     case HangKhachHang::VANG:
-        return std::string("Vang");
+        return std::string("Vàng");
     case HangKhachHang::KIM_CUONG:
-        return std::string("Kim Cuong");
+        return std::string("Kim Cương");
     default:
-        return std::string("Khong xac dinh");
+        return std::string("Không xác định");
     }
 }
 
@@ -97,7 +97,7 @@ int KhachHang::layPhanTramGiamGia() const
     case HangKhachHang::VANG:
         return 6;
     case HangKhachHang::KIM_CUONG:
-        return 8;
+        return 10;
     default:
         return 0;
     }

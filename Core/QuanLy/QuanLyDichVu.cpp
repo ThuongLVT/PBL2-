@@ -36,16 +36,21 @@ bool QuanLyDichVu::themDichVu(DichVu *dv)
         return false;
     }
     danhSachDichVu.push_back(dv);
-    
+
     // Update maxServiceId if needed
     string maDV = dv->layMaDichVu();
-    if (maDV.length() >= 3 && maDV.substr(0, 2) == "DV") {
-        try {
+    if (maDV.length() >= 3 && maDV.substr(0, 2) == "DV")
+    {
+        try
+        {
             int id = stoi(maDV.substr(2));
-            if (id > maxServiceId) {
+            if (id > maxServiceId)
+            {
                 maxServiceId = id;
             }
-        } catch (...) {
+        }
+        catch (...)
+        {
             // Ignore invalid ID format
         }
     }
@@ -153,7 +158,7 @@ bool QuanLyDichVu::ghiFile(ofstream &file) const
 
     // Save maxServiceId first
     file.write(reinterpret_cast<const char *>(&maxServiceId), sizeof(maxServiceId));
-    
+
     int soLuong = danhSachDichVu.size();
     file.write(reinterpret_cast<const char *>(&soLuong), sizeof(soLuong));
 
@@ -174,7 +179,7 @@ bool QuanLyDichVu::docFile(ifstream &file)
 
     // Load maxServiceId first
     file.read(reinterpret_cast<char *>(&maxServiceId), sizeof(maxServiceId));
-    
+
     int soLuong;
     file.read(reinterpret_cast<char *>(&soLuong), sizeof(soLuong));
 
@@ -216,10 +221,15 @@ bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
     {
         const auto &row = rows[i];
 
-        // Parse CSV line: MaDichVu,TenDichVu,LoaiDichVu,DonGia,DonVi,SoLuongBan,TrangThai,HinhAnh,MoTa,SoLuongTon
-        if (row.size() < 9)
+        // New Order: MaDichVu,TenDichVu,DonGia,DonVi,SoLuongTon,SoLuongBan,TrangThai,LoaiDichVu,HinhAnh,MoTa
+        if (row.size() < 10)
         {
-            cerr << "Invalid CSV row at line " << (i + 2) << ": insufficient columns" << endl;
+            // Try old format fallback or skip
+            if (row.size() >= 9)
+            {
+                // Fallback to old format logic if needed, or just continue
+            }
+            // cerr << "Invalid CSV row at line " << (i + 2) << ": insufficient columns" << endl;
             continue;
         }
 
@@ -227,36 +237,32 @@ bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
         {
             string maDV = row[0];
             string tenDV = row[1];
-            string loaiStr = row[2];
-            double donGia = stod(row[3]);
-            string donVi = row[4];
+            double donGia = stod(row[2]);
+            string donVi = row[3];
+            int soLuongTon = stoi(row[4]);
             int soLuongBan = stoi(row[5]);
-            bool trangThai = (row[6] == "1");
-            string hinhAnh = row[7];
-            string moTa = row[8];
-            int soLuongTon = 50; // Default
-            
-            if (row.size() >= 10) {
-                soLuongTon = stoi(row[9]);
-            }
+            bool trangThai = (row[6] == "1" || row[6] == "true" || row[6] == "True");
+            string loaiStr = row[7];
+            string hinhAnh = row[8];
+            string moTa = row[9];
 
             // Convert loaiStr to LoaiDichVu
-            LoaiDichVu loai = LoaiDichVu::KHAC;
+            LoaiDichVu loai = LoaiDichVu::DO_UONG; // Default
             if (loaiStr == "DO_UONG")
                 loai = LoaiDichVu::DO_UONG;
+            else if (loaiStr == "DO_AN")
+                loai = LoaiDichVu::DO_AN;
             else if (loaiStr == "THIET_BI")
                 loai = LoaiDichVu::THIET_BI;
-            else if (loaiStr == "BAO_HIEM")
-                loai = LoaiDichVu::BAO_HIEM;
 
             // Create DichVu object
             DichVu *dv = new DichVu(maDV, tenDV, donGia, loai);
             dv->datDonVi(donVi);
+            dv->datSoLuongTon(soLuongTon);
             dv->datSoLuongBan(soLuongBan);
             dv->datConHang(trangThai);
             dv->datHinhAnh(hinhAnh);
             dv->datMoTa(moTa);
-            dv->datSoLuongTon(soLuongTon);
 
             // Don't auto-save when loading from CSV (avoid infinite loop)
             danhSachDichVu.push_back(dv);
@@ -275,7 +281,8 @@ bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
 
 bool QuanLyDichVu::luuDuLieuRaCSV(const std::string &filePath) const
 {
-    vector<string> headers = {"MaDichVu", "TenDichVu", "LoaiDichVu", "DonGia", "DonVi", "SoLuongBan", "TrangThai", "HinhAnh", "MoTa", "SoLuongTon"};
+    // New Order: MaDichVu,TenDichVu,DonGia,DonVi,SoLuongTon,SoLuongBan,TrangThai,LoaiDichVu,HinhAnh,MoTa
+    vector<string> headers = {"MaDichVu", "TenDichVu", "DonGia", "DonVi", "SoLuongTon", "SoLuongBan", "TrangThai", "LoaiDichVu", "HinhAnh", "MoTa"};
     vector<vector<string>> rows;
 
     for (int i = 0; i < danhSachDichVu.size(); i++)
@@ -290,27 +297,27 @@ bool QuanLyDichVu::luuDuLieuRaCSV(const std::string &filePath) const
         case LoaiDichVu::DO_UONG:
             loaiStr = "DO_UONG";
             break;
+        case LoaiDichVu::DO_AN:
+            loaiStr = "DO_AN";
+            break;
         case LoaiDichVu::THIET_BI:
             loaiStr = "THIET_BI";
             break;
-        case LoaiDichVu::BAO_HIEM:
-            loaiStr = "BAO_HIEM";
-            break;
         default:
-            loaiStr = "KHAC";
+            loaiStr = "DO_UONG";
             break;
         }
 
         row.push_back(dv->layMaDichVu());
         row.push_back(dv->layTenDichVu());
-        row.push_back(loaiStr);
         row.push_back(to_string(static_cast<long long>(dv->layDonGia())));
         row.push_back(dv->layDonVi());
+        row.push_back(to_string(dv->laySoLuongTon()));
         row.push_back(to_string(dv->laySoLuongBan()));
         row.push_back(dv->coConHang() ? "1" : "0");
+        row.push_back(loaiStr);
         row.push_back(dv->layHinhAnh());
         row.push_back(dv->layMoTa());
-        row.push_back(to_string(dv->laySoLuongTon()));
 
         rows.push_back(row);
     }

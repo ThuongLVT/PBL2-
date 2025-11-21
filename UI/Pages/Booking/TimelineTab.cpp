@@ -101,7 +101,7 @@ void TimelineTab::setupCalendarPanel()
     // Removed green highlight for current date as requested
     // QTextCharFormat todayFormat;
     // todayFormat.setBackground(QBrush(QColor(220, 252, 231))); // Light green background (#dcfce7)
-    // todayFormat.setForeground(QBrush(QColor(22, 163, 74)));   // Green text (#16a34a)
+    // todayFormat.setForeground(QBrush(QColor(22,163,74)));   // Green text (#16a34a)
     // todayFormat.setFontWeight(QFont::Bold);
     // calendar->setDateTextFormat(QDate::currentDate(), todayFormat);
 
@@ -848,7 +848,7 @@ void TimelineTab::updateDuration()
             double totalPrice = pricePerHour * durationHours;
             priceLabel->setText(formatCurrency(totalPrice));
 
-            // T\u00ednh c\u1ecdc 30% ti\u1ec1n s\u00e2n
+            // Tính cọc 30% tiền sân
             double depositAmount = totalPrice * 0.3;
             depositLabel->setText(formatCurrency(depositAmount));
         }
@@ -1248,6 +1248,24 @@ void TimelineTab::onDeleteClicked()
 
 void TimelineTab::onTimelineSlotSelected(int fieldIndex, int startHour, int startMinute, int durationMinutes)
 {
+    // Check for past time
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QDate currentDate = currentDateTime.date();
+    QTime currentTime = currentDateTime.time();
+
+    QTime slotTime(startHour, startMinute);
+
+    if (selectedDate < currentDate)
+    {
+        QMessageBox::warning(this, "Lỗi", "Không thể đặt sân ở quá khứ!");
+        return;
+    }
+    else if (selectedDate == currentDate && slotTime < currentTime)
+    {
+        QMessageBox::warning(this, "Lỗi", "Không thể đặt sân ở khung giờ đã qua!");
+        return;
+    }
+
     // LOCK MECHANISM: If already has pending selection, don't allow new selection
     // User must click Cancel button to clear selection first
     if (timelineGrid && timelineGrid->property("isLocked").toBool())
@@ -1418,9 +1436,59 @@ void TimelineTab::setDuration(int minutes)
     updateDuration();
 }
 
-void TimelineTab::setupFilters()
+void TimelineTab::reloadFields()
 {
-    // Bỏ bộ lọc - không còn sử dụng
+    fieldCombo->clear();
+    fields.clear();
+
+    QuanLySan *quanLySan = system->layQuanLySan();
+    if (quanLySan)
+    {
+        fields = quanLySan->layDanhSachSan();
+        for (int i = 0; i < fields.size(); ++i)
+        {
+            fieldCombo->addItem(QString::fromStdString(fields[i]->getTenSan()), i);
+        }
+    }
+}
+
+void TimelineTab::updateCalendarDates()
+{
+    // Reset formatting
+    QTextCharFormat defaultFormat;
+    calendar->setDateTextFormat(QDate(), defaultFormat);
+
+    QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
+    if (!quanLyDS)
+        return;
+
+    // Get all bookings
+    MangDong<DatSan *> bookings = quanLyDS->layDanhSachDatSan();
+
+    // Map to store status for each date
+    // 0: no booking, 1: has booking
+    std::map<QDate, int> dateStatus;
+
+    for (int i = 0; i < bookings.size(); ++i)
+    {
+        DatSan *booking = bookings[i];
+        if (booking->getTrangThai() == TrangThaiDatSan::DA_HUY)
+            continue;
+
+        NgayGio ng = booking->getThoiGianDat();
+        QDate date(ng.getNam(), ng.getThang(), ng.getNgay());
+        dateStatus[date] = 1;
+    }
+
+    // Apply formatting
+    QTextCharFormat hasBookingFormat;
+    hasBookingFormat.setFontWeight(QFont::Bold);
+    hasBookingFormat.setForeground(QBrush(QColor("#16a34a"))); // Green for days with bookings
+
+    for (const auto &pair : dateStatus)
+    {
+        calendar->setDateTextFormat(pair.first, hasBookingFormat);
+    }
 }
 
 bool TimelineTab::checkBookingConflict(San *san, const NgayGio &ngayGio, const KhungGio &khungGio)
@@ -1429,111 +1497,45 @@ bool TimelineTab::checkBookingConflict(San *san, const NgayGio &ngayGio, const K
     if (!quanLyDS)
         return false;
 
-    // Check if time slot is already booked
-    const MangDong<DatSan *> &allBookings = quanLyDS->layDanhSachDatSan();
+    MangDong<DatSan *> bookings = quanLyDS->layDanhSachDatSan();
 
-    for (int i = 0; i < allBookings.size(); i++)
+    // Convert input time to minutes for easier comparison
+    int startMin = khungGio.layGioBatDau().getGio() * 60 + khungGio.layGioBatDau().getPhut();
+    int endMin = khungGio.layGioKetThuc().getGio() * 60 + khungGio.layGioKetThuc().getPhut();
+
+    for (int i = 0; i < bookings.size(); ++i)
     {
-        DatSan *existingBooking = allBookings[i];
-
-        // Skip if different field
-        if (existingBooking->getSan() != san)
+        DatSan *booking = bookings[i];
+        // Skip cancelled bookings
+        if (booking->getTrangThai() == TrangThaiDatSan::DA_HUY)
             continue;
 
-        // Skip if different date
-        NgayGio existingNgayGio = existingBooking->getThoiGianDat();
-        if (existingNgayGio.getNgay() != ngayGio.getNgay() ||
-            existingNgayGio.getThang() != ngayGio.getThang() ||
-            existingNgayGio.getNam() != ngayGio.getNam())
-        {
+        // Skip current booking if in edit mode
+        if (isEditMode && currentBooking && booking->getMaDatSan() == currentBooking->getMaDatSan())
             continue;
-        }
 
-        // Skip current booking in edit mode
-        if (isEditMode && existingBooking == currentBooking)
+        // Check same field
+        if (booking->getSan()->getMaSan() != san->getMaSan())
+            continue;
+
+        // Check same date
+        NgayGio bNgay = booking->getThoiGianDat();
+        if (bNgay.getNgay() != ngayGio.getNgay() ||
+            bNgay.getThang() != ngayGio.getThang() ||
+            bNgay.getNam() != ngayGio.getNam())
             continue;
 
         // Check time overlap
-        KhungGio existingKhungGio = existingBooking->getKhungGio();
+        KhungGio bKhung = booking->getKhungGio();
+        int bStart = bKhung.layGioBatDau().getGio() * 60 + bKhung.layGioBatDau().getPhut();
+        int bEnd = bKhung.layGioKetThuc().getGio() * 60 + bKhung.layGioKetThuc().getPhut();
 
-        int newStart = khungGio.getGioBatDau().getGio() * 60 + khungGio.getGioBatDau().getPhut();
-        int newEnd = khungGio.getGioKetThuc().getGio() * 60 + khungGio.getGioKetThuc().getPhut();
-        int existingStart = existingKhungGio.getGioBatDau().getGio() * 60 + existingKhungGio.getGioBatDau().getPhut();
-        int existingEnd = existingKhungGio.getGioKetThuc().getGio() * 60 + existingKhungGio.getGioKetThuc().getPhut();
-
-        // Check overlap
-        if (!(newEnd <= existingStart || newStart >= existingEnd))
+        // Overlap logic: (StartA < EndB) and (EndA > StartB)
+        if (startMin < bEnd && endMin > bStart)
         {
-            return true; // Conflict found
+            return true;
         }
     }
 
-    return false; // No conflict
-}
-
-void TimelineTab::updateCalendarDates()
-{
-    if (!calendar)
-        return;
-
-    // Clear all date formats first
-    QTextCharFormat defaultFormat;
-    defaultFormat.setForeground(Qt::black);
-    calendar->setDateTextFormat(QDate(), defaultFormat);
-
-    // Get all bookings
-    QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
-    if (!quanLyDS)
-        return;
-
-    const MangDong<DatSan *> &allBookings = quanLyDS->layDanhSachDatSan();
-
-    // Create format for dates with bookings
-    QTextCharFormat bookedFormat;
-    bookedFormat.setBackground(QColor("#dcfce7")); // Light green
-    bookedFormat.setForeground(QColor("#16a34a")); // Dark green
-    bookedFormat.setFontWeight(QFont::Bold);
-
-    // Highlight dates with bookings
-    QSet<QDate> bookedDates;
-    for (int i = 0; i < allBookings.size(); i++)
-    {
-        DatSan *booking = allBookings[i];
-        if (booking)
-        {
-            NgayGio ngayGio = booking->getThoiGianDat();
-            QDate bookingDate(ngayGio.getNam(), ngayGio.getThang(), ngayGio.getNgay());
-            bookedDates.insert(bookingDate);
-        }
-    }
-
-    // Apply format to all booked dates
-    // for (const QDate &date : bookedDates)
-    // {
-    //     calendar->setDateTextFormat(date, bookedFormat);
-    // }
-    // Removed booked date highlighting as requested
-
-    // Highlight today with different color
-    // Removed today highlighting as requested to avoid confusion with selected date
-    // QTextCharFormat todayFormat;
-    // todayFormat.setBackground(QColor("#dbeafe")); // Light blue
-    // todayFormat.setForeground(QColor("#1e40af")); // Dark blue
-    // todayFormat.setFontWeight(QFont::Bold);
-    // calendar->setDateTextFormat(QDate::currentDate(), todayFormat);
-
-    // Highlight selected date with specific Blue color as requested
-    if (selectedDate.isValid())
-    {
-        QTextCharFormat selectedFormat;
-        selectedFormat.setBackground(QColor("#3b82f6")); // Blue
-        selectedFormat.setForeground(Qt::white);
-        selectedFormat.setFontWeight(QFont::Bold);
-        calendar->setDateTextFormat(selectedDate, selectedFormat);
-    }
-}
-
-void TimelineTab::reloadFields()
-{
-    loadFields();
+    return false;
 }

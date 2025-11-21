@@ -24,7 +24,7 @@ enum class HangKhachHang
     DONG,     ///< Đồng (1.000.000 - 4.999.999 VND) - Giảm 2%
     BAC,      ///< Bạc (5.000.000 - 9.999.999 VND) - Giảm 4%
     VANG,     ///< Vàng (10.000.000 - 19.999.999 VND) - Giảm 6%
-    KIM_CUONG ///< Kim cương (>= 20.000.000 VND) - Giảm 8%
+    KIM_CUONG ///< Kim cương (>= 20.000.000 VND) - Giảm 10%
 };
 
 /**

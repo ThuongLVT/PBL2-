@@ -1,13 +1,176 @@
 #include "ServiceSelectionDialog.h"
+#include "Core/QuanLy/HeThongQuanLy.h"
+#include "Core/Models/DichVu.h"
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPushButton>
 #include <QFrame>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QLabel>
+#include <QScrollArea>
+#include <QGridLayout>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QMessageBox>
 #include <QDebug>
-#include <QSpinBox>
+#include <QDialogButtonBox>
+#include <QMouseEvent>
+
+// =================================================================================
+// Helper Class: ServiceQuantityDialog
+// =================================================================================
+class ServiceQuantityDialog : public QDialog
+{
+public:
+    ServiceQuantityDialog(DichVu *service, QWidget *parent = nullptr)
+        : QDialog(parent), m_service(service), m_quantity(1)
+    {
+        setWindowTitle("Chọn số lượng");
+        setFixedSize(500, 280);
+        setStyleSheet("background-color: white; color: #1f2937;"); // Light theme
+
+        QHBoxLayout *mainLayout = new QHBoxLayout(this);
+        mainLayout->setSpacing(20);
+        mainLayout->setContentsMargins(20, 20, 20, 20);
+
+        // --- Left: Image ---
+        QLabel *imgLabel = new QLabel(this);
+        imgLabel->setFixedSize(160, 220);
+        imgLabel->setStyleSheet("background-color: #f3f4f6; border-radius: 8px; border: 1px solid #e5e7eb;");
+
+        // Load image from Data/images/ID.png
+        QString imgPath = "D:/PBL2-/Data/images/" + QString::fromStdString(service->layMaDichVu()) + ".png";
+        QPixmap pixmap(imgPath);
+        if (pixmap.isNull())
+        {
+            imgLabel->setText("Không có ảnh");
+            imgLabel->setAlignment(Qt::AlignCenter);
+        }
+        else
+        {
+            imgLabel->setPixmap(pixmap.scaled(160, 220, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            imgLabel->setAlignment(Qt::AlignCenter);
+        }
+        mainLayout->addWidget(imgLabel);
+
+        // --- Right: Info & Controls ---
+        QVBoxLayout *rightLayout = new QVBoxLayout();
+        rightLayout->setSpacing(10);
+        rightLayout->setAlignment(Qt::AlignTop);
+
+        // Name
+        QLabel *lblName = new QLabel(QString::fromStdString(service->layTenDichVu()), this);
+        lblName->setStyleSheet("font-size: 20px; font-weight: bold; color: #111827;");
+        lblName->setWordWrap(true);
+        rightLayout->addWidget(lblName);
+
+        // Info (Unit & Stock)
+        QHBoxLayout *infoLayout = new QHBoxLayout();
+        QLabel *lblUnit = new QLabel("Đơn vị: " + QString::fromStdString(service->layDonVi()), this);
+        QLabel *lblStock = new QLabel("Tồn kho: " + QString::number(service->laySoLuongTon()), this);
+
+        lblUnit->setStyleSheet("font-size: 14px; color: #4b5563;");
+        lblStock->setStyleSheet("font-size: 14px; color: #4b5563;");
+
+        infoLayout->addWidget(lblUnit);
+        infoLayout->addSpacing(20);
+        infoLayout->addWidget(lblStock);
+        infoLayout->addStretch();
+        rightLayout->addLayout(infoLayout);
+
+        // Price
+        QLabel *lblPrice = new QLabel(QString::number(service->layDonGia(), 'f', 0) + "đ", this);
+        lblPrice->setStyleSheet("font-size: 24px; font-weight: bold; color: #16a34a;");
+        lblPrice->setAlignment(Qt::AlignRight);
+        rightLayout->addWidget(lblPrice);
+
+        rightLayout->addStretch();
+
+        // --- Quantity Controls (Row 1) ---
+        QHBoxLayout *qtyLayout = new QHBoxLayout();
+        qtyLayout->setAlignment(Qt::AlignCenter);
+
+        // Minus Button
+        QPushButton *btnMinus = new QPushButton("-", this);
+        btnMinus->setFixedSize(45, 45); // Fixed square size
+        btnMinus->setCursor(Qt::PointingHandCursor);
+        // Improved styling for centering and visibility
+        btnMinus->setStyleSheet("QPushButton { background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 5px; font-size: 30px; font-weight: bold; color: #374151; padding: 0px; padding-bottom: 5px; } QPushButton:hover { background-color: #e5e7eb; }");
+
+        // Quantity Box
+        txtQty = new QLineEdit("1", this);
+        txtQty->setFixedSize(80, 45); // Same height as buttons
+        txtQty->setAlignment(Qt::AlignCenter);
+        txtQty->setStyleSheet("background-color: white; border: 1px solid #d1d5db; border-radius: 5px; color: #111827; font-weight: bold; font-size: 18px;");
+
+        // Plus Button
+        QPushButton *btnPlus = new QPushButton("+", this);
+        btnPlus->setFixedSize(45, 45); // Fixed square size
+        btnPlus->setCursor(Qt::PointingHandCursor);
+        // Improved styling for centering and visibility
+        btnPlus->setStyleSheet("QPushButton { background-color: #3b82f6; border: none; border-radius: 5px; font-size: 30px; font-weight: bold; color: white; padding: 0px; padding-bottom: 5px; } QPushButton:hover { background-color: #2563eb; }");
+
+        qtyLayout->addWidget(btnMinus);
+        qtyLayout->addSpacing(10);
+        qtyLayout->addWidget(txtQty);
+        qtyLayout->addSpacing(10);
+        qtyLayout->addWidget(btnPlus);
+
+        rightLayout->addLayout(qtyLayout);
+        rightLayout->addSpacing(15);
+
+        // --- Action Buttons (Row 2) ---
+        QHBoxLayout *btnLayout = new QHBoxLayout();
+
+        QPushButton *btnClose = new QPushButton("Đóng", this);
+        btnClose->setCursor(Qt::PointingHandCursor);
+        btnClose->setFixedHeight(40);
+        btnClose->setStyleSheet("QPushButton { background-color: #9ca3af; border: none; padding: 0 30px; border-radius: 5px; color: white; font-weight: bold; font-size: 14px; } QPushButton:hover { background-color: #6b7280; }");
+
+        QPushButton *btnAdd = new QPushButton("Thêm", this);
+        btnAdd->setCursor(Qt::PointingHandCursor);
+        btnAdd->setFixedHeight(40);
+        btnAdd->setStyleSheet("QPushButton { background-color: #16a34a; border: none; padding: 0 40px; border-radius: 5px; font-weight: bold; color: white; font-size: 14px; } QPushButton:hover { background-color: #15803d; }");
+
+        btnLayout->addWidget(btnClose);
+        btnLayout->addStretch();
+        btnLayout->addWidget(btnAdd);
+
+        rightLayout->addLayout(btnLayout);
+        mainLayout->addLayout(rightLayout);
+
+        // Logic
+        connect(btnMinus, &QPushButton::clicked, [this]()
+                {
+            int q = txtQty->text().toInt();
+            if (q > 1) txtQty->setText(QString::number(q - 1)); });
+        connect(btnPlus, &QPushButton::clicked, [this]()
+                {
+            int q = txtQty->text().toInt();
+            if (q < m_service->laySoLuongTon()) txtQty->setText(QString::number(q + 1)); });
+        connect(btnClose, &QPushButton::clicked, this, &QDialog::reject);
+        connect(btnAdd, &QPushButton::clicked, [this]()
+                {
+            m_quantity = txtQty->text().toInt();
+            accept(); });
+    }
+
+    int getQuantity() const { return m_quantity; }
+
+private:
+    DichVu *m_service;
+    int m_quantity;
+    QLineEdit *txtQty;
+};
+
+// =================================================================================
+// ServiceSelectionDialog Implementation
+// =================================================================================
 
 ServiceSelectionDialog::ServiceSelectionDialog(QWidget *parent)
-    : QDialog(parent), system(HeThongQuanLy::getInstance())
+    : QDialog(parent)
 {
-    setWindowTitle("Chọn Dịch Vụ");
-    resize(1000, 700); // Large dialog
     setupUI();
     loadServices();
 }
@@ -16,444 +179,393 @@ ServiceSelectionDialog::~ServiceSelectionDialog()
 {
 }
 
-QList<ServiceSelectionItem> ServiceSelectionDialog::getSelectedServices() const
-{
-    QList<ServiceSelectionItem> result;
-    for (auto it = tempSelection.begin(); it != tempSelection.end(); ++it) {
-        if (it.value() > 0 && serviceMap.contains(it.key())) {
-            result.append({serviceMap[it.key()], it.value()});
-        }
-    }
-    return result;
-}
-
-void ServiceSelectionDialog::setCurrentSelection(const QMap<QString, int>& currentQuantities)
-{
-    tempSelection = currentQuantities;
-    updateCartTable();
-}
-
-void ServiceSelectionDialog::setExistingCart(const QMap<QString, int>& existingQuantities)
-{
-    existingCart = existingQuantities;
-    createServiceCards(); // Refresh cards to update stock display
-}
-
 void ServiceSelectionDialog::setupUI()
 {
-    // Main Layout: Horizontal Split (Left: Services, Right: Cart)
-    QHBoxLayout *mainLayout = new QHBoxLayout(this);
-    mainLayout->setSpacing(20);
-    mainLayout->setContentsMargins(20, 20, 20, 20);
+    setWindowTitle("Chọn Dịch Vụ");
+    setFixedSize(960, 750);                      // Enforce fixed size
+    setStyleSheet("background-color: #f3f4f6;"); // Light gray background
 
-    // --- LEFT SIDE: Service Grid (55%) ---
-    QWidget *leftWidget = new QWidget();
-    QVBoxLayout *leftLayout = new QVBoxLayout(leftWidget);
-    leftLayout->setContentsMargins(0, 0, 0, 0);
-    leftLayout->setSpacing(15);
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(10, 10, 10, 10);
 
-    // 1. Header & Filter Section
-    QHBoxLayout *headerLayout = new QHBoxLayout();
-    
+    // ================= TOP FRAME: Selected Services Table (40%) =================
+    QFrame *topFrame = new QFrame(this);
+    topFrame->setStyleSheet("background-color: white; border-radius: 10px;");
+    QVBoxLayout *topLayout = new QVBoxLayout(topFrame);
+
+    selectedTable = new QTableWidget(this);
+    selectedTable->setColumnCount(7); // Removed STT
+    selectedTable->setHorizontalHeaderLabels({"Hình ảnh", "Tên dịch vụ", "Đơn giá", "Mô tả", "Đơn vị", "Số lượng", "Thành tiền"});
+
+    selectedTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch); // Name stretch
+    selectedTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch); // Desc stretch
+
+    selectedTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    selectedTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    selectedTable->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel); // Smooth scrolling
+
+    // Light header style + Remove focus outline
+    selectedTable->setStyleSheet(
+        "QTableWidget { border: none; gridline-color: #e5e7eb; outline: none; }"
+        "QHeaderView::section { background-color: #f3f4f6; color: #111827; padding: 8px; border: none; font-weight: bold; }"
+        "QTableWidget::item:focus { border: none; outline: none; }"
+        "QTableWidget::item:selected { background-color: #e0f2fe; color: #111827; }");
+    selectedTable->verticalHeader()->setVisible(false);
+    selectedTable->setIconSize(QSize(50, 50));
+
+    connect(selectedTable, &QTableWidget::cellDoubleClicked, this, &ServiceSelectionDialog::onTableDoubleClicked);
+
+    // Delete Button for Table
+    QHBoxLayout *tableFooter = new QHBoxLayout();
+    QPushButton *btnDelete = new QPushButton("Xoá dịch vụ", this);
+    btnDelete->setCursor(Qt::PointingHandCursor);
+    btnDelete->setStyleSheet("QPushButton { background-color: #ef4444; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; border: none; } QPushButton:hover { background-color: #dc2626; }");
+    connect(btnDelete, &QPushButton::clicked, this, &ServiceSelectionDialog::onRemoveServiceClicked);
+
+    tableFooter->addStretch();
+    tableFooter->addWidget(btnDelete);
+
+    topLayout->addWidget(selectedTable);
+    topLayout->addLayout(tableFooter);
+
+    // ================= BOTTOM FRAME: Service Grid (60%) =================
+    QFrame *bottomFrame = new QFrame(this);
+    bottomFrame->setStyleSheet("background-color: white; border-radius: 10px;");
+    QVBoxLayout *bottomLayout = new QVBoxLayout(bottomFrame);
+
+    // Search & Filter Bar
+    QHBoxLayout *filterLayout = new QHBoxLayout();
     searchEdit = new QLineEdit(this);
-    searchEdit->setPlaceholderText("🔍 Tìm kiếm dịch vụ...");
-    searchEdit->setFixedHeight(40);
-    searchEdit->setStyleSheet("QLineEdit { border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; }");
-    
-    categoryCombo = new QComboBox(this);
-    categoryCombo->addItem("Tất cả loại");
-    categoryCombo->addItem("Đồ uống");
-    categoryCombo->addItem("Đồ ăn");
-    categoryCombo->addItem("Dụng cụ");
-    categoryCombo->setFixedHeight(40);
-    categoryCombo->setStyleSheet("QComboBox { border: 1px solid #d1d5db; border-radius: 6px; padding: 0 10px; }");
-
-    headerLayout->addWidget(searchEdit, 1);
-    headerLayout->addWidget(categoryCombo);
-    
-    leftLayout->addLayout(headerLayout);
-
-    // 2. Service Grid Area
-    serviceScrollArea = new QScrollArea(this);
-    serviceScrollArea->setWidgetResizable(true);
-    serviceScrollArea->setFrameShape(QFrame::NoFrame);
-    serviceScrollArea->setStyleSheet("QScrollArea { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }");
-
-    serviceGridWidget = new QWidget();
-    serviceGridWidget->setStyleSheet("background-color: transparent;");
-    serviceGridLayout = new QGridLayout(serviceGridWidget);
-    serviceGridLayout->setSpacing(15);
-    serviceGridLayout->setContentsMargins(15, 15, 15, 15);
-
-    serviceScrollArea->setWidget(serviceGridWidget);
-    leftLayout->addWidget(serviceScrollArea);
-    
-    mainLayout->addWidget(leftWidget, 55); // Stretch 55%
-
-    // --- RIGHT SIDE: Mini Cart (45%) ---
-    QWidget *rightWidget = new QWidget();
-    QVBoxLayout *rightLayout = new QVBoxLayout(rightWidget);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
-    rightLayout->setSpacing(15);
-    
-    QLabel *cartTitle = new QLabel("🛒 Đã chọn", this);
-    cartTitle->setStyleSheet("font-weight: bold; font-size: 16px; color: #1f2937;");
-    rightLayout->addWidget(cartTitle);
-    
-    // Mini Cart Table
-    cartTable = new QTableWidget(0, 4, this);
-    cartTable->setHorizontalHeaderLabels({"Tên món", "SL", "Thành tiền", ""});
-    cartTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    cartTable->setColumnWidth(1, 120); // Increased width for Quantity
-    cartTable->setColumnWidth(2, 90);
-    cartTable->setColumnWidth(3, 40);
-    cartTable->verticalHeader()->setVisible(false);
-    cartTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    cartTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    cartTable->setShowGrid(false);
-    cartTable->setStyleSheet("QTableWidget { border: 1px solid #e5e7eb; border-radius: 8px; background-color: white; }");
-    
-    rightLayout->addWidget(cartTable);
-    
-    // Summary
-    summaryLabel = new QLabel("Tổng cộng: 0 đ", this);
-    summaryLabel->setAlignment(Qt::AlignRight);
-    summaryLabel->setStyleSheet("font-weight: bold; font-size: 16px; color: #dc2626; margin-top: 10px;");
-    rightLayout->addWidget(summaryLabel);
-
-    // Buttons
-    QHBoxLayout *footerLayout = new QHBoxLayout();
-    
-    cancelBtn = new QPushButton("Hủy bỏ", this);
-    cancelBtn->setFixedSize(100, 40);
-    cancelBtn->setStyleSheet("QPushButton { background-color: white; border: 1px solid #d1d5db; border-radius: 6px; color: #374151; } QPushButton:hover { background-color: #f3f4f6; }");
-    
-    confirmBtn = new QPushButton("✅ Xác nhận", this);
-    confirmBtn->setFixedHeight(40);
-    confirmBtn->setStyleSheet("QPushButton { background-color: #16a34a; border: none; border-radius: 6px; color: white; font-weight: bold; } QPushButton:hover { background-color: #15803d; }");
-
-    footerLayout->addWidget(cancelBtn);
-    footerLayout->addWidget(confirmBtn);
-
-    rightLayout->addLayout(footerLayout);
-    
-    mainLayout->addWidget(rightWidget, 45); // Stretch 45%
-
-    // Connections
+    searchEdit->setPlaceholderText("Tìm kiếm...");
+    searchEdit->setStyleSheet("padding: 8px; border: 1px solid #d1d5db; border-radius: 5px; background-color: white; color: #111827;");
     connect(searchEdit, &QLineEdit::textChanged, this, &ServiceSelectionDialog::onSearchTextChanged);
-    connect(categoryCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ServiceSelectionDialog::onCategoryFilterChanged);
-    connect(cancelBtn, &QPushButton::clicked, this, &ServiceSelectionDialog::onCancelClicked);
-    connect(confirmBtn, &QPushButton::clicked, this, &ServiceSelectionDialog::onConfirmClicked);
+
+    filterCombo = new QComboBox(this);
+    filterCombo->addItem("Tất cả", -1);
+    filterCombo->addItem("Đồ uống", (int)LoaiDichVu::DO_UONG);
+    filterCombo->addItem("Đồ ăn", (int)LoaiDichVu::DO_AN);
+    filterCombo->addItem("Thiết bị", (int)LoaiDichVu::THIET_BI);
+    filterCombo->setStyleSheet("padding: 8px; border: 1px solid #d1d5db; border-radius: 5px;");
+    connect(filterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ServiceSelectionDialog::onFilterChanged);
+
+    filterLayout->addWidget(searchEdit);
+    filterLayout->addWidget(filterCombo);
+    filterLayout->addStretch();
+
+    // Grid Area
+    scrollArea = new QScrollArea(this);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff); // Disable horizontal scroll
+
+    gridContainer = new QWidget();
+    gridLayout = new QGridLayout(gridContainer);
+    gridLayout->setSpacing(15);
+    gridLayout->setContentsMargins(10, 10, 10, 10);
+    gridLayout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+    scrollArea->setWidget(gridContainer);
+
+    bottomLayout->addLayout(filterLayout);
+    bottomLayout->addWidget(scrollArea);
+
+    // ================= MAIN LAYOUT ASSEMBLY =================
+    mainLayout->addWidget(topFrame, 4);
+    mainLayout->addWidget(bottomFrame, 6);
+
+    // ================= BOTTOM BUTTONS =================
+    QHBoxLayout *footerLayout = new QHBoxLayout();
+    QPushButton *btnCancel = new QPushButton("Huỷ bỏ", this);
+    btnCancel->setCursor(Qt::PointingHandCursor);
+    btnCancel->setStyleSheet("QPushButton { background-color: #6b7280; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; border: none; } QPushButton:hover { background-color: #4b5563; }");
+    connect(btnCancel, &QPushButton::clicked, this, &QDialog::reject);
+
+    QPushButton *btnAdd = new QPushButton("Thêm vào", this);
+    btnAdd->setCursor(Qt::PointingHandCursor);
+    btnAdd->setStyleSheet("QPushButton { background-color: #2563eb; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; border: none; } QPushButton:hover { background-color: #1d4ed8; }");
+    connect(btnAdd, &QPushButton::clicked, this, &ServiceSelectionDialog::onConfirmClicked);
+
+    footerLayout->addStretch();
+    footerLayout->addWidget(btnCancel);
+    footerLayout->addWidget(btnAdd);
+
+    mainLayout->addLayout(footerLayout);
 }
 
 void ServiceSelectionDialog::loadServices()
 {
+    HeThongQuanLy *system = HeThongQuanLy::getInstance();
+    if (!system)
+        return;
+
+    QuanLyDichVu *qldv = system->layQuanLyDichVu();
+    if (!qldv)
+        return;
+
     allServices.clear();
-    const MangDong<DichVu *> &services = system->layDanhSachDichVu();
-    for (int i = 0; i < services.size(); i++)
+    const MangDong<DichVu *> &ds = qldv->layDanhSachDichVu();
+    for (int i = 0; i < ds.size(); ++i)
     {
-        allServices.append(services[i]);
+        allServices.push_back(ds[i]);
     }
-    filteredServices = allServices;
-    
-    // Map for quick lookup
-    for(DichVu* dv : allServices) {
-        serviceMap[QString::fromStdString(dv->layMaDichVu())] = dv;
-    }
-    
-    createServiceCards();
+
+    updateGrid();
 }
 
-void ServiceSelectionDialog::createServiceCards()
+void ServiceSelectionDialog::updateGrid()
 {
-    // Clear existing
+    // Clear grid
     QLayoutItem *child;
-    while ((child = serviceGridLayout->takeAt(0)) != nullptr) {
-        delete child->widget();
+    while ((child = gridLayout->takeAt(0)) != nullptr)
+    {
+        if (child->widget())
+            delete child->widget();
         delete child;
     }
 
+    // Filter
+    displayedServices.clear();
+    QString searchText = searchEdit->text().trimmed().toLower();
+    int filterType = filterCombo->currentData().toInt();
+
+    for (DichVu *dv : allServices)
+    {
+        if (!dv)
+            continue;
+        if (!searchText.isEmpty() && !QString::fromStdString(dv->layTenDichVu()).toLower().contains(searchText))
+            continue;
+        if (filterType != -1 && (int)dv->layLoaiDichVu() != filterType)
+            continue;
+        displayedServices.push_back(dv);
+    }
+
+    // Populate Grid
     int row = 0;
     int col = 0;
-    int maxCols = 3; // Reduced columns for split layout
+    int maxCols = 4; // 4 columns for wider dialog
 
-    for (DichVu *service : filteredServices) {
-        if (!service->coConHang()) continue;
-
-        QWidget *card = createServiceCard(service);
-        serviceGridLayout->addWidget(card, row, col);
-
+    for (DichVu *dv : displayedServices)
+    {
+        QWidget *card = createServiceCard(dv);
+        gridLayout->addWidget(card, row, col);
         col++;
-        if (col >= maxCols) {
+        if (col >= maxCols)
+        {
             col = 0;
             row++;
         }
     }
-    
-    // Spacer to push items to top-left
-    if (filteredServices.isEmpty()) {
-        QLabel *emptyLabel = new QLabel("Không tìm thấy dịch vụ nào", serviceGridWidget);
-        emptyLabel->setAlignment(Qt::AlignCenter);
-        serviceGridLayout->addWidget(emptyLabel, 0, 0, 1, maxCols);
-    } else {
-        serviceGridLayout->setRowStretch(row + 1, 1);
-        serviceGridLayout->setColumnStretch(maxCols, 1);
-    }
 }
+
+// Custom Clickable Frame
+class ClickableFrame : public QFrame
+{
+    Q_OBJECT
+public:
+    explicit ClickableFrame(QWidget *parent = nullptr) : QFrame(parent) {}
+signals:
+    void clicked();
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton)
+            emit clicked();
+        QFrame::mousePressEvent(event);
+    }
+};
 
 QWidget *ServiceSelectionDialog::createServiceCard(DichVu *service)
 {
-    QFrame *card = new QFrame();
-    card->setFixedSize(140, 180); // Slightly smaller cards
-    card->setStyleSheet(R"(
-        QFrame {
-            background-color: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-        }
-        QFrame:hover {
-            border: 2px solid #3b82f6;
-            background-color: #eff6ff;
-        }
-    )");
+    ClickableFrame *card = new ClickableFrame();
+    card->setFixedSize(210, 260); // Adjusted width for 960px dialog (4 items/row)
+    card->setStyleSheet(
+        "ClickableFrame { background-color: white; border: 1px solid #e5e7eb; border-radius: 8px; }"
+        "ClickableFrame:hover { border: 2px solid #2563eb; }");
 
     QVBoxLayout *layout = new QVBoxLayout(card);
-    layout->setContentsMargins(5, 5, 5, 5);
-    layout->setSpacing(2);
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->setSpacing(5);
 
-    // Icon
-    QLabel *icon = new QLabel("📷");
-    icon->setAlignment(Qt::AlignCenter);
-    icon->setStyleSheet("background-color: #f3f4f6; border-radius: 4px; font-size: 24px; color: #9ca3af;");
-    icon->setFixedHeight(70);
-    layout->addWidget(icon);
+    // Image
+    QLabel *img = new QLabel();
+    img->setAlignment(Qt::AlignCenter);
+    img->setStyleSheet("background-color: #f3f4f6; border-radius: 5px;");
+    img->setFixedHeight(140);
+
+    QString imgPath = "D:/PBL2-/Data/images/" + QString::fromStdString(service->layMaDichVu()) + ".png";
+    QPixmap pixmap(imgPath);
+    if (!pixmap.isNull())
+    {
+        img->setPixmap(pixmap.scaled(190, 140, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    else
+    {
+        img->setText("Không có ảnh");
+    }
 
     // Name
     QLabel *name = new QLabel(QString::fromStdString(service->layTenDichVu()));
     name->setWordWrap(true);
-    name->setAlignment(Qt::AlignCenter);
-    name->setStyleSheet("font-weight: bold; color: #1f2937; font-size: 12px; border: none; background: transparent;");
-    layout->addWidget(name);
+    name->setStyleSheet("font-weight: bold; font-size: 14px; border: none; color: #111827;");
+    name->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    // Unit
+    QLabel *unit = new QLabel(QString::fromStdString(service->layDonVi()));
+    unit->setStyleSheet("color: #6b7280; font-size: 12px; border: none;");
+    unit->setAlignment(Qt::AlignLeft);
 
     // Price
-    QLabel *price = new QLabel(QString("%1 đ").arg(QString::number(service->layDonGia(), 'f', 0)));
-    price->setAlignment(Qt::AlignCenter);
-    price->setStyleSheet("color: #dc2626; font-weight: bold; font-size: 12px; border: none; background: transparent;");
-    layout->addWidget(price);
-    
-    // Stock
-    int available = getAvailableStock(service);
-    QLabel *stock = new QLabel(QString("Còn: %1").arg(available));
-    stock->setAlignment(Qt::AlignCenter);
-    stock->setStyleSheet("color: #6b7280; font-size: 11px; border: none; background: transparent;");
-    layout->addWidget(stock);
+    QLabel *price = new QLabel(QString::number(service->layDonGia(), 'f', 0) + "đ");
+    price->setStyleSheet("color: #16a34a; font-weight: bold; font-size: 15px; border: none;");
+    price->setAlignment(Qt::AlignLeft);
 
-    // Add Button Overlay
-    QPushButton *btn = new QPushButton(card);
-    btn->resize(140, 180);
-    btn->setStyleSheet("background-color: transparent; border: none;");
-    btn->setCursor(Qt::PointingHandCursor);
-    
-    connect(btn, &QPushButton::clicked, [this, service, available]() {
-        if (available > 0) {
-            onServiceCardClicked(service);
-        } else {
-            // Optional: Show out of stock message or visual feedback
-        }
-    });
+    layout->addWidget(img);
+    layout->addWidget(name);
+    layout->addWidget(unit);
+    layout->addWidget(price);
+    layout->addStretch();
+
+    connect(card, &ClickableFrame::clicked, [this, service]()
+            { onServiceCardClicked(service); });
 
     return card;
 }
 
-int ServiceSelectionDialog::getAvailableStock(DichVu* service)
-{
-    // Check if service is available (TrangThai)
-    if (!service->coConHang()) {
-        return 0;
-    }
-
-    QString id = QString::fromStdString(service->layMaDichVu());
-    int inCart = existingCart.value(id, 0);
-    int inTemp = tempSelection.value(id, 0);
-    
-    // Use real stock from system
-    int totalStock = service->laySoLuongTon();
-    
-    return totalStock - inCart - inTemp;
-}
-
 void ServiceSelectionDialog::onServiceCardClicked(DichVu *service)
 {
-    QString id = QString::fromStdString(service->layMaDichVu());
-    
-    // Check stock before adding
-    if (getAvailableStock(service) > 0) {
-        tempSelection[id]++;
-        updateCartTable();
-        createServiceCards(); // Refresh to update stock counts
+    openQuantityDialog(service, 0);
+}
+
+void ServiceSelectionDialog::onTableDoubleClicked(int row, int column)
+{
+    // Name is at column 1 (0: Image, 1: Name)
+    QString name = selectedTable->item(row, 1)->text();
+    DichVu *target = nullptr;
+    for (auto s : allServices)
+    {
+        if (QString::fromStdString(s->layTenDichVu()) == name)
+        {
+            target = s;
+            break;
+        }
+    }
+
+    if (target)
+    {
+        openQuantityDialog(target, 0);
     }
 }
 
-void ServiceSelectionDialog::updateCartTable()
+void ServiceSelectionDialog::openQuantityDialog(DichVu *service, int currentQty)
 {
-    cartTable->setRowCount(0);
-    double total = 0;
-    
-    QMapIterator<QString, int> i(tempSelection);
-    while (i.hasNext()) {
-        i.next();
-        if (i.value() <= 0) continue;
-        
-        QString id = i.key();
-        int qty = i.value();
-        
-        if (!serviceMap.contains(id)) continue;
-        DichVu *service = serviceMap[id];
-        
-        int row = cartTable->rowCount();
-        cartTable->insertRow(row);
-        
-        // Name
-        cartTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(service->layTenDichVu())));
-        
-        // Quantity Control (Custom Widget: - [Value] +)
-        QWidget *qtyWidget = new QWidget();
-        QHBoxLayout *qtyLayout = new QHBoxLayout(qtyWidget);
-        qtyLayout->setContentsMargins(0, 0, 0, 0);
-        qtyLayout->setSpacing(0);
-        qtyLayout->setAlignment(Qt::AlignCenter);
-
-        QPushButton *minusBtn = new QPushButton("-");
-        minusBtn->setFixedSize(30, 30);
-        minusBtn->setCursor(Qt::PointingHandCursor);
-        minusBtn->setStyleSheet("QPushButton { border: 1px solid #d1d5db; border-top-left-radius: 4px; border-bottom-left-radius: 4px; background-color: #f3f4f6; color: #374151; font-weight: bold; font-size: 16px; padding-bottom: 2px; } QPushButton:hover { background-color: #e5e7eb; }");
-        
-        QLabel *qtyLabel = new QLabel(QString::number(qty));
-        qtyLabel->setFixedSize(50, 30);
-        qtyLabel->setAlignment(Qt::AlignCenter);
-        qtyLabel->setStyleSheet("border-top: 1px solid #d1d5db; border-bottom: 1px solid #d1d5db; background-color: white; color: #1f2937; font-weight: bold; font-size: 14px;");
-        
-        QPushButton *plusBtn = new QPushButton("+");
-        plusBtn->setFixedSize(30, 30);
-        plusBtn->setCursor(Qt::PointingHandCursor);
-        plusBtn->setStyleSheet("QPushButton { border: 1px solid #d1d5db; border-top-right-radius: 4px; border-bottom-right-radius: 4px; background-color: #f3f4f6; color: #374151; font-weight: bold; font-size: 16px; padding-bottom: 2px; } QPushButton:hover { background-color: #e5e7eb; }");
-
-        // Connect buttons
-        connect(minusBtn, &QPushButton::clicked, [this, row]() { onDecreaseQuantity(row); });
-        connect(plusBtn, &QPushButton::clicked, [this, row]() { onIncreaseQuantity(row); });
-        
-        qtyLayout->addWidget(minusBtn);
-        qtyLayout->addWidget(qtyLabel);
-        qtyLayout->addWidget(plusBtn);
-        
-        cartTable->setCellWidget(row, 1, qtyWidget);
-        
-        // Total
-        double lineTotal = service->layDonGia() * qty;
-        total += lineTotal;
-        cartTable->setItem(row, 2, new QTableWidgetItem(QString::number(lineTotal, 'f', 0)));
-        
-        // Delete
-        QPushButton *delBtn = new QPushButton("🗑️");
-        delBtn->setFixedSize(30, 30);
-        delBtn->setCursor(Qt::PointingHandCursor);
-        delBtn->setStyleSheet("QPushButton { border: none; background-color: transparent; color: #ef4444; } QPushButton:hover { background-color: #fee2e2; border-radius: 4px; }");
-        connect(delBtn, &QPushButton::clicked, [this, row]() { onRemoveItem(row); });
-        cartTable->setCellWidget(row, 3, delBtn);
-        
-        // Store ID in item data for reference
-        cartTable->item(row, 0)->setData(Qt::UserRole, id);
+    ServiceQuantityDialog dlg(service, this);
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        int newQty = dlg.getQuantity();
+        if (newQty > 0)
+        {
+            selectedQuantities[service->layMaDichVu()] += newQty;
+        }
+        updateTable();
     }
-    
-    summaryLabel->setText(QString("Tổng cộng: %1 đ").arg(QString::number(total, 'f', 0)));
 }
 
-void ServiceSelectionDialog::onQuantityChanged(int row, int value)
+void ServiceSelectionDialog::updateTable()
 {
-    QString id = cartTable->item(row, 0)->data(Qt::UserRole).toString();
-    if (tempSelection.contains(id)) {
-        // Check stock limit
-        int current = tempSelection[id];
-        int diff = value - current;
-        
-        if (diff > 0) {
-            // Increasing
-            if (getAvailableStock(serviceMap[id]) >= diff) {
-                tempSelection[id] = value;
-            } else {
-                // Revert if not enough stock
-                QSpinBox *sb = qobject_cast<QSpinBox*>(cartTable->cellWidget(row, 1));
-                if (sb) {
-                    sb->blockSignals(true);
-                    sb->setValue(current);
-                    sb->blockSignals(false);
-                }
-                return; 
+    selectedTable->setRowCount(0);
+
+    for (auto it = selectedQuantities.begin(); it != selectedQuantities.end(); ++it)
+    {
+        std::string id = it.key();
+        int qty = it.value();
+
+        DichVu *dv = nullptr;
+        for (auto s : allServices)
+        {
+            if (s->layMaDichVu() == id)
+            {
+                dv = s;
+                break;
             }
-        } else {
-            // Decreasing
-            tempSelection[id] = value;
         }
-        
-        updateCartTable();
-        createServiceCards(); // Refresh stock display
-    }
-}
 
-void ServiceSelectionDialog::onIncreaseQuantity(int row)
-{
-    QString id = cartTable->item(row, 0)->data(Qt::UserRole).toString();
-    if (tempSelection.contains(id)) {
-        tempSelection[id]++;
-        updateCartTable();
-    }
-}
+        if (dv)
+        {
+            int row = selectedTable->rowCount();
+            selectedTable->insertRow(row);
+            selectedTable->setRowHeight(row, 60); // Reduced row height to 60
 
-void ServiceSelectionDialog::onDecreaseQuantity(int row)
-{
-    QString id = cartTable->item(row, 0)->data(Qt::UserRole).toString();
-    if (tempSelection.contains(id)) {
-        if (tempSelection[id] > 1) {
-            tempSelection[id]--;
-        } else {
-            tempSelection.remove(id);
-        }
-        updateCartTable();
-    }
-}
+            // Image (Col 0)
+            QTableWidgetItem *imgItem = new QTableWidgetItem();
+            QString imgPath = "D:/PBL2-/Data/images/" + QString::fromStdString(dv->layMaDichVu()) + ".png";
+            QPixmap pixmap(imgPath);
+            if (!pixmap.isNull())
+            {
+                imgItem->setIcon(QIcon(pixmap));
+            }
+            else
+            {
+                imgItem->setText("No Img");
+            }
+            selectedTable->setItem(row, 0, imgItem);
 
-void ServiceSelectionDialog::onRemoveItem(int row)
-{
-    QString id = cartTable->item(row, 0)->data(Qt::UserRole).toString();
-    tempSelection.remove(id);
-    updateCartTable();
-}
+            // Name (Col 1)
+            selectedTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(dv->layTenDichVu())));
+            // Price (Col 2)
+            selectedTable->setItem(row, 2, new QTableWidgetItem(QString::number(dv->layDonGia(), 'f', 0) + "đ"));
+            // Desc (Col 3)
+            selectedTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(dv->layMoTa())));
+            // Unit (Col 4)
+            selectedTable->setItem(row, 4, new QTableWidgetItem(QString::fromStdString(dv->layDonVi())));
+            // Qty (Col 5)
+            selectedTable->setItem(row, 5, new QTableWidgetItem(QString::number(qty)));
 
-void ServiceSelectionDialog::onSearchTextChanged(const QString &text)
-{
-    filteredServices.clear();
-    QString lower = text.toLower();
-    for (DichVu *s : allServices) {
-        if (QString::fromStdString(s->layTenDichVu()).toLower().contains(lower)) {
-            filteredServices.append(s);
+            double total = dv->layDonGia() * qty;
+            // Total (Col 6)
+            selectedTable->setItem(row, 6, new QTableWidgetItem(QString::number(total, 'f', 0) + "đ"));
         }
     }
-    createServiceCards();
 }
 
-void ServiceSelectionDialog::onCategoryFilterChanged(int index)
+void ServiceSelectionDialog::onSearchTextChanged(const QString &text) { updateGrid(); }
+void ServiceSelectionDialog::onFilterChanged(int index) { updateGrid(); }
+
+void ServiceSelectionDialog::onRemoveServiceClicked()
 {
-    // Implement category filtering logic if needed
-    // For now just re-trigger search to refresh
-    onSearchTextChanged(searchEdit->text());
+    int row = selectedTable->currentRow();
+    if (row < 0)
+    {
+        QMessageBox::warning(this, "Thông báo", "Vui lòng chọn dịch vụ để xoá!");
+        return;
+    }
+
+    // Name is at column 1
+    QString name = selectedTable->item(row, 1)->text();
+
+    std::string idToRemove = "";
+    for (auto s : allServices)
+    {
+        if (QString::fromStdString(s->layTenDichVu()) == name)
+        {
+            idToRemove = s->layMaDichVu();
+            break;
+        }
+    }
+
+    if (!idToRemove.empty())
+    {
+        selectedQuantities.remove(idToRemove);
+        updateTable();
+    }
 }
 
-void ServiceSelectionDialog::onConfirmClicked()
+void ServiceSelectionDialog::onConfirmClicked() { accept(); }
+
+QMap<std::string, int> ServiceSelectionDialog::getSelectedServices() const
 {
-    accept();
+    return selectedQuantities;
 }
 
-void ServiceSelectionDialog::onCancelClicked()
-{
-    reject();
-}
+#include "ServiceSelectionDialog.moc"

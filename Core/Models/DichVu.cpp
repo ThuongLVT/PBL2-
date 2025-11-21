@@ -12,7 +12,7 @@ using namespace std;
 
 DichVu::DichVu()
     : maDichVu(""), tenDichVu(""), donGia(0.0),
-      loaiDichVu(LoaiDichVu::KHAC), moTa(""), conHang(true),
+      loaiDichVu(LoaiDichVu::DO_UONG), moTa(""), conHang(true),
       donVi(""), soLuongBan(0), soLuongTon(50), hinhAnh("")
 {
 }
@@ -78,12 +78,10 @@ std::string DichVu::layTenLoaiDichVu() const
     {
     case LoaiDichVu::DO_UONG:
         return std::string("Do uong");
+    case LoaiDichVu::DO_AN:
+        return std::string("Do an");
     case LoaiDichVu::THIET_BI:
         return std::string("Thiet bi");
-    case LoaiDichVu::BAO_HIEM:
-        return std::string("Bao hiem");
-    case LoaiDichVu::KHAC:
-        return std::string("Khac");
     default:
         return std::string("Khong xac dinh");
     }
@@ -217,13 +215,16 @@ bool DichVu::docFile(std::ifstream &file)
     if (!FileHelper::docString(file, moTa))
         return false;
     file.read(reinterpret_cast<char *>(&conHang), sizeof(conHang));
-    
+
     // Try to read soLuongTon, if fail (old file format), set default
-    if (file.peek() != EOF) {
+    if (file.peek() != EOF)
+    {
         file.read(reinterpret_cast<char *>(&soLuongTon), sizeof(soLuongTon));
-    } else {
+    }
+    else
+    {
         soLuongTon = 50; // Default for old files
-        file.clear(); // Clear EOF flag
+        file.clear();    // Clear EOF flag
     }
 
     return file.good();

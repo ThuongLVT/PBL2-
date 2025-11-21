@@ -63,6 +63,12 @@ ThanhToan *QuanLyThanhToan::taoThanhToan(DatSan *datSan, PhuongThucThanhToan phu
     if (thanhToan != nullptr)
     {
         danhSachThanhToan.push_back(thanhToan);
+
+        // Cập nhật chi tiêu cho khách hàng
+        if (datSan->getKhachHang() != nullptr)
+        {
+            datSan->getKhachHang()->themChiTieu(soTien);
+        }
     }
 
     return thanhToan;

@@ -20,10 +20,9 @@
  */
 enum class LoaiDichVu
 {
-    DO_UONG,  ///< Đồ uống (nước, trà, cà phê...)
-    THIET_BI, ///< Thiết bị (áo, giày, bóng...)
-    BAO_HIEM, ///< Bảo hiểm tai nạn
-    KHAC      ///< Dịch vụ khác
+    DO_UONG, ///< Đồ uống (nước, trà, cà phê...)
+    DO_AN,   ///< Đồ ăn (mì, snack...)
+    THIET_BI ///< Thiết bị (áo, giày, bóng...)
 };
 
 /**
@@ -40,16 +39,16 @@ enum class LoaiDichVu
 class DichVu
 {
 protected:
-    std::string maDichVu;    ///< Mã dịch vụ (VD: DV001)
-    std::string tenDichVu;   ///< Tên dịch vụ
+    std::string maDichVu;  ///< Mã dịch vụ (VD: DV001)
+    std::string tenDichVu; ///< Tên dịch vụ
     double donGia;         ///< Đơn giá
     LoaiDichVu loaiDichVu; ///< Loại dịch vụ
-    std::string moTa;        ///< Mô tả chi tiết
+    std::string moTa;      ///< Mô tả chi tiết
     bool conHang;          ///< Trạng thái còn hàng
-    std::string donVi;       ///< Đơn vị (Lon, Chai, Cái, Đôi, Bộ...)
+    std::string donVi;     ///< Đơn vị (Lon, Chai, Cái, Đôi, Bộ...)
     int soLuongBan;        ///< Số lượng đã bán
     int soLuongTon;        ///< Số lượng tồn kho
-    std::string hinhAnh;     ///< Đường dẫn file hình ảnh
+    std::string hinhAnh;   ///< Đường dẫn file hình ảnh
 
 public:
     // ========== CONSTRUCTORS ==========

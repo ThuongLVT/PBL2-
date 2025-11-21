@@ -516,34 +516,42 @@ void BookingTableTab::loadTableData()
         QString paymentText;
         QColor paymentColor;
 
-        // Map deposit status to payment text
-        switch (depositStatus)
+        // Logic hiển thị trạng thái thanh toán dựa trên trạng thái đặt sân và cọc
+        if (status == TrangThaiDatSan::HOAN_THANH)
         {
-        case DA_COC:
-            paymentText = "Chỉ cọc";
-            paymentColor = QColor(245, 158, 11); // Orange
-            break;
-        case HOAN_COC:
-            paymentText = "Hoàn cọc";
-            paymentColor = QColor(59, 130, 246); // Blue
-            break;
-        case MAT_COC:
-            paymentText = "Mất cọc";
-            paymentColor = QColor(239, 68, 68); // Red
-            break;
-        default:
-            // If CHUA_COC and status is HOAN_THANH, show "Đã thanh toán"
-            if (status == TrangThaiDatSan::HOAN_THANH)
+            paymentText = "Đã thanh toán";
+            paymentColor = QColor(22, 163, 74); // Green
+        }
+        else if (status == TrangThaiDatSan::DA_HUY)
+        {
+            if (depositStatus == MAT_COC)
             {
-                paymentText = "Đã thanh toán";
-                paymentColor = QColor(22, 163, 74); // Green
+                paymentText = "Mất cọc";
+                paymentColor = QColor(239, 68, 68); // Red
+            }
+            else if (depositStatus == HOAN_COC)
+            {
+                paymentText = "Hoàn cọc";
+                paymentColor = QColor(59, 130, 246); // Blue
             }
             else
             {
-                paymentText = "Chỉ cọc";
+                paymentText = "Đã hủy";
+                paymentColor = QColor(107, 114, 128); // Gray
+            }
+        }
+        else // DA_DAT
+        {
+            if (depositStatus == DA_COC)
+            {
+                paymentText = "Chỉ cọc";             // Hoặc "Đã cọc"
                 paymentColor = QColor(245, 158, 11); // Orange
             }
-            break;
+            else
+            {
+                paymentText = "Chưa cọc";
+                paymentColor = QColor(107, 114, 128); // Gray
+            }
         }
 
         QTableWidgetItem *paymentItem = new QTableWidgetItem(paymentText);

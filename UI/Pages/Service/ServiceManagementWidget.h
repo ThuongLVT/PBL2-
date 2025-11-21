@@ -1,10 +1,3 @@
-/**
- * @file ServiceManagementWidget.h
- * @brief Service Management Widget (CRUD) - Tab 2
- * @author khninh22 - Service Module
- * @date 2025-11-14
- */
-
 #ifndef SERVICEMANAGEMENTWIDGET_H
 #define SERVICEMANAGEMENTWIDGET_H
 
@@ -24,10 +17,6 @@
 #include "../../Core/QuanLy/HeThongQuanLy.h"
 #include "../../Core/Models/DichVu.h"
 
-/**
- * @class ServiceManagementWidget
- * @brief Widget for managing services (CRUD operations) - Tab 2
- */
 class ServiceManagementWidget : public QWidget
 {
     Q_OBJECT
@@ -39,25 +28,24 @@ public:
 private:
     void setupUI();
     void setupConnections();
-    void applyStyles();
     void loadServices();
     void loadServiceToForm(DichVu *service);
     void clearForm();
-    void updateStatsCards();
     bool validateServiceData();
+    void updateUnitFilter(); // Helper to populate unit filter
 
 private slots:
     void onSearchTextChanged(const QString &text);
-    void onCategoryFilterChanged(int index);
-    void onPriceFilterChanged(int index);
+    void onStatusFilterChanged(int index);
+    void onSortByChanged(int index);
+    void onSortOrderChanged(int index);
+    void onUnitFilterChanged(int index);
     void onReloadClicked();
     void onAddNewClicked();
     void onTableRowClicked(int row);
     void onSaveClicked();
     void onDeleteClicked();
-
-signals:
-    void serviceUpdated();
+    void onUploadImageClicked();
 
 private:
     // ===== LAYOUTS =====
@@ -68,21 +56,24 @@ private:
     // ===== LEFT PANEL (70%) =====
     // Search & Filters
     QLineEdit *searchEdit;
-    QComboBox *categoryCombo;
-    QComboBox *priceCombo;
+    QPushButton *searchBtn;       // Added search button
+    QCompleter *searchCompleter;  // Search suggestions
+    QComboBox *statusFilterCombo; // Active/Inactive
+    QComboBox *sortByCombo;       // Price, Stock, Sold
+    QComboBox *sortOrderCombo;    // Asc, Desc
+    QComboBox *unitFilterCombo;   // Unit
     QPushButton *reloadBtn;
-
-    // Stats Cards
-    QLabel *totalServicesLabel;
-    QLabel *drinkServicesLabel;
-    QLabel *equipmentServicesLabel;
 
     // Table
     QTableWidget *serviceTable;
 
     // ===== RIGHT PANEL (30%) =====
     QFrame *formFrame;
-    QPushButton *addNewBtn;
+
+    // Image Upload
+    QLabel *imagePreviewLabel;
+    QPushButton *uploadImageBtn;
+    QString currentImagePath;
 
     // Form fields
     QLineEdit *codeEdit;
@@ -90,11 +81,12 @@ private:
     QComboBox *categoryEdit;
     QLineEdit *priceEdit;
     QLineEdit *unitEdit;
-    QLineEdit *stockEdit; // Added stock edit field
-    QCheckBox *availableCheckBox;
+    QLineEdit *stockEdit;
+    QComboBox *statusEdit; // Replaces availableCheckBox
     QTextEdit *descriptionEdit;
 
     // Action buttons
+    QPushButton *addNewBtn;
     QPushButton *saveBtn;
     QPushButton *deleteBtn;
 
@@ -102,11 +94,13 @@ private:
     HeThongQuanLy *system;
     DichVu *currentService;
     QList<DichVu *> allServices;
-    QList<DichVu *> filteredServices;
+    QList<DichVu *> displayedServices; // Filtered and sorted
     bool isEditMode;
 
     // ===== HELPER METHODS =====
     QString generateNextServiceCode();
+    void sortServices();
+    void filterServices();
 };
 
 #endif // SERVICEMANAGEMENTWIDGET_H

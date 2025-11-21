@@ -67,12 +67,12 @@ private:
 
     // Header
     QLabel *headerIdLabel;
-    QLabel *headerDateLabel;
     QLabel *headerStatusLabel;
 
     // Info section
     QLabel *customerNameLabel;
     QLabel *customerPhoneLabel;
+    QLabel *customerTierLabel;
     QLabel *fieldNameLabel;
     QLabel *dateLabel;
     QLabel *timeLabel;
@@ -87,6 +87,7 @@ private:
     // Payment section
     QLabel *fieldPriceLabel;
     QLabel *servicePriceLabel;
+    QLabel *discountLabel;
     QLabel *depositLabel;
     QLabel *totalLabel;
     QLabel *toPayLabel;

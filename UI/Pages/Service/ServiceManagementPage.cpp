@@ -38,6 +38,17 @@ void ServiceManagementPage::setupUI()
 
     mainLayout->addWidget(tabWidget);
     setLayout(mainLayout);
+    
+    // Initial data load
+    refreshData();
+}
+
+void ServiceManagementPage::refreshData()
+{
+    if (orderWidget) {
+        orderWidget->loadServices();
+    }
+    // Add other refresh calls if needed
 }
 
 void ServiceManagementPage::applyStyles()

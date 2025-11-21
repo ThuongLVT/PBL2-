@@ -16,6 +16,8 @@ public:
     explicit ServiceManagementPage(QWidget *parent = nullptr);
     ~ServiceManagementPage();
 
+    void refreshData();
+
 private:
     void setupUI();
     void applyStyles();

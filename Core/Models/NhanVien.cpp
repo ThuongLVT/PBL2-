@@ -36,6 +36,25 @@ NhanVien::~NhanVien()
     // Destructor
 }
 
+// ========== ASSIGNMENT OPERATOR ==========
+
+NhanVien& NhanVien::operator=(const NhanVien &other)
+{
+    if (this != &other)
+    {
+        // Copy base class members
+        NguoiDung::operator=(other);
+        
+        // Copy NhanVien specific members
+        maNhanVien = other.maNhanVien;
+        ngayVaoLam = other.ngayVaoLam;
+        luongCoBan = other.luongCoBan;
+        caLamViec = other.caLamViec;
+        soNgayLam = other.soNgayLam;
+    }
+    return *this;
+}
+
 // ========== GETTERS ==========
 
 std::string NhanVien::layMaNhanVien() const
@@ -164,20 +183,6 @@ bool NhanVien::docFile(std::ifstream &file)
 }
 
 // ========== OPERATORS ==========
-
-NhanVien &NhanVien::operator=(const NhanVien &other)
-{
-    if (this != &other)
-    {
-        NguoiDung::operator=(other);
-        maNhanVien = other.maNhanVien;
-        ngayVaoLam = other.ngayVaoLam;
-        luongCoBan = other.luongCoBan;
-        caLamViec = other.caLamViec;
-        soNgayLam = other.soNgayLam;
-    }
-    return *this;
-}
 
 std::ostream &operator<<(std::ostream &os, const NhanVien &nv)
 {

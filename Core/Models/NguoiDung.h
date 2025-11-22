@@ -75,6 +75,13 @@ public:
      */
     virtual ~NguoiDung();
 
+    /**
+     * @brief Assignment operator
+     * @param other Đối tượng NguoiDung khác để gán
+     * @return Reference đến chính đối tượng này
+     */
+    NguoiDung& operator=(const NguoiDung &other);
+
     // ========== GETTERS ==========
 
     /**
@@ -194,13 +201,6 @@ public:
     virtual bool docFile(std::ifstream &file) override;
 
     // ========== OPERATORS ==========
-
-    /**
-     * @brief Toán tử gán
-     * @param other Đối tượng NguoiDung khác
-     * @return Tham chiếu đến đối tượng hiện tại
-     */
-    NguoiDung &operator=(const NguoiDung &other);
 
     /**
      * @brief Toán tử xuất ra stream

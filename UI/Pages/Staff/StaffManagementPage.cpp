@@ -99,8 +99,8 @@ void StaffManagementPage::setupUI()
         "}");
     topLayout->addWidget(searchEdit);
     
-    // Print button
-    printBtn = new QPushButton("🖨️ Print", this);
+    // Refresh button
+    printBtn = new QPushButton("🔄 Làm mới", this);
     printBtn->setMinimumHeight(38);
     printBtn->setCursor(Qt::PointingHandCursor);
     printBtn->setStyleSheet(
@@ -124,7 +124,7 @@ void StaffManagementPage::setupUI()
     staffTable = new QTableWidget(0, 9, this);
     staffTable->setHorizontalHeaderLabels({
         "ID", "Họ Tên", "Giới Tính", "Ngày Sinh", 
-        "SĐT", "Username", "Password 👁", "Vai Trò", "Trạng Thái"
+        "SĐT", "Username", "Password 👁", "Lương", "Ca Làm"
     });
     
     staffTable->horizontalHeader()->setStretchLastSection(false);
@@ -149,6 +149,11 @@ void StaffManagementPage::setupUI()
         "   border: 1px solid #e5e7eb;"
         "   border-radius: 6px;"
         "   gridline-color: #f3f4f6;"
+        "   outline: none;"
+        "}"
+        "QTableWidget:focus {"
+        "   border: 1px solid #e5e7eb;"
+        "   outline: none;"
         "}"
         "QHeaderView::section {"
         "   background-color: #f9fafb;"
@@ -162,10 +167,15 @@ void StaffManagementPage::setupUI()
         "QTableWidget::item {"
         "   padding: 8px;"
         "   font-size: 13px;"
+        "   outline: none;"
+        "}"
+        "QTableWidget::item:focus {"
+        "   outline: none;"
         "}"
         "QTableWidget::item:selected {"
         "   background-color: #dcfce7;"
         "   color: #166534;"
+        "   outline: none;"
         "}"
         "QTableWidget::item:alternate {"
         "   background-color: #f9fafb;"
@@ -184,6 +194,27 @@ void StaffManagementPage::setupUI()
     formScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     formScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     formScrollArea->setFrameShape(QFrame::NoFrame);
+    formScrollArea->setStyleSheet(
+        "QScrollArea { background: transparent; border: none; }"
+        "QScrollBar:vertical {"
+        "    border: none;"
+        "    background: #f3f4f6;"
+        "    width: 8px;"
+        "    border-radius: 4px;"
+        "}"
+        "QScrollBar::handle:vertical {"
+        "    background: #d1d5db;"
+        "    border-radius: 4px;"
+        "    min-height: 20px;"
+        "}"
+        "QScrollBar::handle:vertical:hover {"
+        "    background: #9ca3af;"
+        "}"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+        "    border: none;"
+        "    background: none;"
+        "}"
+    );
 
     formFrame = new QFrame();
     formFrame->setObjectName("formFrame");
@@ -310,6 +341,43 @@ void StaffManagementPage::setupUI()
     passwordEdit->setStyleSheet(nameEdit->styleSheet());
     formLayout->addWidget(passwordEdit);
 
+    // Salary
+    QLabel *salaryLabel = new QLabel("Lương cơ bản:", this);
+    salaryLabel->setStyleSheet("font-weight: bold; font-size: 13px; color: #374151; margin-top: 8px;");
+    formLayout->addWidget(salaryLabel);
+    
+    salaryEdit = new QLineEdit(this);
+    salaryEdit->setPlaceholderText("Nhập lương (VNĐ)");
+    salaryEdit->setMinimumHeight(38);
+    salaryEdit->setStyleSheet(nameEdit->styleSheet());
+    formLayout->addWidget(salaryEdit);
+
+    // Shift
+    QLabel *shiftLabel = new QLabel("Ca làm việc:", this);
+    shiftLabel->setStyleSheet("font-weight: bold; font-size: 13px; color: #374151; margin-top: 8px;");
+    formLayout->addWidget(shiftLabel);
+    
+    shiftCombo = new QComboBox(this);
+    shiftCombo->addItem("Sáng", static_cast<int>(CaLamViec::SANG));
+    shiftCombo->addItem("Chiều", static_cast<int>(CaLamViec::CHIEU));
+    shiftCombo->addItem("Tối", static_cast<int>(CaLamViec::TOI));
+    shiftCombo->setMinimumHeight(38);
+    shiftCombo->setStyleSheet(
+        "QComboBox {"
+        "   padding: 8px 12px;"
+        "   border: 1px solid #d1d5db;"
+        "   border-radius: 6px;"
+        "   font-size: 13px;"
+        "}"
+        "QComboBox:focus {"
+        "   border: 2px solid #16a34a;"
+        "}"
+        "QComboBox::drop-down {"
+        "   border: none;"
+        "   padding-right: 8px;"
+        "}");
+    formLayout->addWidget(shiftCombo);
+
     // Role (Staff Management only handles NhanVien)
     QLabel *roleLabel = new QLabel("Vai trò:", this);
     roleLabel->setStyleSheet("font-weight: bold; font-size: 13px; color: #374151; margin-top: 8px;");
@@ -403,7 +471,9 @@ void StaffManagementPage::setupUI()
     formLayout->addLayout(btnLayout);
     formLayout->addStretch();
 
-    rightLayout->addWidget(formFrame);
+    // Add form to scroll area
+    formScrollArea->setWidget(formFrame);
+    rightLayout->addWidget(formScrollArea);
 
     // Add panels to main layout
     mainLayout->addLayout(leftLayout, 7); // 70%
@@ -516,6 +586,15 @@ void StaffManagementPage::loadStaff()
         QTableWidgetItem *salaryItem = new QTableWidgetItem(salary);
         salaryItem->setTextAlignment(Qt::AlignCenter);
         staffTable->setItem(row, 7, salaryItem);
+        
+        // Col 8: Shift
+        CaLamViec shift = nv->layCaLamViec();
+        QString shiftText = "Sáng";
+        if (shift == CaLamViec::CHIEU) shiftText = "Chiều";
+        else if (shift == CaLamViec::TOI) shiftText = "Tối";
+        QTableWidgetItem *shiftItem = new QTableWidgetItem(shiftText);
+        shiftItem->setTextAlignment(Qt::AlignCenter);
+        staffTable->setItem(row, 8, shiftItem);
     }
     
     qDebug() << "Loaded" << staffList.size() << "staff members";
@@ -569,6 +648,16 @@ void StaffManagementPage::onStaffRowClicked(int row)
     usernameEdit->setText(QString::fromStdString(selectedStaff->layTenDangNhap()));
     passwordEdit->setText(""); // Don't show password
     
+    NhanVien *nv = dynamic_cast<NhanVien*>(selectedStaff);
+    if (nv) {
+        salaryEdit->setText(QString::number(nv->layLuongCoBan(), 'f', 0));
+        
+        CaLamViec shift = nv->layCaLamViec();
+        if (shift == CaLamViec::SANG) shiftCombo->setCurrentIndex(0);
+        else if (shift == CaLamViec::CHIEU) shiftCombo->setCurrentIndex(1);
+        else if (shift == CaLamViec::TOI) shiftCombo->setCurrentIndex(2);
+    }
+    
     // Always show staff role (admin managed separately)
     roleCombo->setCurrentIndex(0);
     
@@ -585,12 +674,16 @@ void StaffManagementPage::onAddNewClicked()
 
 void StaffManagementPage::onSaveClicked()
 {
+    qDebug() << "[UI DEBUG] onSaveClicked called";
+    
     if (!validateForm()) {
+        qDebug() << "[UI DEBUG] Validation failed";
         return;
     }
     
-    if (!staffManager || !currentAdmin) {
-        QMessageBox::warning(this, "Lỗi", "Chưa khởi tạo hệ thống!");
+    if (!staffManager) {
+        qDebug() << "[UI DEBUG] staffManager is null!";
+        QMessageBox::critical(this, "Lỗi", "Chưa khởi tạo hệ thống quản lý!");
         return;
     }
     
@@ -601,13 +694,22 @@ void StaffManagementPage::onSaveClicked()
     QString phone = phoneEdit->text();
     QString username = usernameEdit->text();
     QString password = passwordEdit->text();
+    double salary = salaryEdit->text().toDouble();
+    CaLamViec shift = static_cast<CaLamViec>(shiftCombo->currentData().toInt());
+    
+    qDebug() << "[UI DEBUG] isEditMode:" << isEditMode;
+    qDebug() << "[UI DEBUG] Name:" << name;
+    qDebug() << "[UI DEBUG] Phone:" << phone;
+    qDebug() << "[UI DEBUG] Username:" << username;
+    qDebug() << "[UI DEBUG] Salary:" << salary;
+    
     // Always create NhanVien (staff), admin managed separately
     
     if (isEditMode && selectedStaff) {
         // Update existing staff
         NhanVien* nv = dynamic_cast<NhanVien*>(selectedStaff);
         if (!nv) {
-            QMessageBox::warning(this, "Lỗi", "Lỗi kiểu dữ liệu!");
+            QMessageBox::critical(this, "Lỗi", "Không thể chuyển đổi dữ liệu nhân viên!");
             return;
         }
         
@@ -618,8 +720,8 @@ void StaffManagementPage::onSaveClicked()
             username.toStdString(),
             password.isEmpty() ? nv->layMatKhau() : password.toStdString(),
             nv->layMaNhanVien(),
-            nv->layLuongCoBan(),
-            nv->layCaLamViec()
+            salary,
+            shift
         );
         nvMoi.datGioiTinh(gender.toStdString());
         nvMoi.datNgaySinh(dob.toStdString());
@@ -627,20 +729,24 @@ void StaffManagementPage::onSaveClicked()
         nvMoi.datHoatDong(true);
         
         if (staffManager->capNhatNhanVien(nv->layMaNhanVien(), nvMoi)) {
-            QMessageBox::information(this, "Thành công", "Đã cập nhật thông tin nhân viên!");
-            loadStaff();
+            QMessageBox::information(this, "Thành công", "Thông tin nhân viên đã được cập nhật!");
             clearForm();
+            loadStaff(); // Reload to show updated data immediately
         } else {
-            QMessageBox::warning(this, "Lỗi", "Không thể cập nhật nhân viên!");
+            QMessageBox::warning(this, "Lỗi", "Không thể cập nhật thông tin. Vui lòng kiểm tra lại Username/SĐT!");
         }
     } else {
         // Add new staff
+        qDebug() << "[UI DEBUG] Add new staff mode";
+        
         if (password.isEmpty()) {
-            QMessageBox::warning(this, "Lỗi", "Vui lòng nhập mật khẩu cho nhân viên mới!");
+            qDebug() << "[UI DEBUG] Password is empty!";
+            QMessageBox::warning(this, "Thiếu thông tin", "Vui lòng nhập mật khẩu cho nhân viên mới!");
             return;
         }
         
         std::string maNV = staffManager->taoMaNhanVienMoi();
+        qDebug() << "[UI DEBUG] Generated ID:" << QString::fromStdString(maNV);
         
         // Always create NhanVien (staff only)
         NhanVien *nv = new NhanVien(
@@ -650,20 +756,25 @@ void StaffManagementPage::onSaveClicked()
             username.toStdString(),
             password.toStdString(),
             maNV,
-            0, // Default salary
-            CaLamViec::SANG // Default shift
+            salary,
+            shift
         );
         
         nv->datGioiTinh(gender.toStdString());
         nv->datNgaySinh(dob.toStdString());
         nv->datHoatDong(true);
         
+        qDebug() << "Attempting to add new staff:" << name;
+        qDebug() << "[UI DEBUG] Calling staffManager->themNhanVien...";
+        
         if (staffManager->themNhanVien(nv)) {
-            QMessageBox::information(this, "Thành công", "Đã thêm nhân viên mới!");
-            loadStaff();
+            qDebug() << "Successfully added staff!";
+            QMessageBox::information(this, "Thành công", "Nhân viên mới đã được thêm vào hệ thống!");
             clearForm();
+            loadStaff(); // Reload to show new staff immediately
         } else {
-            QMessageBox::warning(this, "Lỗi", "Không thể thêm nhân viên! Username hoặc SĐT đã tồn tại.");
+            qDebug() << "Failed to add staff!";
+            QMessageBox::warning(this, "Lỗi", "Không thể thêm nhân viên. Username hoặc SĐT đã tồn tại!");
             delete nv;
         }
     }
@@ -672,35 +783,47 @@ void StaffManagementPage::onSaveClicked()
 void StaffManagementPage::onDeleteClicked()
 {
     if (!selectedStaff) {
-        QMessageBox::warning(this, "Lỗi", "Vui lòng chọn nhân viên cần xóa!");
+        QMessageBox::warning(this, "Chưa chọn", "Vui lòng chọn nhân viên cần xóa!");
         return;
     }
     
     QString name = QString::fromStdString(selectedStaff->layHoTen());
     QString maNV = QString::fromStdString(selectedStaff->layMaNhanVien());
     
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this,
-        "Xác nhận xóa",
-        QString("Bạn có chắc chắn muốn xóa nhân viên '%1' (%2)?").arg(name, maNV),
-        QMessageBox::Yes | QMessageBox::No
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Xác nhận xóa");
+    msgBox.setText("<h3>Bạn có chắc chắn muốn xóa?</h3>");
+    msgBox.setInformativeText(QString("Nhân viên: <b>%1</b> (%2)<br>Hành động này không thể hoàn tác.").arg(name, maNV));
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::No);
+    msgBox.setStyleSheet(
+        "QMessageBox { background-color: white; }"
+        "QLabel { min-width: 300px; font-size: 13px; }"
+        "QPushButton { padding: 6px 16px; font-weight: bold; border-radius: 4px; }"
+        "QPushButton[text='&Yes'] { background-color: #ef4444; color: white; border: none; }"
+        "QPushButton[text='&No'] { background-color: #e5e7eb; color: #374151; border: none; }"
+        "QPushButton[text='&Yes']:hover { background-color: #dc2626; }"
+        "QPushButton[text='&No']:hover { background-color: #d1d5db; }"
     );
     
-    if (reply == QMessageBox::Yes) {
+    if (msgBox.exec() == QMessageBox::Yes) {
         if (staffManager->xoaNhanVien(maNV.toStdString())) {
-            QMessageBox::information(this, "Thành công", "Đã xóa nhân viên!");
-            loadStaff();
+            QMessageBox::information(this, "Thành công", QString("Đã xóa nhân viên %1!").arg(name));
             clearForm();
             deleteBtn->setEnabled(false);
+            loadStaff(); // Reload to remove deleted staff from table immediately
         } else {
-            QMessageBox::warning(this, "Lỗi", "Không thể xóa nhân viên!");
+            QMessageBox::critical(this, "Lỗi", "Không thể xóa nhân viên. Vui lòng kiểm tra lại file dữ liệu!");
         }
     }
 }
 
 void StaffManagementPage::onPrintClicked()
 {
-    QMessageBox::information(this, "Print", "Chức năng in đang được phát triển!");
+    loadStaff();
+    
+    QMessageBox::information(this, "Thông báo", "Dữ liệu nhân viên đã được cập nhật thành công!");
 }
 
 void StaffManagementPage::clearForm()
@@ -711,6 +834,8 @@ void StaffManagementPage::clearForm()
     phoneEdit->clear();
     usernameEdit->clear();
     passwordEdit->clear();
+    salaryEdit->clear();
+    shiftCombo->setCurrentIndex(0);
     roleCombo->setCurrentIndex(0);
     
     staffTable->clearSelection();
@@ -746,26 +871,34 @@ void StaffManagementPage::populateForm(NhanVien *staff)
 bool StaffManagementPage::validateForm()
 {
     if (nameEdit->text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "Lỗi", "Vui lòng nhập họ tên!");
+        QMessageBox::warning(this, "Thiếu thông tin", "Vui lòng nhập họ tên!");
         nameEdit->setFocus();
         return false;
     }
     
     if (phoneEdit->text().trimmed().length() < 10) {
-        QMessageBox::warning(this, "Lỗi", "Số điện thoại phải có ít nhất 10 số!");
+        QMessageBox::warning(this, "Thông tin không hợp lệ", "Số điện thoại phải có ít nhất 10 số!");
         phoneEdit->setFocus();
         return false;
     }
     
     if (usernameEdit->text().trimmed().length() < 3) {
-        QMessageBox::warning(this, "Lỗi", "Username phải có ít nhất 3 ký tự!");
+        QMessageBox::warning(this, "Thông tin không hợp lệ", "Username phải có ít nhất 3 ký tự!");
         usernameEdit->setFocus();
         return false;
     }
     
     if (!isEditMode && passwordEdit->text().length() < 6) {
-        QMessageBox::warning(this, "Lỗi", "Mật khẩu phải có ít nhất 6 ký tự!");
+        QMessageBox::warning(this, "Thông tin không hợp lệ", "Mật khẩu phải có ít nhất 6 ký tự!");
         passwordEdit->setFocus();
+        return false;
+    }
+    
+    bool ok;
+    double salary = salaryEdit->text().toDouble(&ok);
+    if (!ok || salary < 0) {
+        QMessageBox::warning(this, "Thông tin không hợp lệ", "Lương phải là số dương!");
+        salaryEdit->setFocus();
         return false;
     }
     

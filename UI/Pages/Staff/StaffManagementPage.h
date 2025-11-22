@@ -23,6 +23,7 @@
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <QDateEdit>
+#include <QMessageBox>
 #include "../../Core/QuanLy/HeThongQuanLy.h"
 #include "../../Core/QuanLy/QuanLyNhanVien.h"
 #include "../../Core/Models/NhanVien.h"
@@ -88,6 +89,8 @@ private:
     QLineEdit *phoneEdit;
     QLineEdit *usernameEdit;
     QLineEdit *passwordEdit;
+    QLineEdit *salaryEdit;
+    QComboBox *shiftCombo;
     QComboBox *roleCombo;
     
     QPushButton *addNewBtn;

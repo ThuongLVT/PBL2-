@@ -79,6 +79,13 @@ public:
      */
     virtual ~NhanVien();
 
+    /**
+     * @brief Assignment operator
+     * @param other Đối tượng NhanVien khác
+     * @return Reference to this
+     */
+    NhanVien& operator=(const NhanVien &other);
+
     // ========== GETTERS ==========
 
     /**
@@ -164,13 +171,6 @@ public:
     virtual bool docFile(std::ifstream &file) override;
 
     // ========== OPERATORS ==========
-
-    /**
-     * @brief Toán tử gán
-     * @param other Đối tượng NhanVien khác
-     * @return Tham chiếu đến đối tượng hiện tại
-     */
-    NhanVien &operator=(const NhanVien &other);
 
     /**
      * @brief Toán tử xuất ra stream

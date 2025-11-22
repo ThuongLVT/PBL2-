@@ -35,6 +35,26 @@ NguoiDung::~NguoiDung()
     // Destructor
 }
 
+// ========== ASSIGNMENT OPERATOR ==========
+
+NguoiDung& NguoiDung::operator=(const NguoiDung &other)
+{
+    if (this != &other)
+    {
+        // Copy base class members
+        ConNguoi::operator=(other);
+        
+        // Copy NguoiDung specific members
+        tenDangNhap = other.tenDangNhap;
+        matKhau = other.matKhau;
+        vaiTro = other.vaiTro;
+        hoatDong = other.hoatDong;
+        gioiTinh = other.gioiTinh;
+        ngaySinh = other.ngaySinh;
+    }
+    return *this;
+}
+
 // ========== GETTERS ==========
 
 std::string NguoiDung::layTenDangNhap() const
@@ -193,19 +213,6 @@ bool NguoiDung::docFile(std::ifstream &file)
 }
 
 // ========== OPERATORS ==========
-
-NguoiDung &NguoiDung::operator=(const NguoiDung &other)
-{
-    if (this != &other)
-    {
-        ConNguoi::operator=(other); // Gọi toán tử gán lớp cha
-        tenDangNhap = other.tenDangNhap;
-        matKhau = other.matKhau;
-        vaiTro = other.vaiTro;
-        hoatDong = other.hoatDong;
-    }
-    return *this;
-}
 
 std::ostream &operator<<(std::ostream &os, const NguoiDung &nd)
 {

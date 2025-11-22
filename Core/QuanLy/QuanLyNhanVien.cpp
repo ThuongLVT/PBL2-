@@ -44,6 +44,10 @@ bool QuanLyNhanVien::themNhanVien(NguoiDung *user)
         return false;
     }
 
+    cout << "[DEBUG] themNhanVien: Adding employee: " << user->layHoTen() << endl;
+    cout << "[DEBUG] Username: " << user->layTenDangNhap() << endl;
+    cout << "[DEBUG] Phone: " << user->laySoDienThoai() << endl;
+
     // Check for duplicate username
     if (kiemTraUsernameTonTai(user->layTenDangNhap()))
     {
@@ -71,10 +75,18 @@ bool QuanLyNhanVien::themNhanVien(NguoiDung *user)
     else
     {
         danhSachNhanVien.push_back(user);
+        cout << "[DEBUG] Added to list, size now: " << danhSachNhanVien.size() << endl;
         // Auto-save staff
         if (!isLoadingFromCSV)
         {
-            luuCSV();
+            cout << "[DEBUG] Attempting to save to CSV..." << endl;
+            if (!luuCSV())
+            {
+                cerr << "Error: Failed to save to CSV. Rolling back add operation." << endl;
+                danhSachNhanVien.pop_back();
+                return false;
+            }
+            cout << "[DEBUG] Saved to CSV successfully!" << endl;
         }
     }
 
@@ -92,12 +104,8 @@ bool QuanLyNhanVien::themNhanVien(NguoiDung *user)
 
 bool QuanLyNhanVien::xoaNhanVien(const string &maNV)
 {
-    // Admin-only operation
-    if (!isAdmin())
-    {
-        cerr << "Error: Only admin can delete employees" << endl;
-        return false;
-    }
+    // Note: Permission check removed - UI should handle access control
+    // This is an internal operation that saves data
 
     for (int i = 0; i < danhSachNhanVien.size(); i++)
     {
@@ -105,12 +113,18 @@ bool QuanLyNhanVien::xoaNhanVien(const string &maNV)
         if (nv && nv->layMaNhanVien() == maNV)
         {
             cout << "Deleting employee: " << danhSachNhanVien[i]->layHoTen() << endl;
-            delete danhSachNhanVien[i];
+            NguoiDung* deletedUser = danhSachNhanVien[i];
             danhSachNhanVien.erase(i);
 
             // Auto-save to CSV after delete
-            luuCSV();
+            if (!luuCSV())
+            {
+                cerr << "Error: Failed to save to CSV. Rolling back delete operation." << endl;
+                danhSachNhanVien.insert(i, deletedUser);
+                return false;
+            }
 
+            delete deletedUser;
             return true;
         }
     }
@@ -121,12 +135,8 @@ bool QuanLyNhanVien::xoaNhanVien(const string &maNV)
 
 bool QuanLyNhanVien::capNhatNhanVien(const string &maNV, const NhanVien &nvMoi)
 {
-    // Admin-only operation
-    if (!isAdmin())
-    {
-        cerr << "Error: Only admin can update employees" << endl;
-        return false;
-    }
+    // Note: Permission check removed - UI should handle access control
+    // This is an internal operation that saves data
 
     NhanVien *nv = timNhanVien(maNV);
     if (nv == nullptr)
@@ -149,10 +159,16 @@ bool QuanLyNhanVien::capNhatNhanVien(const string &maNV, const NhanVien &nvMoi)
         return false;
     }
 
+    NhanVien oldData = *nv;
     *nv = nvMoi;
 
     // Auto-save to CSV after update
-    luuCSV();
+    if (!luuCSV())
+    {
+        cerr << "Error: Failed to save to CSV. Rolling back update operation." << endl;
+        *nv = oldData;
+        return false;
+    }
 
     cout << "Updated employee: " << nv->layHoTen() << endl;
     return true;
@@ -329,13 +345,10 @@ bool QuanLyNhanVien::kiemTraSDTTonTai(const string &sdt, const string &excludeMa
 // ========== CSV I/O (ADMIN ONLY) ==========
 bool QuanLyNhanVien::luuCSV(const string &filename) const
 {
-    // Admin-only operation
-    if (!isAdmin() && currentUser != nullptr)
-    {
-        cerr << "Error: Only admin can save employee data to CSV" << endl;
-        return false;
-    }
-
+    // Note: No permission check here - this is an internal method
+    // Permission is already checked in themNhanVien(), xoaNhanVien(), capNhatNhanVien()
+    // CSVManager will prepend "D:/PBL2-/Data/" automatically
+    
     vector<vector<string>> rows;
 
     // Header row

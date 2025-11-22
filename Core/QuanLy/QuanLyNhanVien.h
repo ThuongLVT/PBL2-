@@ -170,17 +170,17 @@ public:
     // ========== CSV I/O (ADMIN ONLY) ==========
     /**
      * @brief Lưu danh sách nhân viên ra file CSV (admin only)
-     * @param filename Đường dẫn file CSV (mặc định: Data/nhanvien.csv)
+     * @param filename Đường dẫn file CSV (mặc định: nhanvien.csv)
      * @return true nếu thành công
      */
-    bool luuCSV(const std::string &filename = "Data/nhanvien.csv") const;
+    bool luuCSV(const std::string &filename = "nhanvien.csv") const;
 
     /**
      * @brief Đọc danh sách nhân viên từ file CSV (admin only)
-     * @param filename Đường dẫn file CSV (mặc định: Data/nhanvien.csv)
+     * @param filename Đường dẫn file CSV (mặc định: nhanvien.csv)
      * @return true nếu thành công
      */
-    bool docCSV(const std::string &filename = "Data/nhanvien.csv");
+    bool docCSV(const std::string &filename = "nhanvien.csv");
 
     // ========== ADMIN CSV I/O ==========
     /**

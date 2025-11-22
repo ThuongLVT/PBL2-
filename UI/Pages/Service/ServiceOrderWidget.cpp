@@ -319,6 +319,7 @@ void ServiceOrderWidget::refreshData()
 void ServiceOrderWidget::onAddServiceClicked()
 {
     ServiceSelectionDialog dialog(this);
+    dialog.setExistingCart(currentCart); // Pass current cart to dialog
     if (dialog.exec() == QDialog::Accepted)
     {
         QMap<std::string, int> selected = dialog.getSelectedServices();
@@ -544,6 +545,10 @@ void ServiceOrderWidget::onPayClicked()
         {
             DichVuDat dvd(dv, qty);
             donHang->themDichVu(dvd);
+
+            // Update stock
+            dv->datSoLuongTon(dv->laySoLuongTon() - qty);
+            dv->datSoLuongBan(dv->laySoLuongBan() + qty);
         }
     }
 
@@ -554,8 +559,7 @@ void ServiceOrderWidget::onPayClicked()
     donHang->setTrangThai(TrangThaiDonHang::HOAN_THANH); // Auto complete for now
 
     // Save System
-    // Note: taoDonHangDichVu already adds it to the manager list, but we might need to trigger a save to file
-    // HeThongQuanLy::getInstance()->luuHeThong("Data/data.bin"); // Or similar if needed
+    HeThongQuanLy::getInstance()->luuHeThong("D:/PBL2-/Data/data.bin");
 
     QMessageBox::information(this, "Thành công", "Thanh toán đơn hàng thành công!\nMã đơn: " + QString::fromStdString(donHang->getMaDonHang()));
 

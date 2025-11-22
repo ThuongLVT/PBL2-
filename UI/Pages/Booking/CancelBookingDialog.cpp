@@ -8,6 +8,8 @@
 #include <QGroupBox>
 #include <iomanip>
 #include <sstream>
+#include <QScreen>
+#include <QGuiApplication>
 
 CancelBookingDialog::CancelBookingDialog(DatSan *booking, QWidget *parent)
     : QDialog(parent),
@@ -19,6 +21,15 @@ CancelBookingDialog::CancelBookingDialog(DatSan *booking, QWidget *parent)
     setModal(true);
 
     setupUI();
+
+    // Center the dialog
+    if (QScreen *screen = QGuiApplication::primaryScreen())
+    {
+        QRect screenGeometry = screen->availableGeometry();
+        int x = (screenGeometry.width() - width()) / 2;
+        int y = (screenGeometry.height() - height()) / 2;
+        move(x, y);
+    }
 }
 
 CancelBookingDialog::~CancelBookingDialog()
@@ -114,10 +125,8 @@ void CancelBookingDialog::setupUI()
     refundRadio->setChecked(true); // Default
 
     depositLayout->addWidget(refundRadio);
-    depositLayout->addWidget(refundHint);
     depositLayout->addSpacing(10);
     depositLayout->addWidget(forfeitRadio);
-    depositLayout->addWidget(forfeitHint);
 
     mainLayout->addWidget(depositGroup);
 

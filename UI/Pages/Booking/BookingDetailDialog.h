@@ -51,9 +51,9 @@ private slots:
 private:
     void setupUI();
     void setupHeader(QVBoxLayout *parentLayout);
-    void setupInfoSection(QVBoxLayout *parentLayout);
-    void setupServicesSection(QVBoxLayout *parentLayout);
-    void setupPaymentSection(QVBoxLayout *parentLayout);
+    QFrame *createInfoSection();
+    QFrame *createServicesSection();
+    QFrame *createPaymentSection();
     void populateForm();
     void loadServices();
     void updateTotalPrice();
@@ -83,6 +83,7 @@ private:
     // Services section
     QTableWidget *serviceTable;
     QPushButton *addServiceBtn;
+    QPushButton *removeServiceBtn;
 
     // Payment section
     QLabel *fieldPriceLabel;

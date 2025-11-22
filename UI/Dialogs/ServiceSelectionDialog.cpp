@@ -23,8 +23,8 @@
 class ServiceQuantityDialog : public QDialog
 {
 public:
-    ServiceQuantityDialog(DichVu *service, QWidget *parent = nullptr)
-        : QDialog(parent), m_service(service), m_quantity(1)
+    ServiceQuantityDialog(DichVu *service, int maxQuantity, QWidget *parent = nullptr)
+        : QDialog(parent), m_service(service), m_quantity(1), m_maxQuantity(maxQuantity)
     {
         setWindowTitle("Chọn số lượng");
         setFixedSize(500, 280);
@@ -68,7 +68,7 @@ public:
         // Info (Unit & Stock)
         QHBoxLayout *infoLayout = new QHBoxLayout();
         QLabel *lblUnit = new QLabel("Đơn vị: " + QString::fromStdString(service->layDonVi()), this);
-        QLabel *lblStock = new QLabel("Tồn kho: " + QString::number(service->laySoLuongTon()), this);
+        QLabel *lblStock = new QLabel("Tồn kho: " + QString::number(m_maxQuantity), this);
 
         lblUnit->setStyleSheet("font-size: 14px; color: #4b5563;");
         lblStock->setStyleSheet("font-size: 14px; color: #4b5563;");
@@ -148,11 +148,15 @@ public:
         connect(btnPlus, &QPushButton::clicked, [this]()
                 {
             int q = txtQty->text().toInt();
-            if (q < m_service->laySoLuongTon()) txtQty->setText(QString::number(q + 1)); });
+            if (q < m_maxQuantity) txtQty->setText(QString::number(q + 1)); });
         connect(btnClose, &QPushButton::clicked, this, &QDialog::reject);
         connect(btnAdd, &QPushButton::clicked, [this]()
                 {
             m_quantity = txtQty->text().toInt();
+            if (m_quantity > m_maxQuantity) {
+                QMessageBox::warning(this, "Lỗi", "Số lượng vượt quá tồn kho!");
+                return;
+            }
             accept(); });
     }
 
@@ -161,6 +165,7 @@ public:
 private:
     DichVu *m_service;
     int m_quantity;
+    int m_maxQuantity;
     QLineEdit *txtQty;
 };
 
@@ -416,6 +421,16 @@ QWidget *ServiceSelectionDialog::createServiceCard(DichVu *service)
     unit->setStyleSheet("color: #6b7280; font-size: 12px; border: none;");
     unit->setAlignment(Qt::AlignLeft);
 
+    // Calculate available stock (Total - In Cart)
+    int inCartQty = existingCart.value(service->layMaDichVu(), 0);
+    int displayStock = service->laySoLuongTon() - inCartQty;
+    if (displayStock < 0)
+        displayStock = 0;
+
+    QLabel *lblStock = new QLabel(QString("Tồn kho: %1").arg(displayStock));
+    lblStock->setStyleSheet("color: #6b7280; font-size: 12px; border: none;");
+    lblStock->setAlignment(Qt::AlignLeft);
+
     // Price
     QLabel *price = new QLabel(QString::number(service->layDonGia(), 'f', 0) + "đ");
     price->setStyleSheet("color: #16a34a; font-weight: bold; font-size: 15px; border: none;");
@@ -424,6 +439,7 @@ QWidget *ServiceSelectionDialog::createServiceCard(DichVu *service)
     layout->addWidget(img);
     layout->addWidget(name);
     layout->addWidget(unit);
+    layout->addWidget(lblStock);
     layout->addWidget(price);
     layout->addStretch();
 
@@ -435,7 +451,17 @@ QWidget *ServiceSelectionDialog::createServiceCard(DichVu *service)
 
 void ServiceSelectionDialog::onServiceCardClicked(DichVu *service)
 {
-    openQuantityDialog(service, 0);
+    int currentQty = selectedQuantities.value(service->layMaDichVu(), 0);
+    int inCartQty = existingCart.value(service->layMaDichVu(), 0);
+    int maxQty = service->laySoLuongTon() - currentQty - inCartQty;
+
+    if (maxQty <= 0)
+    {
+        QMessageBox::warning(this, "Hết hàng", "Sản phẩm này đã hết hàng hoặc bạn đã chọn hết số lượng tồn kho!");
+        return;
+    }
+
+    openQuantityDialog(service, maxQty);
 }
 
 void ServiceSelectionDialog::onTableDoubleClicked(int row, int column)
@@ -454,13 +480,23 @@ void ServiceSelectionDialog::onTableDoubleClicked(int row, int column)
 
     if (target)
     {
-        openQuantityDialog(target, 0);
+        int currentQty = selectedQuantities.value(target->layMaDichVu(), 0);
+        int inCartQty = existingCart.value(target->layMaDichVu(), 0);
+        int maxQty = target->laySoLuongTon() - currentQty - inCartQty;
+
+        if (maxQty <= 0)
+        {
+            QMessageBox::warning(this, "Hết hàng", "Sản phẩm này đã hết hàng hoặc bạn đã chọn hết số lượng tồn kho!");
+            return;
+        }
+
+        openQuantityDialog(target, maxQty);
     }
 }
 
-void ServiceSelectionDialog::openQuantityDialog(DichVu *service, int currentQty)
+void ServiceSelectionDialog::openQuantityDialog(DichVu *service, int maxQty)
 {
-    ServiceQuantityDialog dlg(service, this);
+    ServiceQuantityDialog dlg(service, maxQty, this);
     if (dlg.exec() == QDialog::Accepted)
     {
         int newQty = dlg.getQuantity();
@@ -527,6 +563,13 @@ void ServiceSelectionDialog::updateTable()
             selectedTable->setItem(row, 6, new QTableWidgetItem(QString::number(total, 'f', 0) + "đ"));
         }
     }
+}
+
+void ServiceSelectionDialog::setExistingCart(const QMap<std::string, int> &cart)
+{
+    existingCart = cart;
+    // Refresh grid to update stock display
+    updateGrid();
 }
 
 void ServiceSelectionDialog::onSearchTextChanged(const QString &text) { updateGrid(); }

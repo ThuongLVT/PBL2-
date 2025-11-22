@@ -30,6 +30,8 @@
 #include "../../Core/Models/DatSan.h"
 #include "../../Core/Models/KhachHang.h"
 #include "../../Core/Models/San.h"
+#include <QCompleter>
+#include <QStringListModel>
 
 // Forward declaration
 class TimelineGridWidget;
@@ -191,6 +193,8 @@ private:
     MangDong<San *> fields;
     DatSan *currentBooking; // Current editing booking
     bool isEditMode;
+    QCompleter *phoneCompleter;
+    QCompleter *nameCompleter;
 };
 
 #endif // TIMELINETAB_H

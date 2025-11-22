@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <QSet>
 #include <QTextCharFormat>
+#include <QTimer>
 
 #include <QRegularExpressionValidator>
 
@@ -222,18 +223,26 @@ void TimelineTab::setupFormPanel()
     gridLayout->addWidget(phoneLabel, row, 0);
 
     phoneEdit = new QLineEdit(formPanel);
-    phoneEdit->setPlaceholderText("Nhập số điện thoại...");
+    phoneEdit->setPlaceholderText("Nhập SĐT...");
     phoneEdit->setMinimumWidth(200);
     phoneEdit->setMaximumWidth(200);
-    // Validator: Only 10 digits allowed, must start with 0
-    QRegularExpression rx("^0[0-9]{9}$");
+
+    // Validator: Only allow digits
+    QRegularExpression rx("^[0-9]*$");
     QValidator *validator = new QRegularExpressionValidator(rx, this);
     phoneEdit->setValidator(validator);
+
     phoneEdit->setStyleSheet(
         "QLineEdit { " + inputStyle + " } "
                                       "QLineEdit:focus { "
                                       "border: 1px solid #16a34a; "
                                       "}");
+
+    // Completer setup
+    phoneCompleter = new QCompleter(this);
+    phoneCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    phoneCompleter->setFilterMode(Qt::MatchContains);
+    phoneEdit->setCompleter(phoneCompleter);
     gridLayout->addWidget(phoneEdit, row, 1);
 
     QLabel *fieldLabel = new QLabel("Sân:", formPanel);
@@ -259,8 +268,23 @@ void TimelineTab::setupFormPanel()
     nameEdit->setPlaceholderText("Tên khách hàng");
     nameEdit->setMinimumWidth(200);
     nameEdit->setMaximumWidth(200);
-    nameEdit->setReadOnly(true); // Default read-only until phone entered
-    nameEdit->setStyleSheet(readOnlyStyle);
+    nameEdit->setReadOnly(false);
+
+    // Validator: Only allow letters and spaces
+    QRegularExpression nameRx("^[\\p{L}\\s]*$");
+    QValidator *nameValidator = new QRegularExpressionValidator(nameRx, this);
+    nameEdit->setValidator(nameValidator);
+
+    nameEdit->setStyleSheet(
+        "QLineEdit { " + inputStyle + " } "
+                                      "QLineEdit:focus { border: 1px solid #16a34a; }");
+
+    // Name Completer setup
+    nameCompleter = new QCompleter(this);
+    nameCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    nameCompleter->setFilterMode(Qt::MatchContains);
+    nameEdit->setCompleter(nameCompleter);
+
     gridLayout->addWidget(nameEdit, row, 1);
 
     QLabel *typeLabel = new QLabel("Loại sân:", formPanel);
@@ -446,36 +470,8 @@ void TimelineTab::setupFormPanel()
     duration120Btn = new QPushButton(formPanel);
     duration120Btn->setVisible(false);
 
-    // Connect phone edit to auto-lookup customer
-    connect(phoneEdit, &QLineEdit::textChanged, [this](const QString &phone)
-            {
-        if (phone.length() < 10) {
-            nameEdit->clear();
-            nameEdit->setReadOnly(true);
-            nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
-            phoneEdit->setProperty("hasCustomer", false);
-            return;
-        }
-        
-        QuanLyKhachHang *qlkh = system->layQuanLyKhachHang();
-        if (qlkh) {
-            KhachHang *customer = qlkh->timKhachHangTheoSDT(phone.toStdString());
-            if (customer) {
-                nameEdit->setText(QString::fromStdString(customer->layHoTen()));
-                nameEdit->setReadOnly(true);
-                nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
-                phoneEdit->setProperty("hasCustomer", true);
-            } else {
-                // New customer - allow editing name
-                if (nameEdit->text().isEmpty() || nameEdit->isReadOnly()) {
-                     nameEdit->clear();
-                }
-                nameEdit->setPlaceholderText("Nhập tên khách hàng mới...");
-                nameEdit->setReadOnly(false);
-                nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
-                phoneEdit->setProperty("hasCustomer", false);
-            }
-        } });
+    // Connect phone edit to auto-lookup customer - REMOVED LAMBDA, using onPhoneSearchClicked
+    // ...
 
     // === RIGHT COLUMN: Note + Buttons ===
     QVBoxLayout *rightColumnLayout = new QVBoxLayout();
@@ -575,7 +571,44 @@ void TimelineTab::setupConnections()
     connect(calendar, &QCalendarWidget::clicked, this, &TimelineTab::onDateSelected);
 
     // Form - auto-search on phone text changed
-    connect(phoneEdit, &QLineEdit::textChanged, this, &TimelineTab::onPhoneSearchClicked);
+    // connect(phoneEdit, &QLineEdit::textChanged, this, &TimelineTab::onPhoneSearchClicked); // Removed to avoid double trigger with completer
+    connect(phoneEdit, &QLineEdit::returnPressed, this, &TimelineTab::onPhoneSearchClicked);
+
+    // Completer connection
+    connect(phoneCompleter, QOverload<const QString &>::of(&QCompleter::activated),
+            [this](const QString &text)
+            {
+                // Text format: "Phone - Name"
+                QStringList parts = text.split(" - ");
+                if (parts.size() >= 2)
+                {
+                    QString phone = parts.first().trimmed();
+                    // Use QTimer to ensure this runs after the completer has finished its default action
+                    QTimer::singleShot(0, this, [this, phone]()
+                                       {
+                        phoneEdit->setText(phone);
+                        onPhoneSearchClicked(); });
+                }
+            });
+
+    connect(nameCompleter, QOverload<const QString &>::of(&QCompleter::activated),
+            [this](const QString &text)
+            {
+                // Text format: "Phone - Name"
+                QStringList parts = text.split(" - ");
+                if (parts.size() >= 2)
+                {
+                    QString phone = parts.first().trimmed();
+                    QString name = parts.last().trimmed();
+                    // Use QTimer to ensure this runs after the completer has finished its default action
+                    QTimer::singleShot(0, this, [this, phone, name]()
+                                       {
+                        phoneEdit->setText(phone);
+                        nameEdit->setText(name);
+                        onPhoneSearchClicked(); });
+                }
+            });
+
     connect(fieldCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TimelineTab::onFieldChanged);
 
     // Buttons
@@ -654,6 +687,30 @@ void TimelineTab::refreshData()
 
     // Update calendar to highlight dates with bookings
     updateCalendarDates();
+
+    // Update Completer Data
+    QStringList customerList;
+    QuanLyKhachHang *qlkh = system->layQuanLyKhachHang();
+    if (qlkh)
+    {
+        const MangDong<KhachHang *> &customers = qlkh->layDanhSachKhachHang();
+        for (int i = 0; i < customers.size(); i++)
+        {
+            KhachHang *kh = customers[i];
+            QString item = QString::fromStdString(kh->laySoDienThoai()) + " - " + QString::fromStdString(kh->layHoTen());
+            customerList << item;
+        }
+    }
+
+    QStringListModel *model = new QStringListModel(customerList, this);
+    if (phoneCompleter)
+    {
+        phoneCompleter->setModel(model);
+    }
+    if (nameCompleter)
+    {
+        nameCompleter->setModel(model);
+    }
 }
 
 void TimelineTab::clearForm()
@@ -874,13 +931,21 @@ void TimelineTab::onDateSelected(const QDate &date)
 
 void TimelineTab::onPhoneSearchClicked()
 {
-    QString phone = phoneEdit->text().trimmed();
-    if (phone.isEmpty())
+    QString text = phoneEdit->text().trimmed();
+    if (text.isEmpty())
     {
         nameEdit->clear();
         nameEdit->setReadOnly(true);
+        nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
         phoneEdit->setProperty("hasCustomer", false);
         return;
+    }
+
+    // Handle "Phone - Name" format from completer
+    QString phone = text;
+    if (text.contains(" - "))
+    {
+        phone = text.split(" - ").first().trimmed();
     }
 
     QuanLyKhachHang *quanLyKH = system->layQuanLyKhachHang();
@@ -897,11 +962,17 @@ void TimelineTab::onPhoneSearchClicked()
         nameEdit->setReadOnly(true);
         nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
         phoneEdit->setProperty("hasCustomer", true);
+
+        // If the text was just the phone number, update it to show "Phone - Name" for consistency?
+        // No, keep it as is or what the user typed.
+        // But if the user typed just phone, maybe we want to show the name in the name box (already doing that).
     }
     else
     {
         // Not found - allow entering new name
-        if (phone.length() >= 10)
+        // Only if it looks like a phone number (digits)
+        QRegularExpression phoneRegex("^0[0-9]{9}$");
+        if (phoneRegex.match(phone).hasMatch())
         {
             nameEdit->setReadOnly(false);
             nameEdit->setPlaceholderText("Nhập tên khách hàng mới...");
@@ -978,7 +1049,12 @@ void TimelineTab::onSaveClicked()
     }
 
     // 2. Validate Customer
-    QString phone = phoneEdit->text().trimmed();
+    QString text = phoneEdit->text().trimmed();
+    QString phone = text;
+    if (text.contains(" - "))
+    {
+        phone = text.split(" - ").first().trimmed();
+    }
     QString name = nameEdit->text().trimmed();
 
     qDebug() << "Phone from phoneEdit:" << phone;

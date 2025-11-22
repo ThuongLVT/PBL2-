@@ -5,6 +5,7 @@
 
 #include "BookingDetailDialog.h"
 #include "CancelBookingDialog.h"
+#include "../../Dialogs/ServiceSelectionDialog.h"
 #include "../../../Core/QuanLy/QuanLyThanhToan.h"
 #include <QMessageBox>
 #include <QSpinBox>
@@ -13,6 +14,8 @@
 #include <QDateTime>
 #include <iomanip>
 #include <sstream>
+#include <QScreen>
+#include <QGuiApplication>
 
 BookingDetailDialog::BookingDetailDialog(DatSan *booking, QWidget *parent)
     : QDialog(parent),
@@ -23,12 +26,21 @@ BookingDetailDialog::BookingDetailDialog(DatSan *booking, QWidget *parent)
     fields = system->layDanhSachSan();
 
     setWindowTitle("Chi tiết đặt sân");
-    setMinimumSize(1100, 600);
+    setMinimumSize(1100, 800); // Fixed height 800
     setModal(true);
 
     setupUI();
     populateForm();
     loadServices();
+
+    // Center the dialog
+    if (QScreen *screen = QGuiApplication::primaryScreen())
+    {
+        QRect screenGeometry = screen->availableGeometry();
+        int x = (screenGeometry.width() - width()) / 2;
+        int y = (screenGeometry.height() - height()) / 2;
+        move(x, y);
+    }
 }
 
 BookingDetailDialog::~BookingDetailDialog()
@@ -49,52 +61,26 @@ void BookingDetailDialog::setupUI()
     QHBoxLayout *contentLayout = new QHBoxLayout();
     contentLayout->setSpacing(20);
 
-    // Left Column (Info)
-    QWidget *leftWidget = new QWidget();
-    QVBoxLayout *leftLayout = new QVBoxLayout(leftWidget);
-    leftLayout->setContentsMargins(0, 0, 0, 0);
-    leftLayout->setSpacing(15);
-    setupInfoSection(leftLayout);
-    leftLayout->addStretch(); // Push content up
-    leftWidget->setLayout(leftLayout);
+    // Left Column (Info) - 40%
+    QFrame *infoFrame = createInfoSection();
+    // Ensure info frame expands
+    infoFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    contentLayout->addWidget(infoFrame, 40);
 
-    // Right Column (Services & Payment)
-    QWidget *rightWidget = new QWidget();
-    QVBoxLayout *rightLayout = new QVBoxLayout(rightWidget);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
-    rightLayout->setSpacing(15);
-    setupServicesSection(rightLayout);
-    setupPaymentSection(rightLayout);
-    rightWidget->setLayout(rightLayout);
+    // Right Column (Services & Payment) - 60%
+    QVBoxLayout *rightLayout = new QVBoxLayout();
+    rightLayout->setSpacing(20);
 
-    // Add to content layout (Ratio 4:6)
-    contentLayout->addWidget(leftWidget, 40);
-    contentLayout->addWidget(rightWidget, 60);
+    QFrame *servicesFrame = createServicesSection();
+    QFrame *paymentFrame = createPaymentSection();
+
+    // Split 50/50 vertically
+    rightLayout->addWidget(servicesFrame, 1);
+    rightLayout->addWidget(paymentFrame, 1);
+
+    contentLayout->addLayout(rightLayout, 60);
 
     mainLayout->addLayout(contentLayout);
-
-    // 3. Footer (Close Button)
-    QHBoxLayout *footerLayout = new QHBoxLayout();
-    footerLayout->addStretch();
-
-    closeBtn = new QPushButton("Đóng");
-    closeBtn->setMinimumSize(100, 36);
-    closeBtn->setCursor(Qt::PointingHandCursor);
-    closeBtn->setStyleSheet(
-        "QPushButton { "
-        "background-color: white; "
-        "border: 1px solid #d1d5db; "
-        "border-radius: 6px; "
-        "color: #374151; "
-        "font-weight: 500; "
-        "} "
-        "QPushButton:hover { "
-        "background-color: #f3f4f6; "
-        "}");
-    connect(closeBtn, &QPushButton::clicked, this, &QDialog::reject);
-
-    footerLayout->addWidget(closeBtn);
-    mainLayout->addLayout(footerLayout);
 
     // Global Styles
     setStyleSheet(
@@ -146,7 +132,7 @@ void BookingDetailDialog::setupHeader(QVBoxLayout *parentLayout)
     parentLayout->addWidget(headerFrame);
 }
 
-void BookingDetailDialog::setupInfoSection(QVBoxLayout *parentLayout)
+QFrame *BookingDetailDialog::createInfoSection()
 {
     QFrame *card = new QFrame();
     card->setObjectName("card");
@@ -226,18 +212,34 @@ void BookingDetailDialog::setupInfoSection(QVBoxLayout *parentLayout)
         "} "
         "QPushButton:hover { background-color: #dc2626; }");
 
+    closeBtn = new QPushButton("Đóng");
+    closeBtn->setMinimumHeight(40);
+    closeBtn->setCursor(Qt::PointingHandCursor);
+    closeBtn->setStyleSheet(
+        "QPushButton { "
+        "background-color: white; "
+        "border: 1px solid #d1d5db; "
+        "border-radius: 6px; "
+        "color: #374151; "
+        "font-weight: 500; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #f3f4f6; "
+        "}");
+    connect(closeBtn, &QPushButton::clicked, this, &QDialog::reject);
+
     btnLayout->addWidget(rescheduleBtn);
     btnLayout->addWidget(cancelBtn);
+    btnLayout->addWidget(closeBtn);
     layout->addLayout(btnLayout);
-
-    parentLayout->addWidget(card);
 
     // Connect buttons
     connect(cancelBtn, &QPushButton::clicked, this, &BookingDetailDialog::onCancelBookingClicked);
-    // Reschedule button logic can be added later
+
+    return card;
 }
 
-void BookingDetailDialog::setupServicesSection(QVBoxLayout *parentLayout)
+QFrame *BookingDetailDialog::createServicesSection()
 {
     QFrame *card = new QFrame();
     card->setObjectName("card");
@@ -253,26 +255,48 @@ void BookingDetailDialog::setupServicesSection(QVBoxLayout *parentLayout)
 
     // Table
     serviceTable = new QTableWidget();
-    serviceTable->setColumnCount(4);
-    serviceTable->setHorizontalHeaderLabels({"Tên dịch vụ", "Đơn giá", "SL", "Thành tiền"});
+    serviceTable->setColumnCount(7);
+    serviceTable->setHorizontalHeaderLabels({"STT", "Mã DV", "Tên dịch vụ", "Đơn vị", "Đơn giá", "SL", "Thành tiền"});
     serviceTable->verticalHeader()->setVisible(false);
-    serviceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    serviceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    serviceTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    serviceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    serviceTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); // STT
+    serviceTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents); // Ma DV
+    serviceTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);          // Ten DV
+    serviceTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents); // Don vi
+    serviceTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents); // Don gia
+    serviceTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents); // SL
+    serviceTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::ResizeToContents); // Thanh tien
     serviceTable->setShowGrid(false);
     serviceTable->setFrameShape(QFrame::NoFrame);
-    serviceTable->setSelectionMode(QAbstractItemView::NoSelection);
+    serviceTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    serviceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    serviceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    serviceTable->setFocusPolicy(Qt::NoFocus);
     serviceTable->setStyleSheet(
         "QTableWidget { background-color: #f9fafb; border-radius: 6px; }"
         "QHeaderView::section { background-color: #f3f4f6; border: none; padding: 8px; font-weight: bold; color: #6b7280; }"
-        "QTableWidget::item { padding: 8px; border-bottom: 1px solid #e5e7eb; }");
-    serviceTable->setMinimumHeight(150);
+        "QTableWidget::item { padding: 8px; border-bottom: 1px solid #e5e7eb; outline: none; }"
+        "QTableWidget::item:selected { background-color: #e0f2fe; color: #111827; }");
+    // serviceTable->setMinimumHeight(150); // Let layout handle height
     layout->addWidget(serviceTable);
 
     // Add Button
     QHBoxLayout *btnLayout = new QHBoxLayout();
     btnLayout->addStretch();
+
+    removeServiceBtn = new QPushButton("🗑️ Xóa dịch vụ");
+    removeServiceBtn->setCursor(Qt::PointingHandCursor);
+    removeServiceBtn->setFixedSize(140, 36);
+    removeServiceBtn->setEnabled(false); // Disabled by default
+    removeServiceBtn->setStyleSheet(
+        "QPushButton { "
+        "background-color: #ef4444; "
+        "color: white; "
+        "border: none; "
+        "border-radius: 6px; "
+        "font-weight: 600; "
+        "} "
+        "QPushButton:hover { background-color: #dc2626; }"
+        "QPushButton:disabled { background-color: #9ca3af; }");
 
     addServiceBtn = new QPushButton("➕ Thêm dịch vụ");
     addServiceBtn->setCursor(Qt::PointingHandCursor);
@@ -286,15 +310,22 @@ void BookingDetailDialog::setupServicesSection(QVBoxLayout *parentLayout)
         "font-weight: 600; "
         "} "
         "QPushButton:hover { background-color: #059669; }");
+
+    btnLayout->addWidget(removeServiceBtn);
     btnLayout->addWidget(addServiceBtn);
     layout->addLayout(btnLayout);
 
-    parentLayout->addWidget(card);
-
     connect(addServiceBtn, &QPushButton::clicked, this, &BookingDetailDialog::onAddServiceClicked);
+    connect(removeServiceBtn, &QPushButton::clicked, this, &BookingDetailDialog::onRemoveServiceClicked);
+
+    // Enable remove button when row selected
+    connect(serviceTable, &QTableWidget::itemSelectionChanged, [this]()
+            { removeServiceBtn->setEnabled(!serviceTable->selectedItems().isEmpty()); });
+
+    return card;
 }
 
-void BookingDetailDialog::setupPaymentSection(QVBoxLayout *parentLayout)
+QFrame *BookingDetailDialog::createPaymentSection()
 {
     QFrame *card = new QFrame();
     card->setObjectName("card");
@@ -376,9 +407,9 @@ void BookingDetailDialog::setupPaymentSection(QVBoxLayout *parentLayout)
         "QPushButton:disabled { background-color: #9ca3af; }");
     layout->addWidget(payNowBtn);
 
-    parentLayout->addWidget(card);
-
     connect(payNowBtn, &QPushButton::clicked, this, &BookingDetailDialog::onPaymentClicked);
+
+    return card;
 }
 
 void BookingDetailDialog::populateForm()
@@ -506,19 +537,28 @@ void BookingDetailDialog::loadServices()
             double total = unitPrice * dvDat.getSoLuong();
             totalServicePrice += total;
 
+            QTableWidgetItem *sttItem = new QTableWidgetItem(QString::number(i + 1));
+            QTableWidgetItem *codeItem = new QTableWidgetItem(QString::fromStdString(dv->layMaDichVu()));
             QTableWidgetItem *nameItem = new QTableWidgetItem(QString::fromStdString(dv->layTenDichVu()));
+            QTableWidgetItem *unitItem = new QTableWidgetItem(QString::fromStdString(dv->layDonVi()));
             QTableWidgetItem *priceItem = new QTableWidgetItem(formatCurrency(unitPrice));
             QTableWidgetItem *qtyItem = new QTableWidgetItem(QString::number(dvDat.getSoLuong()));
             QTableWidgetItem *totalItem = new QTableWidgetItem(formatCurrency(total));
 
+            sttItem->setTextAlignment(Qt::AlignCenter);
+            codeItem->setTextAlignment(Qt::AlignCenter);
+            unitItem->setTextAlignment(Qt::AlignCenter);
             priceItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
             qtyItem->setTextAlignment(Qt::AlignCenter);
             totalItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-            serviceTable->setItem(i, 0, nameItem);
-            serviceTable->setItem(i, 1, priceItem);
-            serviceTable->setItem(i, 2, qtyItem);
-            serviceTable->setItem(i, 3, totalItem);
+            serviceTable->setItem(i, 0, sttItem);
+            serviceTable->setItem(i, 1, codeItem);
+            serviceTable->setItem(i, 2, nameItem);
+            serviceTable->setItem(i, 3, unitItem);
+            serviceTable->setItem(i, 4, priceItem);
+            serviceTable->setItem(i, 5, qtyItem);
+            serviceTable->setItem(i, 6, totalItem);
         }
     }
 
@@ -628,6 +668,19 @@ void BookingDetailDialog::onPaymentClicked()
 
             if (tt)
             {
+                // Update stock for services
+                const MangDong<DichVuDat> &services = currentBooking->getDanhSachDichVu();
+                for (int i = 0; i < services.size(); i++)
+                {
+                    DichVu *dv = services[i].getDichVu();
+                    if (dv)
+                    {
+                        int qty = services[i].getSoLuong();
+                        dv->datSoLuongTon(dv->laySoLuongTon() - qty);
+                        dv->datSoLuongBan(dv->laySoLuongBan() + qty);
+                    }
+                }
+
                 currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
 
                 if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
@@ -663,56 +716,90 @@ void BookingDetailDialog::onAddServiceClicked()
     if (!currentBooking || !system)
         return;
 
-    const MangDong<DichVu *> &allServices = system->layDanhSachDichVu();
-    if (allServices.size() == 0)
+    ServiceSelectionDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted)
     {
-        QMessageBox::information(this, "Thông báo", "Không có dịch vụ nào!");
-        return;
-    }
+        QMap<std::string, int> selectedServices = dialog.getSelectedServices();
+        const MangDong<DichVu *> &allServices = system->layDanhSachDichVu();
 
-    QDialog selectDialog(this);
-    selectDialog.setWindowTitle("Chọn dịch vụ");
-    selectDialog.setMinimumSize(300, 150);
+        if (selectedServices.isEmpty())
+            return;
 
-    QVBoxLayout *layout = new QVBoxLayout(&selectDialog);
-    QComboBox *serviceCombo = new QComboBox();
-    for (int i = 0; i < allServices.size(); i++)
-    {
-        DichVu *dv = allServices[i];
-        if (dv)
+        for (auto it = selectedServices.begin(); it != selectedServices.end(); ++it)
         {
-            serviceCombo->addItem(QString::fromStdString(dv->layTenDichVu()), QString::fromStdString(dv->layMaDichVu()));
-        }
-    }
-    layout->addWidget(new QLabel("Dịch vụ:"));
-    layout->addWidget(serviceCombo);
+            std::string serviceId = it.key();
+            int quantity = it.value();
 
-    QSpinBox *qtySpin = new QSpinBox();
-    qtySpin->setRange(1, 100);
-    layout->addWidget(new QLabel("Số lượng:"));
-    layout->addWidget(qtySpin);
-
-    QPushButton *btnOk = new QPushButton("Thêm");
-    connect(btnOk, &QPushButton::clicked, &selectDialog, &QDialog::accept);
-    layout->addWidget(btnOk);
-
-    if (selectDialog.exec() == QDialog::Accepted)
-    {
-        QString maDV = serviceCombo->currentData().toString();
-        int qty = qtySpin->value();
-
-        for (int i = 0; i < allServices.size(); i++)
-        {
-            if (QString::fromStdString(allServices[i]->layMaDichVu()) == maDV)
+            // Find the service object
+            DichVu *service = nullptr;
+            for (int i = 0; i < allServices.size(); i++)
             {
-                DichVuDat dvDat(allServices[i], qty);
+                if (allServices[i]->layMaDichVu() == serviceId)
+                {
+                    service = allServices[i];
+                    break;
+                }
+            }
+
+            if (service)
+            {
+                DichVuDat dvDat(service, quantity);
                 currentBooking->themDichVu(dvDat);
-                loadServices(); // Refresh table and totals
-                break;
             }
         }
+
+        // Refresh table and totals
+        loadServices();
+
+        // Optional: Save changes immediately if required, or wait for a "Save" action.
+        // The original code didn't save immediately in onAddServiceClicked,
+        // but onPaymentClicked does save.
+        // However, since we are modifying the booking in memory,
+        // and this dialog seems to be a "viewer/editor",
+        // we should probably save the system state if we want it to persist
+        // after closing the dialog without paying.
+        // But looking at onCancelBookingClicked, it saves.
+        // The original onAddServiceClicked didn't save to file, just updated memory.
+        // I will stick to updating memory and refreshing UI.
     }
 }
 
-void BookingDetailDialog::onRemoveServiceClicked() { /* Not used in new UI */ }
+void BookingDetailDialog::onRemoveServiceClicked()
+{
+    if (!currentBooking)
+        return;
+
+    int currentRow = serviceTable->currentRow();
+    if (currentRow < 0)
+    {
+        QMessageBox::warning(this, "Thông báo", "Vui lòng chọn dịch vụ cần xóa!");
+        return;
+    }
+
+    // Get Service ID from column 1 (Mã DV)
+    QString serviceId = serviceTable->item(currentRow, 1)->text();
+
+    // Confirm deletion
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this, "Xác nhận",
+        "Bạn có chắc chắn muốn xóa dịch vụ này không?",
+        QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes)
+    {
+        // Remove service from booking
+        const MangDong<DichVuDat> &services = currentBooking->getDanhSachDichVu();
+        for (int i = 0; i < services.size(); i++)
+        {
+            if (services[i].getDichVu() && services[i].getDichVu()->layMaDichVu() == serviceId.toStdString())
+            {
+                currentBooking->xoaDichVu(i);
+                break;
+            }
+        }
+
+        loadServices();
+        removeServiceBtn->setEnabled(false);
+    }
+}
 void BookingDetailDialog::onPayDepositClicked() { /* Not used in new UI */ }

@@ -25,6 +25,9 @@ public:
     // Get selected services: Map<ServiceCode, Quantity>
     QMap<std::string, int> getSelectedServices() const;
 
+    // Set existing items in cart to calculate available stock
+    void setExistingCart(const QMap<std::string, int> &cart);
+
 private slots:
     void onSearchTextChanged(const QString &text);
     void onFilterChanged(int index);
@@ -55,6 +58,7 @@ private:
     std::vector<DichVu *> allServices;
     std::vector<DichVu *> displayedServices;
     QMap<std::string, int> selectedQuantities; // ServiceID -> Quantity
+    QMap<std::string, int> existingCart;       // ServiceID -> Quantity (Already in main cart)
 };
 
 #endif // SERVICESELECTIONDIALOG_H

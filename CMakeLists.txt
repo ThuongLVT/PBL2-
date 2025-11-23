@@ -11,8 +11,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Find Qt6 packages - Core, Widgets only (NO Charts - no dashboard)
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+# Find Qt6 packages - Core, Widgets, PrintSupport, Charts
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets PrintSupport Charts)
 
 # Include directories
 include_directories(
@@ -272,6 +272,8 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     Qt6::Core
     Qt6::Widgets
+    Qt6::PrintSupport
+    Qt6::Charts
 )
 
 # Compiler warnings

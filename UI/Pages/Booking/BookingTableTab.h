@@ -49,6 +49,11 @@ signals:
      * @brief Emitted when booking data changes
      */
     void bookingDataChanged();
+    
+    /**
+     * @brief Emitted when user requests to reschedule a booking
+     */
+    void rescheduleRequested(DatSan *booking);
 
 private slots:
     void onTableRowDoubleClicked(int row, int column);

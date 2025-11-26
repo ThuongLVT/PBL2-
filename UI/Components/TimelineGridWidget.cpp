@@ -52,6 +52,15 @@ void TimelineGridWidget::setDate(const QDate &date)
     update();
 }
 
+void TimelineGridWidget::setFields(const MangDong<San *> &newFields)
+{
+    fields = newFields;
+    numFields = fields.size();
+    calculateGeometry();
+    loadBookings();
+    update();
+}
+
 void TimelineGridWidget::loadBookings()
 {
     // Clear existing blocks

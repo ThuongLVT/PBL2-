@@ -22,7 +22,7 @@
 #include <QRegularExpressionValidator>
 
 TimelineTab::TimelineTab(QWidget *parent)
-    : QWidget(parent), mainLayout(nullptr), topPanel(nullptr), topPanelLayout(nullptr), calendarPanel(nullptr), calendarLayout(nullptr), calendar(nullptr), formPanel(nullptr), formLayout(nullptr), phoneEdit(nullptr), nameEdit(nullptr), fieldCombo(nullptr), priceLabel(nullptr), statusCombo(nullptr), typeCombo(nullptr), dateEdit(nullptr), fromTimeEdit(nullptr), toTimeEdit(nullptr), durationLabel(nullptr), duration30Btn(nullptr), duration60Btn(nullptr), duration90Btn(nullptr), duration120Btn(nullptr), noteEdit(nullptr), saveBtn(nullptr), deleteBtn(nullptr), timelinePanel(nullptr), timelineLayout(nullptr), timelineGrid(nullptr), system(nullptr), currentBooking(nullptr), isEditMode(false)
+    : QWidget(parent), mainLayout(nullptr), topPanel(nullptr), topPanelLayout(nullptr), calendarPanel(nullptr), calendarLayout(nullptr), calendar(nullptr), formPanel(nullptr), formLayout(nullptr), phoneEdit(nullptr), nameEdit(nullptr), fieldCombo(nullptr), filterTypeCombo(nullptr), filterAreaCombo(nullptr), priceLabel(nullptr), statusCombo(nullptr), typeCombo(nullptr), dateEdit(nullptr), fromTimeEdit(nullptr), toTimeEdit(nullptr), durationLabel(nullptr), duration30Btn(nullptr), duration60Btn(nullptr), duration90Btn(nullptr), duration120Btn(nullptr), noteEdit(nullptr), saveBtn(nullptr), deleteBtn(nullptr), timelinePanel(nullptr), timelineLayout(nullptr), timelineGrid(nullptr), system(nullptr), currentBooking(nullptr), reschedulingBooking(nullptr), isEditMode(false), isRescheduleMode(false)
 {
     system = HeThongQuanLy::getInstance();
     selectedDate = QDate::currentDate();
@@ -158,7 +158,7 @@ void TimelineTab::setupFormPanel()
 
     // Grid layout for form fields
     QGridLayout *gridLayout = new QGridLayout();
-    gridLayout->setVerticalSpacing(2); // Changed to 1px as requested
+    gridLayout->setVerticalSpacing(12); // Increased spacing to prevent overlap
     gridLayout->setHorizontalSpacing(10);
     gridLayout->setContentsMargins(0, 0, 0, 0); // Remove margins
     gridLayout->setAlignment(Qt::AlignTop);     // Align grid to top
@@ -250,6 +250,7 @@ void TimelineTab::setupFormPanel()
     fieldLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     gridLayout->addWidget(fieldLabel, row, 3); // Col 3
 
+    // Field combo (only display selected field name)
     fieldCombo = new QComboBox(formPanel);
     fieldCombo->setEnabled(false);
     fieldCombo->setMinimumWidth(200);
@@ -548,21 +549,66 @@ void TimelineTab::setupTimelinePanel()
         "border-radius: 8px; "
         "}");
 
-    timelineLayout = new QVBoxLayout(timelinePanel);
-    timelineLayout->setContentsMargins(10, 10, 10, 10);
+    // Use HBox for 90/10 split
+    timelineLayout = new QHBoxLayout(timelinePanel);
+    timelineLayout->setContentsMargins(0, 0, 0, 0);
+    timelineLayout->setSpacing(0);
 
-    // Scroll area for timeline grid
+    // --- LEFT: TIMELINE (90%) ---
     QScrollArea *scrollArea = new QScrollArea(timelinePanel);
     scrollArea->setWidgetResizable(false);
     scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     scrollArea->setStyleSheet("QScrollArea { border: none; background-color: white; }");
 
-    // Timeline grid widget
     timelineGrid = new TimelineGridWidget();
     scrollArea->setWidget(timelineGrid);
 
-    timelineLayout->addWidget(scrollArea);
+    timelineLayout->addWidget(scrollArea, 9); // Stretch 9
+
+    // --- RIGHT: FILTERS (10%) ---
+    QFrame *filterFrame = new QFrame(timelinePanel);
+    filterFrame->setStyleSheet("background-color: #f9fafb; border-left: 1px solid #e5e7eb; border-top-right-radius: 8px; border-bottom-right-radius: 8px;");
+    
+    QVBoxLayout *filterLayout = new QVBoxLayout(filterFrame);
+    filterLayout->setContentsMargins(10, 15, 10, 10);
+    filterLayout->setSpacing(15);
+    filterLayout->setAlignment(Qt::AlignTop);
+
+    // Label Header
+    QLabel *filterHeader = new QLabel("🔍 Lọc nhanh", filterFrame);
+    filterHeader->setStyleSheet("font-weight: bold; color: #1f2937; font-size: 14px; border: none;");
+    filterLayout->addWidget(filterHeader);
+
+    // Type Filter
+    QLabel *typeLabel = new QLabel("Loại sân:", filterFrame);
+    typeLabel->setStyleSheet("color: #4b5563; font-size: 12px; border: none; font-weight: bold;");
+    filterLayout->addWidget(typeLabel);
+
+    filterTypeCombo = new QComboBox(filterFrame);
+    filterTypeCombo->addItem("Tất cả", -1);
+    filterTypeCombo->addItem("Sân 5", static_cast<int>(LoaiSan::SAN_5));
+    filterTypeCombo->addItem("Sân 7", static_cast<int>(LoaiSan::SAN_7));
+    filterTypeCombo->setStyleSheet("QComboBox { border: 1px solid #d1d5db; border-radius: 4px; padding: 4px; background: white; min-height: 30px; }");
+    filterLayout->addWidget(filterTypeCombo);
+
+    // Area Filter
+    QLabel *areaLabel = new QLabel("Khu vực:", filterFrame);
+    areaLabel->setStyleSheet("color: #4b5563; font-size: 12px; border: none; margin-top: 10px; font-weight: bold;");
+    filterLayout->addWidget(areaLabel);
+
+    filterAreaCombo = new QComboBox(filterFrame);
+    filterAreaCombo->addItem("Tất cả", -1);
+    filterAreaCombo->addItem("Khu A", static_cast<int>(KhuVuc::A));
+    filterAreaCombo->addItem("Khu B", static_cast<int>(KhuVuc::B));
+    filterAreaCombo->addItem("Khu C", static_cast<int>(KhuVuc::C));
+    filterAreaCombo->addItem("Khu D", static_cast<int>(KhuVuc::D));
+    filterAreaCombo->setStyleSheet("QComboBox { border: 1px solid #d1d5db; border-radius: 4px; padding: 4px; background: white; min-height: 30px; }");
+    filterLayout->addWidget(filterAreaCombo);
+
+    filterLayout->addStretch(); // Push everything up
+
+    timelineLayout->addWidget(filterFrame, 1); // Stretch 1
 }
 
 void TimelineTab::setupConnections()
@@ -611,6 +657,10 @@ void TimelineTab::setupConnections()
 
     connect(fieldCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TimelineTab::onFieldChanged);
 
+    // Filter connections
+    connect(filterTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TimelineTab::onFilterChanged);
+    connect(filterAreaCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TimelineTab::onFilterChanged);
+
     // Buttons
     connect(saveBtn, &QPushButton::clicked, this, &TimelineTab::onSaveClicked);
     connect(deleteBtn, &QPushButton::clicked, this, &TimelineTab::onCancelSelectionClicked); // Cancel selection button
@@ -630,25 +680,15 @@ void TimelineTab::setupConnections()
 void TimelineTab::loadFields()
 {
     fieldCombo->clear();
+    fields.clear();
+    allFields.clear();
 
     QuanLySan *quanLySan = system->layQuanLySan();
     if (quanLySan)
     {
-        fields = quanLySan->layDanhSachSan();
-
-        for (int i = 0; i < fields.size(); i++)
-        {
-            San *san = fields[i];
-            QString fieldName = QString::fromStdString(san->layTenSan());
-            // Removed suffix as requested
-            fieldCombo->addItem(fieldName, i);
-        }
-    }
-
-    if (fieldCombo->count() > 0)
-    {
-        fieldCombo->setCurrentIndex(0);
-        onFieldChanged(0);
+        allFields = quanLySan->layDanhSachSan();
+        // Initial population will be handled by onFilterChanged
+        onFilterChanged();
     }
 
     // Load customers into combo
@@ -673,6 +713,48 @@ void TimelineTab::loadFields()
                 }
             }
         }
+    }
+}
+
+void TimelineTab::onFilterChanged()
+{
+    if (!filterTypeCombo || !filterAreaCombo) return;
+
+    int typeIndex = filterTypeCombo->currentData().toInt();
+    int areaIndex = filterAreaCombo->currentData().toInt();
+
+    fields.clear();
+    fieldCombo->clear();
+
+    for (int i = 0; i < allFields.size(); i++)
+    {
+        San *san = allFields[i];
+        bool typeMatch = (typeIndex == -1) || (static_cast<int>(san->layLoaiSan()) == typeIndex);
+        bool areaMatch = (areaIndex == -1) || (static_cast<int>(san->layKhuVuc()) == areaIndex);
+
+        if (typeMatch && areaMatch)
+        {
+            fields.push_back(san);
+        }
+    }
+    
+    // Re-populate fieldCombo with correct indices
+    for (int i = 0; i < fields.size(); ++i)
+    {
+        fieldCombo->addItem(QString::fromStdString(fields[i]->layTenSan()), i);
+    }
+
+    // Update timeline grid
+    if (timelineGrid)
+    {
+        timelineGrid->setFields(fields);
+    }
+    
+    // Select first field if available
+    if (fieldCombo->count() > 0)
+    {
+        fieldCombo->setCurrentIndex(0);
+        onFieldChanged(0);
     }
 }
 
@@ -746,8 +828,13 @@ void TimelineTab::clearForm()
 
     currentBooking = nullptr;
     isEditMode = false;
+    
+    // Reset reschedule mode
+    isRescheduleMode = false;
+    reschedulingBooking = nullptr;
 
     // Reset buttons state
+    saveBtn->setText("💾 Lưu Đặt Sân");
     saveBtn->setEnabled(true);
     saveBtn->setStyleSheet("QPushButton { background-color: #16a34a; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #15803d; }");
 
@@ -1022,6 +1109,72 @@ void TimelineTab::onFieldChanged(int index)
     }
 }
 
+void TimelineTab::filterFieldsByType(LoaiSan type)
+{
+    fieldCombo->clear();
+    fields.clear();
+    
+    // Filter allFields by type
+    for (int i = 0; i < allFields.size(); i++)
+    {
+        San *san = allFields[i];
+        if (san->layLoaiSan() == type)
+        {
+            fields.push_back(san);
+        }
+    }
+    
+    // Populate combo with filtered fields
+    for (int i = 0; i < fields.size(); i++)
+    {
+        San *san = fields[i];
+        QString fieldName = QString::fromStdString(san->layTenSan());
+        fieldCombo->addItem(fieldName, i);
+    }
+}
+
+void TimelineTab::loadBookingForReschedule(DatSan *booking)
+{
+    if (!booking) return;
+    
+    // Set reschedule mode
+    isRescheduleMode = true;
+    reschedulingBooking = booking;
+    
+    // Get customer info
+    KhachHang *customer = booking->getKhachHang();
+    if (customer)
+    {
+        QString phone = QString::fromStdString(customer->laySoDienThoai());
+        QString name = QString::fromStdString(customer->layHoTen());
+        
+        phoneEdit->setText(phone);
+        nameEdit->setText(name);
+        phoneEdit->setProperty("hasCustomer", true);
+    }
+    
+    // Update button text
+    saveBtn->setText("💾 Lưu Đổi Lịch");
+    saveBtn->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #f59e0b;" // Orange for reschedule
+        "   color: white;"
+        "   font-weight: bold;"
+        "   font-size: 14px;"
+        "   padding: 8px 16px;"
+        "   border: none;"
+        "   border-radius: 6px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #d97706;"
+        "}"
+    );
+    
+    // Show message
+    QMessageBox::information(this, "Đổi Lịch", 
+        "Thông tin khách hàng đã được tải.\nVui lòng chọn ngày và khung giờ mới trên lịch.");
+}
+
 void TimelineTab::onSaveClicked()
 {
     qDebug() << "=== SAVE BOOKING DEBUG ===";
@@ -1189,6 +1342,59 @@ void TimelineTab::onSaveClicked()
                                     .arg(QString::fromStdString(currentBooking->getThoiGianDat().getNgayThang().toString()));
             QMessageBox::information(this, "✅ Thành công", updateMsg);
         }
+        else if (isRescheduleMode && reschedulingBooking)
+        {
+            // Reschedule existing booking - update with new date/time/field
+            reschedulingBooking->setSan(san);
+            reschedulingBooking->setThoiGianDat(ngayGio);
+            reschedulingBooking->setKhungGio(khungGio);
+            
+            // Recalculate deposit for new time slot
+            reschedulingBooking->tinhTienCoc();
+            
+            // Save to file
+            try
+            {
+                system->luuHeThong("D:/PBL2-/Data/data.bin");
+            }
+            catch (...)
+            {
+                qDebug() << "Warning: Could not save to data.bin";
+            }
+            
+            // Refresh timeline
+            timelineGrid->clearPendingSelection();
+            timelineGrid->setDate(selectedDate);
+            timelineGrid->loadBookings();
+            timelineGrid->repaint();
+            
+            if (timelineGrid)
+            {
+                timelineGrid->setProperty("isLocked", false);
+            }
+            
+            emit bookingDataChanged();
+            
+            // Prepare success message before clearing
+            QString msg = QString(
+                "✅ ĐỔI LỊCH THÀNH CÔNG\n\n"
+                "📋 Mã đặt sân: %1\n"
+                "⚽ Sân: %2\n"
+                "🕐 Thời gian: %3 - %4\n"
+                "📅 Ngày: %5\n\n"
+                "💰 Tiền cọc mới: %6")
+                .arg(QString::fromStdString(reschedulingBooking->getMaDatSan()))
+                .arg(QString::fromStdString(san->layTenSan()))
+                .arg(from.toString("HH:mm"))
+                .arg(to.toString("HH:mm"))
+                .arg(date.toString("dd/MM/yyyy"))
+                .arg(formatCurrency(reschedulingBooking->getTienCoc()));
+            
+            // Clear form and reset reschedule mode (this will null reschedulingBooking)
+            clearForm();
+            
+            QMessageBox::information(this, "✅ Thành công", msg);
+        }
         else
         {
             // Create new booking
@@ -1279,46 +1485,65 @@ void TimelineTab::onDeleteClicked()
         return;
     }
 
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this,
-        "Xác nhận",
-        "Bạn có chắc chắn muốn hủy đặt sân này?",
-        QMessageBox::Yes | QMessageBox::No);
+    // 1. Ask for confirmation and penalty option
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Xác nhận hủy");
+    msgBox.setText("Bạn có chắc chắn muốn hủy đặt sân này?");
+    msgBox.setInformativeText("Vui lòng chọn hình thức hủy:");
+    
+    QPushButton *refundBtn = msgBox.addButton("Hủy & Hoàn Cọc", QMessageBox::ActionRole);
+    QPushButton *penaltyBtn = msgBox.addButton("Hủy & Phạt Cọc", QMessageBox::ActionRole);
+    QPushButton *cancelBtn = msgBox.addButton("Thoát", QMessageBox::RejectRole);
+    
+    msgBox.exec();
 
-    if (reply == QMessageBox::Yes)
+    if (msgBox.clickedButton() == cancelBtn) return;
+
+    bool isPenalty = (msgBox.clickedButton() == penaltyBtn);
+
+    try
     {
-        try
+        QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
+        if (quanLyDS)
         {
-            QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
-            if (quanLyDS)
+            // Update deposit status based on user choice
+            if (isPenalty) {
+                currentBooking->setTrangThaiCoc(TrangThaiCoc::MAT_COC);
+                std::string currentNote = currentBooking->getGhiChu();
+                currentBooking->setGhiChu(currentNote + " [MAT_COC]");
+            } else {
+                currentBooking->setTrangThaiCoc(TrangThaiCoc::HOAN_COC);
+                std::string currentNote = currentBooking->getGhiChu();
+                currentBooking->setGhiChu(currentNote + " [HOAN_COC]");
+            }
+
+            bool success = quanLyDS->huyDatSan(currentBooking->getMaDatSan());
+            if (success)
             {
-                bool success = quanLyDS->huyDatSan(currentBooking->getMaDatSan());
-                if (success)
+                // ===== SAVE DATA TO FILE =====
+                try
                 {
-                    // ===== SAVE DATA TO FILE =====
-                    try
-                    {
-                        system->luuHeThong("D:/PBL2-/Data/data.bin");
-                    }
-                    catch (...)
-                    {
-                        qDebug() << "Warning: Could not save to data.bin";
-                    }
-
-                    QMessageBox::information(this, "✅ Thành công", "Đã hủy đặt sân!");
-
-                    // Emit signal to refresh table view
-                    emit bookingDataChanged();
-
-                    clearForm();
-                    refreshData();
+                    system->luuHeThong("D:/PBL2-/Data/data.bin");
                 }
+                catch (...)
+                {
+                    qDebug() << "Warning: Could not save to data.bin";
+                }
+
+                QString msg = isPenalty ? "Đã hủy đặt sân và ghi nhận PHẠT CỌC!" : "Đã hủy đặt sân và ghi nhận HOÀN CỌC!";
+                QMessageBox::information(this, "✅ Thành công", msg);
+
+                // Emit signal to refresh table view
+                emit bookingDataChanged();
+
+                clearForm();
+                refreshData();
             }
         }
-        catch (const std::exception &e)
-        {
-            QMessageBox::critical(this, "Lỗi", QString("Không thể hủy đặt sân: %1").arg(e.what()));
-        }
+    }
+    catch (const std::exception &e)
+    {
+        QMessageBox::critical(this, "Lỗi", QString("Không thể hủy đặt sân: %1").arg(e.what()));
     }
 }
 

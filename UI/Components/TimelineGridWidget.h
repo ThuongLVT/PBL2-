@@ -61,6 +61,11 @@ public:
     void setDate(const QDate &date);
 
     /**
+     * @brief Set fields to display in timeline
+     */
+    void setFields(const MangDong<San *> &newFields);
+
+    /**
      * @brief Load bookings for current date
      */
     void loadBookings();

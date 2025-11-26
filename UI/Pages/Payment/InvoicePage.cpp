@@ -63,8 +63,8 @@ void InvoicePage::setupBookingTab()
 
     // Table
     m_bookingTable = new QTableWidget();
-    m_bookingTable->setColumnCount(7);
-    m_bookingTable->setHorizontalHeaderLabels({"Mã Đặt Sân", "Khách Hàng", "Sân", "Ngày", "Giờ", "Tổng Tiền", "Trạng Thái"});
+    m_bookingTable->setColumnCount(8);
+    m_bookingTable->setHorizontalHeaderLabels({"Mã Đặt Sân", "Khách Hàng", "Sân", "Ngày Đặt", "Giờ Đặt", "Ngày Thanh Toán", "Tổng Tiền", "Trạng Thái"});
     m_bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_bookingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_bookingTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -114,10 +114,32 @@ void InvoicePage::loadBookingData()
     for (int i = 0; i < bookings.size(); ++i)
     {
         DatSan *ds = bookings[i];
-        // Only show completed bookings
-        if (ds->getTrangThai() != TrangThaiDatSan::HOAN_THANH)
+        
+        // Logic hiển thị hóa đơn:
+        // 1. Hoàn thành (Đã thanh toán full)
+        // 2. Đã hủy (Có thể là Phạt cọc hoặc Hoàn cọc)
+        bool isCompleted = (ds->getTrangThai() == TrangThaiDatSan::HOAN_THANH);
+        bool isCancelled = (ds->getTrangThai() == TrangThaiDatSan::DA_HUY);
+        
+        if (!isCompleted && !isCancelled)
         {
-            continue;
+            continue; // Bỏ qua các trạng thái khác (Đã đặt, Chờ duyệt...)
+        }
+
+        // Kiểm tra xem có phải phạt cọc không
+        bool isPenalty = false;
+        if (isCancelled) {
+            // Check deposit status directly
+            if (ds->getTrangThaiCoc() == TrangThaiCoc::MAT_COC) {
+                isPenalty = true;
+            }
+            // Fallback to note check for old data
+            else {
+                QString note = QString::fromStdString(ds->getGhiChu());
+                if (note.contains("[MAT_COC]") || note.contains("[PHAT_COC]")) {
+                    isPenalty = true;
+                }
+            }
         }
 
         m_bookingTable->insertRow(m_bookingTable->rowCount());
@@ -126,28 +148,50 @@ void InvoicePage::loadBookingData()
         m_bookingTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(ds->getMaDatSan())));
         m_bookingTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(ds->getKhachHang()->layHoTen())));
         m_bookingTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(ds->getSan()->layTenSan())));
-        m_bookingTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(ds->getThoiGianDat().toString())));
+        
+        // Ngày đặt sân (chỉ ngày)
+        NgayGio thoiGianDat = ds->getThoiGianDat();
+        QString ngayDat = QString("%1/%2/%3")
+            .arg(thoiGianDat.getNgay(), 2, 10, QChar('0'))
+            .arg(thoiGianDat.getThang(), 2, 10, QChar('0'))
+            .arg(thoiGianDat.getNam());
+        m_bookingTable->setItem(row, 3, new QTableWidgetItem(ngayDat));
 
+        // Giờ đặt sân
         std::string khungGioStr = ds->getKhungGio().layGioBatDau().toString() + " - " + ds->getKhungGio().layGioKetThuc().toString();
         m_bookingTable->setItem(row, 4, new QTableWidgetItem(QString::fromStdString(khungGioStr)));
+        
+        // Ngày thanh toán
+        // TODO: Nếu có lưu ngày hủy thì lấy ngày hủy, tạm thời lấy ngày hiện tại
+        QString ngayThanhToan = QDateTime::currentDateTime().toString("dd/MM/yyyy hh:mm:ss");
+        m_bookingTable->setItem(row, 5, new QTableWidgetItem(ngayThanhToan));
 
-        double price = ds->getTongTien();
-        m_bookingTable->setItem(row, 5, new QTableWidgetItem(QString::number(price, 'f', 0) + " VND"));
+        // Tổng tiền & Trạng thái
+        double price = 0;
+        QString statusText;
+        QColor statusColor;
 
-        QString status;
-        switch (ds->getTrangThai())
-        {
-        case TrangThaiDatSan::DA_DAT:
-            status = "Đã Đặt";
-            break;
-        case TrangThaiDatSan::DA_HUY:
-            status = "Đã Hủy";
-            break;
-        case TrangThaiDatSan::HOAN_THANH:
-            status = "Hoàn Tất";
-            break;
+        if (isCompleted) {
+            price = ds->getTongTien();
+            statusText = "Hoàn Tất";
+            statusColor = QColor("#16a34a"); // Green
+        } else if (isPenalty) {
+            price = ds->getTienCoc(); // Phạt cọc thì thu tiền cọc
+            statusText = "Phạt Cọc (Đã Hủy)";
+            statusColor = QColor("#dc2626"); // Red
+        } else {
+            price = 0; // Hoàn cọc thì doanh thu = 0 (hoặc hiển thị tiền cọc nhưng gạch ngang?)
+            // Để 0 cho đúng bản chất doanh thu thực thu
+            statusText = "Hoàn Cọc (Đã Hủy)";
+            statusColor = QColor("#9ca3af"); // Gray
         }
-        m_bookingTable->setItem(row, 6, new QTableWidgetItem(status));
+
+        m_bookingTable->setItem(row, 6, new QTableWidgetItem(QString::number(price, 'f', 0) + " VND"));
+
+        QTableWidgetItem *statusItem = new QTableWidgetItem(statusText);
+        statusItem->setForeground(statusColor);
+        statusItem->setFont(QFont("Segoe UI", 9, QFont::Bold));
+        m_bookingTable->setItem(row, 7, statusItem);
     }
 }
 

@@ -408,6 +408,10 @@ QFrame *BookingDetailDialog::createPaymentSection()
     layout->addWidget(payNowBtn);
 
     connect(payNowBtn, &QPushButton::clicked, this, &BookingDetailDialog::onPaymentClicked);
+    connect(rescheduleBtn, &QPushButton::clicked, [this]() {
+        emit rescheduleRequested(currentBooking);
+        accept(); // Close the dialog
+    });
 
     return card;
 }

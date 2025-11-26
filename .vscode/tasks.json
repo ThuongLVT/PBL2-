@@ -4,16 +4,12 @@
     {
       "label": "CMake: Configure",
       "type": "shell",
-      "command": "cmake",
-      "args": [
-        "-B",
-        "${workspaceFolder}/build",
-        "-S",
-        "${workspaceFolder}",
-        "-G",
-        "MinGW Makefiles",
-        "-DCMAKE_BUILD_TYPE=Debug"
-      ],
+      "command": "$env:PATH = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User'); cmake -B ${workspaceFolder}/build -S ${workspaceFolder} -G 'MinGW Makefiles' -DCMAKE_BUILD_TYPE=Debug",
+      "options": {
+        "shell": {
+          "executable": "powershell.exe"
+        }
+      },
       "group": "build",
       "problemMatcher": [],
       "detail": "Configure CMake project"
@@ -21,16 +17,12 @@
     {
       "label": "CMake: Build",
       "type": "shell",
-      "command": "cmake",
-      "args": [
-        "--build",
-        "${workspaceFolder}/build",
-        "--config",
-        "Debug",
-        "--",
-        "-j",
-        "4"
-      ],
+      "command": "$env:PATH = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User'); cmake --build ${workspaceFolder}/build --config Debug -- -j 4",
+      "options": {
+        "shell": {
+          "executable": "powershell.exe"
+        }
+      },
       "group": {
         "kind": "build",
         "isDefault": true

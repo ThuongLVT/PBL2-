@@ -72,6 +72,18 @@ void BookingPage::setupConnections()
                     {
                         timelineTab->refreshData();
                     } });
+        
+        // Connect reschedule request from table to timeline
+        connect(bookingTableTab, &BookingTableTab::rescheduleRequested, this, [this](DatSan *booking)
+                {
+                    if (timelineTab)
+                    {
+                        // Switch to timeline tab
+                        tabWidget->setCurrentIndex(0);
+                        
+                        // Load booking for reschedule
+                        timelineTab->loadBookingForReschedule(booking);
+                    } });
     }
 }
 

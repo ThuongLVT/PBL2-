@@ -58,6 +58,7 @@ private slots:
     void onAddNewFieldClicked();
     void onSaveFieldClicked();
     void onMaintenanceFieldClicked();
+    void onActivateFieldClicked(); // Kích hoạt lại sân sau bảo trì
     void onDeleteFieldClicked();
 
 private:
@@ -74,6 +75,7 @@ private:
     QLineEdit *searchEdit;
 
     // Filters
+    QComboBox *trangThaiCombo; // Bộ lọc trạng thái sân
     QComboBox *loaiSanCombo;
     QComboBox *khuVucCombo;
 
@@ -99,7 +101,7 @@ private:
     QLineEdit *tenSanEdit;
     QComboBox *loaiSanDetailCombo;
     QComboBox *khuVucDetailCombo;
-    QComboBox *trangThaiCombo;
+    QComboBox *trangThaiDetailCombo; // Trạng thái trong form chi tiết
     QSpinBox *giaThueSpinBox;
     QTextEdit *ghiChuEdit;
 
@@ -107,6 +109,7 @@ private:
     QPushButton *addNewBtn;
     QPushButton *saveBtn;
     QPushButton *maintenanceBtn;
+    QPushButton *activateBtn; // Nút kích hoạt lại sân
     QPushButton *deleteBtn;
 
     // Current filter state

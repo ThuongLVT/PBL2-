@@ -12,7 +12,7 @@
 #include <string>
 
 #include "ConNguoi.h"
-#include "../CauTrucDuLieu/NgayThang.h"
+#include "../CauTrucDuLieu/NgayGio.h"
 
 /**
  * @enum HangKhachHang

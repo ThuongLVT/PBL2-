@@ -45,6 +45,7 @@ private:
     double tienCoc;            // Tiền cọc (30% tổng tiền)
     TrangThaiCoc trangThaiCoc; // Trạng thái cọc
     NgayGio ngayDatCoc;        // Ngày đặt cọc
+    NgayGio ngayThanhToan;     // Ngày thanh toán (khi hoàn tất)
 
     // Cancel fields (Hủy lịch)
     std::string lyDoHuy; // Lý do hủy (bắt buộc khi hủy)
@@ -75,6 +76,7 @@ public:
     double getTienCoc() const;
     TrangThaiCoc getTrangThaiCoc() const;
     NgayGio getNgayDatCoc() const;
+    NgayGio getNgayThanhToan() const;
     std::string getLyDoHuy() const;
     bool isHoanCoc() const;
 
@@ -89,6 +91,7 @@ public:
     void setTienCoc(double tc);
     void setTrangThaiCoc(TrangThaiCoc ttc);
     void setNgayDatCoc(const NgayGio &ndc);
+    void setNgayThanhToan(const NgayGio &ntt);
     void setLyDoHuy(const std::string &lyDo);
     void setHoanCoc(bool hoan);
 

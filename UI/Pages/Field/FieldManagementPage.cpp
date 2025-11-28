@@ -7,7 +7,9 @@
 #include "../../Dialogs/FieldDialog.h"
 #include "../../Dialogs/MaintenanceDialog.h"
 #include "../../Core/Models/San.h"
+#include "../../Core/Models/DatSan.h"
 #include "../../Core/QuanLy/HeThongQuanLy.h"
+#include "../../Core/QuanLy/QuanLyDatSan.h"
 #include <QMessageBox>
 #include <QHeaderView>
 #include <QGridLayout>
@@ -15,6 +17,7 @@
 #include <QScrollArea>
 #include <QEvent>
 #include <QLocale>
+#include <QDateTime>
 #include <algorithm>
 #include <QStyledItemDelegate>
 #include <QPainter>
@@ -110,7 +113,19 @@ void FieldManagementPage::setupLeftPanel()
     searchEdit = new QLineEdit();
     searchEdit->setPlaceholderText("🔍 Tìm theo tên sân...");
     searchEdit->setFixedHeight(36);
-    searchEdit->setMinimumWidth(400);
+    searchEdit->setMinimumWidth(280);
+
+    // Trạng thái filter - NEW
+    QLabel *trangThaiLabel = new QLabel("Trạng thái:");
+    trangThaiLabel->setStyleSheet("color: #374151; font-size: 13px; font-weight: 500;");
+    trangThaiLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    trangThaiCombo = new QComboBox();
+    trangThaiCombo->addItem("Tất cả", -1);
+    trangThaiCombo->addItem("Hoạt động", static_cast<int>(TrangThaiSan::HOAT_DONG));
+    trangThaiCombo->addItem("Bảo trì", static_cast<int>(TrangThaiSan::BAO_TRI));
+    trangThaiCombo->addItem("Ngừng hoạt động", static_cast<int>(TrangThaiSan::NGUNG_HOAT_DONG));
+    trangThaiCombo->setMinimumWidth(140);
+    trangThaiCombo->setFixedHeight(36);
 
     // Loại sân filter - label and combo on same row
     QLabel *loaiSanLabel = new QLabel("Loại sân:");
@@ -120,7 +135,7 @@ void FieldManagementPage::setupLeftPanel()
     loaiSanCombo->addItem("Tất cả", -1);
     loaiSanCombo->addItem("Sân 5 người", static_cast<int>(LoaiSan::SAN_5));
     loaiSanCombo->addItem("Sân 7 người", static_cast<int>(LoaiSan::SAN_7));
-    loaiSanCombo->setMinimumWidth(160);
+    loaiSanCombo->setMinimumWidth(140);
     loaiSanCombo->setFixedHeight(36);
 
     // Khu vực filter - label and combo on same row
@@ -133,10 +148,12 @@ void FieldManagementPage::setupLeftPanel()
     khuVucCombo->addItem("Khu B", static_cast<int>(KhuVuc::B));
     khuVucCombo->addItem("Khu C", static_cast<int>(KhuVuc::C));
     khuVucCombo->addItem("Khu D", static_cast<int>(KhuVuc::D));
-    khuVucCombo->setMinimumWidth(160);
+    khuVucCombo->setMinimumWidth(140);
     khuVucCombo->setFixedHeight(36);
 
     searchLayout->addWidget(searchEdit, 1); // Stretch to fill
+    searchLayout->addWidget(trangThaiLabel);
+    searchLayout->addWidget(trangThaiCombo);
     searchLayout->addWidget(loaiSanLabel);
     searchLayout->addWidget(loaiSanCombo);
     searchLayout->addWidget(khuVucLabel);
@@ -314,14 +331,15 @@ void FieldManagementPage::setupRightPanel()
     formLayout->addRow("Khu vực:", khuVucDetailCombo);
 
     // Trạng thái
-    trangThaiCombo = new QComboBox();
-    trangThaiCombo->addItem("Hoạt động", static_cast<int>(TrangThaiSan::HOAT_DONG));
-    trangThaiCombo->addItem("Ngừng hoạt động", static_cast<int>(TrangThaiSan::NGUNG_HOAT_DONG));
-    trangThaiCombo->setEnabled(false);
-    trangThaiCombo->setMinimumHeight(40);
-    trangThaiCombo->setMinimumWidth(200);
-    trangThaiCombo->setStyleSheet("QComboBox { border-radius: 6px; padding: 8px; }");
-    formLayout->addRow("Trạng thái:", trangThaiCombo);
+    trangThaiDetailCombo = new QComboBox();
+    trangThaiDetailCombo->addItem("Hoạt động", static_cast<int>(TrangThaiSan::HOAT_DONG));
+    trangThaiDetailCombo->addItem("Bảo trì", static_cast<int>(TrangThaiSan::BAO_TRI));
+    trangThaiDetailCombo->addItem("Ngừng hoạt động", static_cast<int>(TrangThaiSan::NGUNG_HOAT_DONG));
+    trangThaiDetailCombo->setEnabled(false);
+    trangThaiDetailCombo->setMinimumHeight(40);
+    trangThaiDetailCombo->setMinimumWidth(200);
+    trangThaiDetailCombo->setStyleSheet("QComboBox { border-radius: 6px; padding: 8px; }");
+    formLayout->addRow("Trạng thái:", trangThaiDetailCombo);
 
     // Giá thuê
     giaThueSpinBox = new QSpinBox();
@@ -355,10 +373,13 @@ void FieldManagementPage::setupRightPanel()
     addNewBtn = new QPushButton("➕ Thêm sân mới");
     saveBtn = new QPushButton("💾 Lưu");
     maintenanceBtn = new QPushButton("⚙️ Bảo trì");
+    activateBtn = new QPushButton("✅ Kích hoạt");
     deleteBtn = new QPushButton("🗑️ Xoá");
 
     saveBtn->setEnabled(false);
     maintenanceBtn->setEnabled(false);
+    activateBtn->setEnabled(false);
+    activateBtn->setVisible(false); // Ẩn mặc định, chỉ hiện khi sân đang bảo trì/ngừng hoạt động
     deleteBtn->setEnabled(false);
 
     btnLayout->addWidget(addNewBtn);
@@ -367,6 +388,7 @@ void FieldManagementPage::setupRightPanel()
 
     QHBoxLayout *btnLayout2 = new QHBoxLayout();
     btnLayout2->addWidget(maintenanceBtn);
+    btnLayout2->addWidget(activateBtn);
     btnLayout2->addWidget(deleteBtn);
     layout->addLayout(btnLayout2);
 }
@@ -375,22 +397,22 @@ void FieldManagementPage::setupConnections()
 {
     // Left panel
     connect(searchEdit, &QLineEdit::textChanged, this, &FieldManagementPage::onSearchTextChanged);
+    connect(trangThaiCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &FieldManagementPage::onFilterChanged);
     connect(loaiSanCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &FieldManagementPage::onFilterChanged);
     connect(khuVucCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &FieldManagementPage::onFilterChanged);
     connect(dataTable, &QTableWidget::cellClicked, this, &FieldManagementPage::onTableRowClicked);
 
-    // Stats cards - use mousePressEvent would be better, but lambda is simpler
-    totalCard->installEventFilter(this);
-    activeCard->installEventFilter(this);
-    maintenanceCard->installEventFilter(this);
-    suspendedCard->installEventFilter(this);
+    // Stats cards - chỉ hiển thị số liệu, không filter nữa
+    // (Bỏ eventFilter cho cards)
 
     // Right panel
     connect(addNewBtn, &QPushButton::clicked, this, &FieldManagementPage::onAddNewFieldClicked);
     connect(saveBtn, &QPushButton::clicked, this, &FieldManagementPage::onSaveFieldClicked);
     connect(maintenanceBtn, &QPushButton::clicked, this, &FieldManagementPage::onMaintenanceFieldClicked);
+    connect(activateBtn, &QPushButton::clicked, this, &FieldManagementPage::onActivateFieldClicked);
     connect(deleteBtn, &QPushButton::clicked, this, &FieldManagementPage::onDeleteFieldClicked);
 
     // Auto-generate name when combos change (only in Add New mode)
@@ -402,33 +424,9 @@ void FieldManagementPage::setupConnections()
 
 bool FieldManagementPage::eventFilter(QObject *watched, QEvent *event)
 {
-    if (event->type() == QEvent::MouseButtonPress)
-    {
-        if (watched == totalCard)
-        {
-            currentStatsFilter = FILTER_ALL;
-            loadTableData();
-            return true;
-        }
-        else if (watched == activeCard)
-        {
-            currentStatsFilter = FILTER_ACTIVE;
-            loadTableData();
-            return true;
-        }
-        else if (watched == maintenanceCard)
-        {
-            currentStatsFilter = FILTER_MAINTENANCE;
-            loadTableData();
-            return true;
-        }
-        else if (watched == suspendedCard)
-        {
-            currentStatsFilter = FILTER_SUSPENDED;
-            loadTableData();
-            return true;
-        }
-    }
+    // Bỏ filter khi click vào card - chỉ cần hiển thị tooltip/info nếu cần
+    Q_UNUSED(watched);
+    Q_UNUSED(event);
     return QWidget::eventFilter(watched, event);
 }
 
@@ -512,6 +510,23 @@ void FieldManagementPage::applyStyles()
         }
         QPushButton:hover {
             background-color: #d97706;
+        }
+        QPushButton:disabled {
+            background-color: #d1d5db;
+        }
+    )");
+
+    activateBtn->setStyleSheet(R"(
+        QPushButton { 
+            background-color: #10b981; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            font-weight: bold;
+            border: none;
+        }
+        QPushButton:hover {
+            background-color: #059669;
         }
         QPushButton:disabled {
             background-color: #d1d5db;
@@ -621,41 +636,23 @@ std::vector<San *> FieldManagementPage::getFilteredFields()
         return {};
     }
 
-    // Get all fields or filtered by stats card
+    // Lấy tất cả sân (không filter theo card nữa)
     std::vector<San *> fields;
+    MangDong<San *> temp = quanLySan->layDanhSachSan();
+    for (int i = 0; i < temp.size(); i++)
+    {
+        fields.push_back(temp[i]);
+    }
 
-    if (currentStatsFilter == FILTER_ACTIVE)
+    // Apply trạng thái filter (từ combo box)
+    int trangThaiIndex = trangThaiCombo->currentData().toInt();
+    if (trangThaiIndex != -1)
     {
-        MangDong<San *> temp = quanLySan->laySanDangHoatDong();
-        for (int i = 0; i < temp.size(); i++)
-        {
-            fields.push_back(temp[i]);
-        }
-    }
-    else if (currentStatsFilter == FILTER_MAINTENANCE)
-    {
-        MangDong<San *> temp = quanLySan->laySanBaoTri();
-        for (int i = 0; i < temp.size(); i++)
-        {
-            fields.push_back(temp[i]);
-        }
-    }
-    else if (currentStatsFilter == FILTER_SUSPENDED)
-    {
-        MangDong<San *> temp = quanLySan->laySanNgungHoatDong();
-        for (int i = 0; i < temp.size(); i++)
-        {
-            fields.push_back(temp[i]);
-        }
-    }
-    else
-    {
-        // FILTER_ALL
-        MangDong<San *> temp = quanLySan->layDanhSachSan();
-        for (int i = 0; i < temp.size(); i++)
-        {
-            fields.push_back(temp[i]);
-        }
+        TrangThaiSan trangThai = static_cast<TrangThaiSan>(trangThaiIndex);
+        fields.erase(std::remove_if(fields.begin(), fields.end(),
+                                    [trangThai](San *s)
+                                    { return s->layTrangThai() != trangThai; }),
+                     fields.end());
     }
 
     // Apply loại sân filter
@@ -793,7 +790,25 @@ void FieldManagementPage::onTableRowClicked(int row, int column)
     {
         loadFieldToForm(san);
         setFormMode(false, true); // Enable editing when selecting field
-        maintenanceBtn->setEnabled(true);
+
+        // Hiển thị nút phù hợp dựa trên trạng thái sân
+        if (san->dangHoatDong())
+        {
+            // Sân đang hoạt động -> Hiện nút Bảo trì, ẩn nút Kích hoạt
+            maintenanceBtn->setEnabled(true);
+            maintenanceBtn->setVisible(true);
+            activateBtn->setEnabled(false);
+            activateBtn->setVisible(false);
+        }
+        else
+        {
+            // Sân đang bảo trì hoặc ngừng hoạt động -> Hiện nút Kích hoạt, ẩn nút Bảo trì
+            maintenanceBtn->setEnabled(false);
+            maintenanceBtn->setVisible(false);
+            activateBtn->setEnabled(true);
+            activateBtn->setVisible(true);
+        }
+
         deleteBtn->setEnabled(true);
     }
 }
@@ -829,7 +844,7 @@ void FieldManagementPage::onSaveFieldClicked()
 
     LoaiSan loaiSan = static_cast<LoaiSan>(loaiSanDetailCombo->currentData().toInt());
     KhuVuc khuVuc = static_cast<KhuVuc>(khuVucDetailCombo->currentData().toInt());
-    TrangThaiSan trangThai = static_cast<TrangThaiSan>(trangThaiCombo->currentData().toInt());
+    TrangThaiSan trangThai = static_cast<TrangThaiSan>(trangThaiDetailCombo->currentData().toInt());
     int giaThue = giaThueSpinBox->value();
     QString ghiChu = ghiChuEdit->toPlainText().trimmed();
 
@@ -899,6 +914,37 @@ void FieldManagementPage::onMaintenanceFieldClicked()
         return;
     }
 
+    // Kiểm tra sân có lịch đặt trong tương lai không
+    HeThongQuanLy *sys = HeThongQuanLy::getInstance();
+    QuanLyDatSan *quanLyDatSan = sys->layQuanLyDatSan();
+    if (quanLyDatSan)
+    {
+        MangDong<DatSan *> bookings = quanLyDatSan->timDatSanTheoSan(selectedFieldId.toStdString());
+        QDateTime now = QDateTime::currentDateTime();
+
+        for (int i = 0; i < bookings.size(); i++)
+        {
+            DatSan *booking = bookings[i];
+            // Bỏ qua booking đã hủy
+            if (booking->getTrangThai() == TrangThaiDatSan::DA_HUY)
+                continue;
+
+            // Kiểm tra booking trong tương lai
+            NgayGio ngayGio = booking->getThoiGianDat();
+            QDateTime bookingTime(QDate(ngayGio.getNam(), ngayGio.getThang(), ngayGio.getNgay()),
+                                  QTime(ngayGio.getGio(), ngayGio.getPhut()));
+
+            if (bookingTime >= now)
+            {
+                QMessageBox::warning(this, "Không thể bảo trì",
+                                     QString("Sân %1 đang có lịch đặt trong tương lai!\n\n"
+                                             "Vui lòng hủy các lịch đặt trước khi đưa sân vào bảo trì.")
+                                         .arg(QString::fromStdString(san->layTenSan())));
+                return;
+            }
+        }
+    }
+
     // Open maintenance dialog
     MaintenanceDialog dialog(san, this);
     if (dialog.exec() == QDialog::Accepted)
@@ -933,6 +979,68 @@ void FieldManagementPage::onMaintenanceFieldClicked()
     }
 }
 
+void FieldManagementPage::onActivateFieldClicked()
+{
+    if (selectedFieldId.isEmpty())
+    {
+        return;
+    }
+
+    San *san = getSelectedField();
+    if (!san)
+    {
+        return;
+    }
+
+    // Check if field is already active
+    if (san->dangHoatDong())
+    {
+        QMessageBox::information(this, "Thông báo",
+                                 "Sân này đã đang hoạt động!");
+        return;
+    }
+
+    // Confirm activation
+    QString currentStatus = san->dangBaoTri() ? "bảo trì" : "ngừng hoạt động";
+    auto reply = QMessageBox::question(this, "Xác nhận kích hoạt",
+                                       QString("Bạn có chắc muốn đưa sân %1 trở lại hoạt động?\n\n"
+                                               "Trạng thái hiện tại: %2")
+                                           .arg(QString::fromStdString(san->layTenSan()))
+                                           .arg(currentStatus),
+                                       QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes)
+    {
+        // Update field status to active
+        San sanCapNhat(san->layMaSan(), san->layTenSan(), san->layLoaiSan(),
+                       san->layKhuVuc(), san->layGiaThueGio());
+        sanCapNhat.datTrangThai(TrangThaiSan::HOAT_DONG);
+        sanCapNhat.datGhiChu(""); // Clear maintenance note
+
+        if (quanLySan->capNhatSan(selectedFieldId.toStdString(), sanCapNhat))
+        {
+            quanLySan->saveToCSV();
+            QMessageBox::information(this, "Thành công",
+                                     QString("Đã kích hoạt sân %1 trở lại hoạt động!")
+                                         .arg(QString::fromStdString(san->layTenSan())));
+            loadData();
+            loadFieldToForm(getSelectedField());
+
+            // Cập nhật nút hiển thị
+            maintenanceBtn->setEnabled(true);
+            maintenanceBtn->setVisible(true);
+            activateBtn->setEnabled(false);
+            activateBtn->setVisible(false);
+
+            emit dataChanged();
+        }
+        else
+        {
+            QMessageBox::warning(this, "Lỗi", "Không thể kích hoạt sân!");
+        }
+    }
+}
+
 void FieldManagementPage::onDeleteFieldClicked()
 {
     if (selectedFieldId.isEmpty())
@@ -944,6 +1052,37 @@ void FieldManagementPage::onDeleteFieldClicked()
     if (!san)
     {
         return;
+    }
+
+    // Kiểm tra sân có lịch đặt trong tương lai không
+    HeThongQuanLy *sys = HeThongQuanLy::getInstance();
+    QuanLyDatSan *quanLyDatSan = sys->layQuanLyDatSan();
+    if (quanLyDatSan)
+    {
+        MangDong<DatSan *> bookings = quanLyDatSan->timDatSanTheoSan(selectedFieldId.toStdString());
+        QDateTime now = QDateTime::currentDateTime();
+
+        for (int i = 0; i < bookings.size(); i++)
+        {
+            DatSan *booking = bookings[i];
+            // Bỏ qua booking đã hủy
+            if (booking->getTrangThai() == TrangThaiDatSan::DA_HUY)
+                continue;
+
+            // Kiểm tra booking trong tương lai
+            NgayGio ngayGio = booking->getThoiGianDat();
+            QDateTime bookingTime(QDate(ngayGio.getNam(), ngayGio.getThang(), ngayGio.getNgay()),
+                                  QTime(ngayGio.getGio(), ngayGio.getPhut()));
+
+            if (bookingTime >= now)
+            {
+                QMessageBox::warning(this, "Không thể xoá",
+                                     QString("Sân %1 đang có lịch đặt trong tương lai!\n\n"
+                                             "Vui lòng hủy các lịch đặt trước khi xoá sân.")
+                                         .arg(QString::fromStdString(san->layTenSan())));
+                return;
+            }
+        }
     }
 
     auto reply = QMessageBox::question(this, "Xác nhận xoá",
@@ -973,7 +1112,7 @@ void FieldManagementPage::setFormMode(bool isNew, bool isEditing)
     tenSanEdit->setReadOnly(!isEditing);
     loaiSanDetailCombo->setEnabled(isEditing); // Enable when editing
     khuVucDetailCombo->setEnabled(isEditing);  // Enable when editing
-    trangThaiCombo->setEnabled(isEditing);
+    trangThaiDetailCombo->setEnabled(isEditing);
     giaThueSpinBox->setReadOnly(!isEditing);
     ghiChuEdit->setReadOnly(!isEditing);
 
@@ -987,7 +1126,7 @@ void FieldManagementPage::clearForm()
     tenSanEdit->clear();
     loaiSanDetailCombo->setCurrentIndex(0);
     khuVucDetailCombo->setCurrentIndex(0);
-    trangThaiCombo->setCurrentIndex(0);
+    trangThaiDetailCombo->setCurrentIndex(0);
     giaThueSpinBox->setValue(0);
     ghiChuEdit->clear();
     selectedFieldId = "";
@@ -1023,11 +1162,11 @@ void FieldManagementPage::loadFieldToForm(San *san)
     }
 
     // Set trạng thái
-    for (int i = 0; i < trangThaiCombo->count(); i++)
+    for (int i = 0; i < trangThaiDetailCombo->count(); i++)
     {
-        if (trangThaiCombo->itemData(i).toInt() == static_cast<int>(san->layTrangThai()))
+        if (trangThaiDetailCombo->itemData(i).toInt() == static_cast<int>(san->layTrangThai()))
         {
-            trangThaiCombo->setCurrentIndex(i);
+            trangThaiDetailCombo->setCurrentIndex(i);
             break;
         }
     }

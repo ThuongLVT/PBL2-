@@ -7,8 +7,7 @@
 #include "Core/CauTrucDuLieu/DanhSachLienKet.h"
 #include "Core/CauTrucDuLieu/Ngan.h"
 #include "Core/CauTrucDuLieu/HangDoi.h"
-#include "Core/CauTrucDuLieu/ThoiGian.h"
-#include "Core/CauTrucDuLieu/NgayThang.h"
+#include "Core/CauTrucDuLieu/NgayGio.h"
 #include "Core/CauTrucDuLieu/NgayGio.h"
 
 // Models - Week 2
@@ -24,10 +23,6 @@
 // Models - Week 3
 #include "Core/Models/DichVuDat.h"
 #include "Core/Models/DatSan.h"
-#include "Core/Models/ThanhToan.h"
-#include "Core/Models/ThanhToanTienMat.h"
-#include "Core/Models/ThanhToanThe.h"
-#include "Core/Models/ThanhToanChuyenKhoan.h"
 
 // System Management - Week 3
 #include "Core/QuanLy/HeThongQuanLy.h"
@@ -116,7 +111,6 @@ int main(int argc, char *argv[])
      cout << "  - Fields: " << heThong->tongSoSan() << endl;
      cout << "  - Staff: " << heThong->tongSoNhanVien() << endl;
      cout << "  - Bookings: " << heThong->tongSoDatSan() << endl;
-     cout << "  - Payments: " << heThong->tongSoThanhToan() << endl;
      cout << endl;
 
      // Load stylesheet

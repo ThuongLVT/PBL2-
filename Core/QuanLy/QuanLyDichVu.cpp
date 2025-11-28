@@ -7,7 +7,7 @@
  */
 
 #include "QuanLyDichVu.h"
-#include "../Utils/CSVManager.h"
+#include "../Utils/CSVHelper.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -208,7 +208,7 @@ void QuanLyDichVu::xoaTatCa()
 
 bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
 {
-    vector<vector<string>> rows = CSVManager::readCSV(filePath, true);
+    vector<vector<string>> rows = CSVHelper::readCSV(filePath, true);
 
     if (rows.empty())
     {
@@ -322,7 +322,7 @@ bool QuanLyDichVu::luuDuLieuRaCSV(const std::string &filePath) const
         rows.push_back(row);
     }
 
-    bool success = CSVManager::writeCSV(filePath, headers, rows);
+    bool success = CSVHelper::writeCSV(filePath, headers, rows);
     if (success)
     {
         cout << "Saved " << danhSachDichVu.size() << " services to CSV: " << filePath << endl;

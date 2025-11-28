@@ -16,6 +16,7 @@
         <file>icons/edit.svg</file>
         <file>icons/eye.svg</file>
         <file>icons/eye-off.svg</file>
+        <file>icons/calendar.svg</file>
         <file>images/peakpx.jpg</file>
     </qresource>
 </RCC>

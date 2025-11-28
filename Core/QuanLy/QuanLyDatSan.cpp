@@ -9,7 +9,7 @@
 #include "QuanLyDatSan.h"
 #include "QuanLyKhachHang.h"
 #include "QuanLySan.h"
-#include "../Utils/CSVManager.h"
+#include "../Utils/CSVHelper.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -274,7 +274,7 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
         return false;
     }
 
-    vector<vector<string>> rows = CSVManager::readCSV(filename, true);
+    vector<vector<string>> rows = CSVHelper::readCSV(filename, true);
 
     if (rows.empty())
     {
@@ -301,8 +301,8 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
             string ngayDatStr = row[3];    // DD/MM/YYYY HH:MM
             string gioBatDauStr = row[4];  // HH:MM
             string gioKetThucStr = row[5]; // HH:MM
-            double tongTien = stod(row[6]);
-            double tienCoc = stod(row[7]);
+            // double tongTien = stod(row[6]);
+            // double tienCoc = stod(row[7]);
             string trangThaiStr = row[8];
             string trangThaiCocStr = row[9];
             string ghiChu = row[10];
@@ -355,6 +355,32 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
             else if (trangThaiCocStr == "MAT_COC")
                 datSan->setTrangThaiCoc(TrangThaiCoc::MAT_COC);
 
+            // Parse NgayThanhToan if available (Column 11)
+            if (row.size() > 11)
+            {
+                string ngayThanhToanStr = row[11];
+                if (!ngayThanhToanStr.empty())
+                {
+                    // Format: DD/MM/YYYY HH:MM:SS
+                    int d, m, y, h = 0, min = 0, sec = 0;
+                    char s;
+                    stringstream ssNTT(ngayThanhToanStr);
+                    ssNTT >> d >> s >> m >> s >> y;
+
+                    // Try to read time if available
+                    if (ssNTT >> h >> s >> min >> s >> sec)
+                    {
+                        // Successfully read time
+                    }
+                    else
+                    {
+                        // Reset stream or just use default 00:00:00
+                    }
+
+                    datSan->setNgayThanhToan(NgayGio(d, m, y, h, min, sec));
+                }
+            }
+
             // Don't auto-save when loading from CSV
             themDatSanTrucTiep(datSan);
         }
@@ -371,7 +397,7 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
 
 bool QuanLyDatSan::saveToCSV(const std::string &filename)
 {
-    vector<string> headers = {"MaDatSan", "MaKhachHang", "MaSan", "NgayDat", "GioBatDau", "GioKetThuc", "TongTien", "TienCoc", "TrangThai", "TrangThaiCoc", "GhiChu"};
+    vector<string> headers = {"MaDatSan", "MaKhachHang", "MaSan", "NgayDat", "GioBatDau", "GioKetThuc", "TongTien", "TienCoc", "TrangThai", "TrangThaiCoc", "GhiChu", "NgayThanhToan"};
     vector<vector<string>> rows;
 
     for (int i = 0; i < danhSachDatSan.size(); i++)
@@ -447,10 +473,22 @@ bool QuanLyDatSan::saveToCSV(const std::string &filename)
         // GhiChu
         row.push_back(ds->getGhiChu());
 
+        // NgayThanhToan
+        NgayGio ntt = ds->getNgayThanhToan();
+        if (ntt.getNam() > 0)
+        { // Valid date
+            // Use toString() which returns "DD/MM/YYYY HH:MM:SS"
+            row.push_back(ntt.toString());
+        }
+        else
+        {
+            row.push_back("");
+        }
+
         rows.push_back(row);
     }
 
-    bool success = CSVManager::writeCSV(filename, headers, rows);
+    bool success = CSVHelper::writeCSV(filename, headers, rows);
     if (success)
     {
         cout << "Saved " << danhSachDatSan.size() << " bookings to CSV: " << filename << endl;

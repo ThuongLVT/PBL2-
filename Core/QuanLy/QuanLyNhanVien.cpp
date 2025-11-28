@@ -7,7 +7,7 @@
  */
 
 #include "QuanLyNhanVien.h"
-#include "../Utils/CSVManager.h"
+#include "../Utils/CSVHelper.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -113,7 +113,7 @@ bool QuanLyNhanVien::xoaNhanVien(const string &maNV)
         if (nv && nv->layMaNhanVien() == maNV)
         {
             cout << "Deleting employee: " << danhSachNhanVien[i]->layHoTen() << endl;
-            NguoiDung* deletedUser = danhSachNhanVien[i];
+            NguoiDung *deletedUser = danhSachNhanVien[i];
             danhSachNhanVien.erase(i);
 
             // Auto-save to CSV after delete
@@ -347,8 +347,8 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
 {
     // Note: No permission check here - this is an internal method
     // Permission is already checked in themNhanVien(), xoaNhanVien(), capNhatNhanVien()
-    // CSVManager will prepend "D:/PBL2-/Data/" automatically
-    
+    // CSVHelper will prepend "D:/PBL2-/Data/" automatically
+
     vector<vector<string>> rows;
 
     // Header row
@@ -398,7 +398,7 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
     vector<string> header = rows[0];
     rows.erase(rows.begin());
 
-    bool success = CSVManager::writeCSV(filename, header, rows);
+    bool success = CSVHelper::writeCSV(filename, header, rows);
     if (success)
     {
         cout << "Saved " << danhSachNhanVien.size() << " employees to CSV: " << filename << endl;
@@ -412,7 +412,7 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
 
 bool QuanLyNhanVien::docCSV(const string &filename)
 {
-    vector<vector<string>> rows = CSVManager::readCSV(filename, false);
+    vector<vector<string>> rows = CSVHelper::readCSV(filename, false);
 
     if (rows.empty())
     {
@@ -557,7 +557,7 @@ bool QuanLyNhanVien::luuAdminCSV(const std::string &filename) const
     vector<string> header = rows[0];
     rows.erase(rows.begin());
 
-    bool success = CSVManager::writeCSV(filename, header, rows);
+    bool success = CSVHelper::writeCSV(filename, header, rows);
     if (success)
     {
         cout << "Saved " << danhSachQuanTriVien.size() << " admins to CSV: " << filename << endl;
@@ -572,7 +572,7 @@ bool QuanLyNhanVien::luuAdminCSV(const std::string &filename) const
 
 bool QuanLyNhanVien::docAdminCSV(const std::string &filename)
 {
-    vector<vector<string>> rows = CSVManager::readCSV(filename, false);
+    vector<vector<string>> rows = CSVHelper::readCSV(filename, false);
 
     if (rows.empty())
     {

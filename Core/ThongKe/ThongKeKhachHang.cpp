@@ -10,7 +10,9 @@ using namespace std;
 // Constructor mặc định
 ThongKeKhachHang::ThongKeKhachHang()
     : ThongKe(), tongSoKhachHang(0), soKhachHangMoi(0), soKhachHangQuayLai(0),
-      chiTieuTrungBinh(0.0), heThong(nullptr)
+      soKhachHangHoatDong(0), chiTieuTrungBinh(0.0), soKhachHangMoiKyTruoc(0),
+      phanTramTangKhachMoi(0.0), customerLifetimeValue(0.0), tanSuatDatSanTB(0.0),
+      soKhachHangRoiBo(0), heThong(nullptr)
 {
     tieuDe = std::string("Bao cao thong ke khach hang");
 }
@@ -19,7 +21,9 @@ ThongKeKhachHang::ThongKeKhachHang()
 ThongKeKhachHang::ThongKeKhachHang(const NgayThang &tu, const NgayThang &den, HeThongQuanLy *ht)
     : ThongKe(std::string("Bao cao thong ke khach hang"), tu, den),
       tongSoKhachHang(0), soKhachHangMoi(0), soKhachHangQuayLai(0),
-      chiTieuTrungBinh(0.0), heThong(ht)
+      soKhachHangHoatDong(0), chiTieuTrungBinh(0.0), soKhachHangMoiKyTruoc(0),
+      phanTramTangKhachMoi(0.0), customerLifetimeValue(0.0), tanSuatDatSanTB(0.0),
+      soKhachHangRoiBo(0), heThong(ht)
 {
     tinhToan();
 }
@@ -30,8 +34,16 @@ ThongKeKhachHang::ThongKeKhachHang(const ThongKeKhachHang &other) : ThongKe(othe
     tongSoKhachHang = other.tongSoKhachHang;
     soKhachHangMoi = other.soKhachHangMoi;
     soKhachHangQuayLai = other.soKhachHangQuayLai;
+    soKhachHangHoatDong = other.soKhachHangHoatDong;
     chiTieuTrungBinh = other.chiTieuTrungBinh;
+    soKhachHangMoiKyTruoc = other.soKhachHangMoiKyTruoc;
+    phanTramTangKhachMoi = other.phanTramTangKhachMoi;
     topKhachHang = other.topKhachHang;
+    thongKeTheoHang = other.thongKeTheoHang;
+    thongKeTheoThang = other.thongKeTheoThang;
+    customerLifetimeValue = other.customerLifetimeValue;
+    tanSuatDatSanTB = other.tanSuatDatSanTB;
+    soKhachHangRoiBo = other.soKhachHangRoiBo;
     heThong = other.heThong;
 }
 
@@ -47,19 +59,41 @@ ThongKeKhachHang &ThongKeKhachHang::operator=(const ThongKeKhachHang &other)
         tongSoKhachHang = other.tongSoKhachHang;
         soKhachHangMoi = other.soKhachHangMoi;
         soKhachHangQuayLai = other.soKhachHangQuayLai;
+        soKhachHangHoatDong = other.soKhachHangHoatDong;
         chiTieuTrungBinh = other.chiTieuTrungBinh;
+        soKhachHangMoiKyTruoc = other.soKhachHangMoiKyTruoc;
+        phanTramTangKhachMoi = other.phanTramTangKhachMoi;
         topKhachHang = other.topKhachHang;
+        thongKeTheoHang = other.thongKeTheoHang;
+        thongKeTheoThang = other.thongKeTheoThang;
+        customerLifetimeValue = other.customerLifetimeValue;
+        tanSuatDatSanTB = other.tanSuatDatSanTB;
+        soKhachHangRoiBo = other.soKhachHangRoiBo;
         heThong = other.heThong;
     }
     return *this;
 }
 
-// Getters
+// ===== GETTERS - CƠ BẢN =====
 int ThongKeKhachHang::getTongSoKhachHang() const { return tongSoKhachHang; }
 int ThongKeKhachHang::getSoKhachHangMoi() const { return soKhachHangMoi; }
 int ThongKeKhachHang::getSoKhachHangQuayLai() const { return soKhachHangQuayLai; }
+int ThongKeKhachHang::getSoKhachHangHoatDong() const { return soKhachHangHoatDong; }
 double ThongKeKhachHang::getChiTieuTrungBinh() const { return chiTieuTrungBinh; }
+
+// ===== GETTERS - SO SÁNH =====
+int ThongKeKhachHang::getSoKhachHangMoiKyTruoc() const { return soKhachHangMoiKyTruoc; }
+double ThongKeKhachHang::getPhanTramTangKhachMoi() const { return phanTramTangKhachMoi; }
+
+// ===== GETTERS - TOP & PHÂN LOẠI =====
 const MangDong<ThongTinKhachHangTop> &ThongKeKhachHang::getTopKhachHang() const { return topKhachHang; }
+const MangDong<ThongKeHangKhachHang> &ThongKeKhachHang::getThongKeTheoHang() const { return thongKeTheoHang; }
+const MangDong<ThongKeKhachHangTheoThang> &ThongKeKhachHang::getThongKeTheoThang() const { return thongKeTheoThang; }
+
+// ===== GETTERS - INSIGHTS =====
+double ThongKeKhachHang::getCustomerLifetimeValue() const { return customerLifetimeValue; }
+double ThongKeKhachHang::getTanSuatDatSanTB() const { return tanSuatDatSanTB; }
+int ThongKeKhachHang::getSoKhachHangRoiBo() const { return soKhachHangRoiBo; }
 
 // Methods
 void ThongKeKhachHang::tinhToan()
@@ -71,6 +105,7 @@ void ThongKeKhachHang::tinhToan()
     tongSoKhachHang = 0;
     soKhachHangMoi = 0;
     soKhachHangQuayLai = 0;
+    soKhachHangHoatDong = 0;
     chiTieuTrungBinh = 0.0;
 
     const MangDong<KhachHang *> &danhSachKH = heThong->layDanhSachKhachHang();
@@ -81,13 +116,21 @@ void ThongKeKhachHang::tinhToan()
     for (int i = 0; i < danhSachKH.size(); i++)
     {
         KhachHang *kh = danhSachKH[i];
-        int soDonDat = demSoDonDatCuaKhachHang(kh);
 
-        if (soDonDat == 1)
+        // Kiểm tra đăng ký trong kỳ
+        if (laDangKyTrongKy(kh))
         {
             soKhachHangMoi++;
         }
-        else if (soDonDat > 1)
+
+        // Kiểm tra hoạt động trong kỳ
+        if (laHoatDongTrongKy(kh))
+        {
+            soKhachHangHoatDong++;
+        }
+
+        int soDonDat = demSoDonDatCuaKhachHang(kh);
+        if (soDonDat > 1)
         {
             soKhachHangQuayLai++;
         }
@@ -101,8 +144,12 @@ void ThongKeKhachHang::tinhToan()
         chiTieuTrungBinh = tongChiTieu / tongSoKhachHang;
     }
 
-    // Tính top khách hàng
+    // Tính các thống kê bổ sung
     tinhTopKhachHang(10);
+    tinhThongKeTheoHang();
+    tinhThongKeTheoThang();
+    tinhCustomerInsights();
+    tinhSoSanhKyTruoc();
 }
 
 void ThongKeKhachHang::hienThi() const
@@ -276,4 +323,280 @@ double ThongKeKhachHang::tinhTongChiTieuCuaKhachHang(KhachHang *kh)
     }
 
     return tongChiTieu;
+}
+
+// ===== NEW METHODS =====
+
+bool ThongKeKhachHang::laDangKyTrongKy(KhachHang *kh)
+{
+    if (kh == nullptr)
+        return false;
+
+    NgayThang ngayDangKy = kh->layNgayDangKy();
+    return (ngayDangKy >= tuNgay && ngayDangKy <= denNgay);
+}
+
+bool ThongKeKhachHang::laHoatDongTrongKy(KhachHang *kh)
+{
+    if (heThong == nullptr || kh == nullptr)
+        return false;
+
+    const MangDong<DatSan *> &danhSach = heThong->layDanhSachDatSan();
+    for (int i = 0; i < danhSach.size(); i++)
+    {
+        DatSan *ds = danhSach[i];
+        if (ds->getKhachHang() == kh)
+        {
+            NgayGio tgDat = ds->getThoiGianDat();
+            NgayThang ngayDat(tgDat.getNgay(), tgDat.getThang(), tgDat.getNam());
+
+            if (ngayDat >= tuNgay && ngayDat <= denNgay)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void ThongKeKhachHang::tinhThongKeTheoHang()
+{
+    if (heThong == nullptr)
+        return;
+
+    thongKeTheoHang = MangDong<ThongKeHangKhachHang>();
+
+    // Tạo entry cho 5 hạng
+    thongKeTheoHang.push_back(ThongKeHangKhachHang(HangKhachHang::THUONG));
+    thongKeTheoHang.push_back(ThongKeHangKhachHang(HangKhachHang::DONG));
+    thongKeTheoHang.push_back(ThongKeHangKhachHang(HangKhachHang::BAC));
+    thongKeTheoHang.push_back(ThongKeHangKhachHang(HangKhachHang::VANG));
+    thongKeTheoHang.push_back(ThongKeHangKhachHang(HangKhachHang::KIM_CUONG));
+
+    const MangDong<KhachHang *> &danhSachKH = heThong->layDanhSachKhachHang();
+    MangDong<double> tongChiTieuTheoHang;
+    for (int i = 0; i < 5; i++)
+        tongChiTieuTheoHang.push_back(0.0);
+
+    for (int i = 0; i < danhSachKH.size(); i++)
+    {
+        KhachHang *kh = danhSachKH[i];
+        int idx = (int)kh->layHang();
+        if (idx >= 0 && idx < 5)
+        {
+            thongKeTheoHang[idx].soLuong++;
+            tongChiTieuTheoHang[idx] += kh->layTongChiTieu();
+        }
+    }
+
+    // Tính tỷ lệ và chi tiêu TB
+    for (int i = 0; i < 5; i++)
+    {
+        if (tongSoKhachHang > 0)
+        {
+            thongKeTheoHang[i].tyLe = (double)thongKeTheoHang[i].soLuong / tongSoKhachHang * 100;
+        }
+        if (thongKeTheoHang[i].soLuong > 0)
+        {
+            thongKeTheoHang[i].chiTieuTrungBinh = tongChiTieuTheoHang[i] / thongKeTheoHang[i].soLuong;
+        }
+    }
+}
+
+void ThongKeKhachHang::tinhThongKeTheoThang()
+{
+    if (heThong == nullptr)
+        return;
+
+    thongKeTheoThang = MangDong<ThongKeKhachHangTheoThang>();
+
+    // Xác định các tháng trong khoảng
+    int thangBatDau = tuNgay.getThang();
+    int namBatDau = tuNgay.getNam();
+    int thangKetThuc = denNgay.getThang();
+    int namKetThuc = denNgay.getNam();
+
+    int thang = thangBatDau;
+    int nam = namBatDau;
+    while (nam < namKetThuc || (nam == namKetThuc && thang <= thangKetThuc))
+    {
+        ThongKeKhachHangTheoThang tk;
+        tk.thang = thang;
+        tk.nam = nam;
+        tk.khachMoi = 0;
+        tk.khachQuayLai = 0;
+        tk.doanhThu = 0.0;
+        thongKeTheoThang.push_back(tk);
+
+        thang++;
+        if (thang > 12)
+        {
+            thang = 1;
+            nam++;
+        }
+    }
+
+    // Đếm khách mới theo tháng đăng ký
+    const MangDong<KhachHang *> &danhSachKH = heThong->layDanhSachKhachHang();
+    for (int i = 0; i < danhSachKH.size(); i++)
+    {
+        KhachHang *kh = danhSachKH[i];
+        NgayThang ngayDK = kh->layNgayDangKy();
+
+        for (int j = 0; j < thongKeTheoThang.size(); j++)
+        {
+            if (ngayDK.getThang() == thongKeTheoThang[j].thang &&
+                ngayDK.getNam() == thongKeTheoThang[j].nam)
+            {
+                thongKeTheoThang[j].khachMoi++;
+                break;
+            }
+        }
+    }
+
+    // Đếm booking và doanh thu theo tháng
+    const MangDong<DatSan *> &danhSach = heThong->layDanhSachDatSan();
+    for (int i = 0; i < danhSach.size(); i++)
+    {
+        DatSan *ds = danhSach[i];
+        NgayGio tgDat = ds->getThoiGianDat();
+
+        for (int j = 0; j < thongKeTheoThang.size(); j++)
+        {
+            if (tgDat.getThang() == thongKeTheoThang[j].thang &&
+                tgDat.getNam() == thongKeTheoThang[j].nam)
+            {
+                if (ds->getTrangThai() == HOAN_THANH)
+                {
+                    thongKeTheoThang[j].doanhThu += ds->getTongTien();
+                }
+                break;
+            }
+        }
+    }
+}
+
+void ThongKeKhachHang::tinhCustomerInsights()
+{
+    if (heThong == nullptr)
+        return;
+
+    const MangDong<KhachHang *> &danhSachKH = heThong->layDanhSachKhachHang();
+
+    // Tính CLV
+    double tongCLV = 0.0;
+    for (int i = 0; i < danhSachKH.size(); i++)
+    {
+        tongCLV += danhSachKH[i]->layTongChiTieu();
+    }
+    if (tongSoKhachHang > 0)
+    {
+        customerLifetimeValue = tongCLV / tongSoKhachHang;
+    }
+
+    // Tính tần suất đặt sân TB
+    int tongSoDon = 0;
+    for (int i = 0; i < danhSachKH.size(); i++)
+    {
+        tongSoDon += danhSachKH[i]->laySoLanDatSan();
+    }
+
+    int soThang = tuNgay.tinhKhoangCach(denNgay) / 30;
+    if (soThang <= 0)
+        soThang = 1;
+
+    if (tongSoKhachHang > 0)
+    {
+        tanSuatDatSanTB = (double)tongSoDon / tongSoKhachHang / soThang;
+    }
+
+    // Đếm khách hàng rời bỏ (không đặt > 90 ngày)
+    soKhachHangRoiBo = 0;
+    NgayThang homNay = ngayTao;
+    NgayThang nguong90Ngay = homNay.addDays(-90);
+
+    const MangDong<DatSan *> &danhSach = heThong->layDanhSachDatSan();
+    for (int i = 0; i < danhSachKH.size(); i++)
+    {
+        KhachHang *kh = danhSachKH[i];
+        bool coDatGanDay = false;
+
+        for (int j = 0; j < danhSach.size(); j++)
+        {
+            if (danhSach[j]->getKhachHang() == kh)
+            {
+                NgayGio tgDat = danhSach[j]->getThoiGianDat();
+                NgayThang ngayDat(tgDat.getNgay(), tgDat.getThang(), tgDat.getNam());
+
+                if (ngayDat >= nguong90Ngay)
+                {
+                    coDatGanDay = true;
+                    break;
+                }
+            }
+        }
+
+        if (!coDatGanDay && kh->laySoLanDatSan() > 0)
+        {
+            soKhachHangRoiBo++;
+        }
+    }
+}
+
+void ThongKeKhachHang::tinhSoSanhKyTruoc()
+{
+    if (heThong == nullptr)
+        return;
+
+    // Tính số ngày
+    int soNgay = tuNgay.tinhKhoangCach(denNgay);
+    if (soNgay <= 0)
+        soNgay = 1;
+
+    // Kỳ trước
+    NgayThang tuNgayKT = tuNgay.addDays(-soNgay);
+    NgayThang denNgayKT = tuNgay.addDays(-1);
+
+    soKhachHangMoiKyTruoc = 0;
+
+    const MangDong<KhachHang *> &danhSachKH = heThong->layDanhSachKhachHang();
+    for (int i = 0; i < danhSachKH.size(); i++)
+    {
+        KhachHang *kh = danhSachKH[i];
+        NgayThang ngayDK = kh->layNgayDangKy();
+
+        if (ngayDK >= tuNgayKT && ngayDK <= denNgayKT)
+        {
+            soKhachHangMoiKyTruoc++;
+        }
+    }
+
+    // Tính % tăng
+    if (soKhachHangMoiKyTruoc > 0)
+    {
+        phanTramTangKhachMoi = ((double)(soKhachHangMoi - soKhachHangMoiKyTruoc) / soKhachHangMoiKyTruoc) * 100;
+    }
+    else if (soKhachHangMoi > 0)
+    {
+        phanTramTangKhachMoi = 100.0;
+    }
+}
+
+std::string ThongKeKhachHang::layTenHang(HangKhachHang hang) const
+{
+    switch (hang)
+    {
+    case HangKhachHang::THUONG:
+        return "Thuong";
+    case HangKhachHang::DONG:
+        return "Dong";
+    case HangKhachHang::BAC:
+        return "Bac";
+    case HangKhachHang::VANG:
+        return "Vang";
+    case HangKhachHang::KIM_CUONG:
+        return "Kim Cuong";
+    default:
+        return "N/A";
+    }
 }

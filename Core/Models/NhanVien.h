@@ -12,8 +12,7 @@
 #include <string>
 
 #include "NguoiDung.h"
-#include "../CauTrucDuLieu/NgayThang.h"
-#include "../CauTrucDuLieu/ThoiGian.h"
+#include "../CauTrucDuLieu/NgayGio.h"
 
 /**
  * @enum CaLamViec
@@ -40,10 +39,10 @@ class NhanVien : public NguoiDung
 {
 private:
     std::string maNhanVien; ///< Mã nhân viên
-    NgayThang ngayVaoLam; ///< Ngày vào làm
-    double luongCoBan;    ///< Lương cơ bản
-    CaLamViec caLamViec;  ///< Ca làm việc chính
-    int soNgayLam;        ///< Tổng số ngày đã làm
+    NgayThang ngayVaoLam;   ///< Ngày vào làm
+    double luongCoBan;      ///< Lương cơ bản
+    CaLamViec caLamViec;    ///< Ca làm việc chính
+    int soNgayLam;          ///< Tổng số ngày đã làm
 
 public:
     // ========== CONSTRUCTORS ==========
@@ -84,7 +83,7 @@ public:
      * @param other Đối tượng NhanVien khác
      * @return Reference to this
      */
-    NhanVien& operator=(const NhanVien &other);
+    NhanVien &operator=(const NhanVien &other);
 
     // ========== GETTERS ==========
 

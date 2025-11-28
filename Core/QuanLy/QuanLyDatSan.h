@@ -15,7 +15,7 @@
 #include "../Models/San.h"
 #include "../CauTrucDuLieu/MangDong.h"
 #include "../CauTrucDuLieu/NgayGio.h"
-#include "../CauTrucDuLieu/NgayThang.h"
+#include "../CauTrucDuLieu/NgayGio.h"
 #include "../Models/KhungGio.h"
 #include <string>
 

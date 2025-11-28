@@ -59,7 +59,7 @@ void LoginDialog::setupUI()
     m_usernameEdit->setObjectName("loginInput");
     m_usernameEdit->setPlaceholderText("Tên đăng nhập");
     m_usernameEdit->setFixedHeight(40);
-    m_usernameEdit->setText("admin"); // Set default username
+    // No default username - user must enter their own credentials
 
     // Password - NO LABEL, only input with placeholder
     m_passwordEdit = new QLineEdit(centerWidget);
@@ -119,8 +119,8 @@ void LoginDialog::setupUI()
     // Removed returnPressed connection to avoid double triggering with default button
     // connect(m_passwordEdit, &QLineEdit::returnPressed, this, &LoginDialog::onLoginClicked);
 
-    // Set focus to password field by default
-    m_passwordEdit->setFocus();
+    // Set focus to username field by default since it's empty
+    m_usernameEdit->setFocus();
 }
 
 void LoginDialog::applyStyles()

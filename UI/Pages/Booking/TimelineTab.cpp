@@ -12,6 +12,7 @@
 #include <QMessageBox>
 #include <QDateTime>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QDialog>
 #include <QListWidget>
 #include <QDebug>
@@ -22,7 +23,9 @@
 #include <QRegularExpressionValidator>
 
 TimelineTab::TimelineTab(QWidget *parent)
-    : QWidget(parent), mainLayout(nullptr), topPanel(nullptr), topPanelLayout(nullptr), calendarPanel(nullptr), calendarLayout(nullptr), calendar(nullptr), formPanel(nullptr), formLayout(nullptr), phoneEdit(nullptr), nameEdit(nullptr), fieldCombo(nullptr), priceLabel(nullptr), statusCombo(nullptr), typeCombo(nullptr), dateEdit(nullptr), fromTimeEdit(nullptr), toTimeEdit(nullptr), durationLabel(nullptr), duration30Btn(nullptr), duration60Btn(nullptr), duration90Btn(nullptr), duration120Btn(nullptr), noteEdit(nullptr), saveBtn(nullptr), deleteBtn(nullptr), timelinePanel(nullptr), timelineLayout(nullptr), timelineGrid(nullptr), system(nullptr), currentBooking(nullptr), isEditMode(false)
+    : QWidget(parent), mainLayout(nullptr), topPanel(nullptr), topPanelLayout(nullptr), calendarPanel(nullptr), calendarLayout(nullptr), calendar(nullptr), formPanel(nullptr), formLayout(nullptr), phoneEdit(nullptr), nameEdit(nullptr), fieldCombo(nullptr), filterTypeCombo(nullptr), filterAreaCombo(nullptr), priceLabel(nullptr), statusCombo(nullptr), typeCombo(nullptr), dateEdit(nullptr), fromTimeEdit(nullptr), toTimeEdit(nullptr), durationLabel(nullptr),
+      timelinePanel(nullptr), timelineLayout(nullptr), cornerWidget(nullptr), headerWidget(nullptr), timeWidget(nullptr), timelineGrid(nullptr), headerScrollArea(nullptr), timeScrollArea(nullptr), gridScrollArea(nullptr),
+      currentBooking(nullptr), reschedulingBooking(nullptr), isEditMode(false), isRescheduleMode(false), isNewCustomerPending(false), phoneCompleter(nullptr), nameCompleter(nullptr)
 {
     system = HeThongQuanLy::getInstance();
     selectedDate = QDate::currentDate();
@@ -108,29 +111,45 @@ void TimelineTab::setupCalendarPanel()
 
     // Calendar styling
     calendar->setStyleSheet(
-        "QCalendarWidget QWidget { "
-        "background-color: white; "
-        "} "
+        "QCalendarWidget QWidget { alternate-background-color: white; }"
         "QCalendarWidget QAbstractItemView:enabled { "
-        "background-color: white; "
-        "selection-background-color: #16a34a; "
-        "selection-color: white; "
-        "} "
+        "   background-color: white; "
+        "   color: black; "
+        "   selection-background-color: #3b82f6; " // Blue selection
+        "   selection-color: white; "
+        "   outline: none; "
+        "}"
+        "QCalendarWidget QAbstractItemView::item:selected { "
+        "   background-color: #3b82f6; "
+        "   color: white; "
+        "}"
+        "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: white; }"
         "QCalendarWidget QToolButton { "
-        "color: #1f2937; "
-        "background-color: white; "
-        "border: none; "
-        "border-radius: 4px; "
-        "} "
-        "QCalendarWidget QToolButton:hover { "
-        "background-color: #f3f4f6; "
-        "} "
-        "QCalendarWidget QMenu { "
-        "background-color: white; "
-        "} "
-        "QCalendarWidget QSpinBox { "
-        "background-color: white; "
-        "} ");
+        "   color: #1f2937; "
+        "   background-color: white; "
+        "   border: none; "
+        "   border-radius: 4px; "
+        "}"
+        "QCalendarWidget QToolButton:hover { background-color: #f3f4f6; }"
+        "QCalendarWidget QMenu { background-color: white; }"
+        "QCalendarWidget QSpinBox { background-color: white; }"
+        "QCalendarWidget QAbstractItemView { selection-background-color: #3b82f6; selection-color: white; outline: none; }");
+
+    // Set weekday text formats (Mon-Fri: Black, Sat-Sun: Black)
+    QTextCharFormat weekdayFormat;
+    weekdayFormat.setForeground(QBrush(Qt::black));
+
+    QTextCharFormat weekendFormat;
+    weekendFormat.setForeground(QBrush(Qt::black));
+
+    calendar->setWeekdayTextFormat(Qt::Monday, weekdayFormat);
+    calendar->setWeekdayTextFormat(Qt::Tuesday, weekdayFormat);
+    calendar->setWeekdayTextFormat(Qt::Wednesday, weekdayFormat);
+    calendar->setWeekdayTextFormat(Qt::Thursday, weekdayFormat);
+    calendar->setWeekdayTextFormat(Qt::Friday, weekdayFormat);
+
+    calendar->setWeekdayTextFormat(Qt::Saturday, weekendFormat);
+    calendar->setWeekdayTextFormat(Qt::Sunday, weekendFormat);
 
     calendarLayout->addWidget(calendar);
 }
@@ -158,7 +177,7 @@ void TimelineTab::setupFormPanel()
 
     // Grid layout for form fields
     QGridLayout *gridLayout = new QGridLayout();
-    gridLayout->setVerticalSpacing(2); // Changed to 1px as requested
+    gridLayout->setVerticalSpacing(12); // Increased spacing to prevent overlap
     gridLayout->setHorizontalSpacing(10);
     gridLayout->setContentsMargins(0, 0, 0, 0); // Remove margins
     gridLayout->setAlignment(Qt::AlignTop);     // Align grid to top
@@ -226,6 +245,7 @@ void TimelineTab::setupFormPanel()
     phoneEdit->setPlaceholderText("Nhập SĐT...");
     phoneEdit->setMinimumWidth(200);
     phoneEdit->setMaximumWidth(200);
+    phoneEdit->setMaxLength(10); // Limit to 10 digits
 
     // Validator: Only allow digits
     QRegularExpression rx("^[0-9]*$");
@@ -250,6 +270,7 @@ void TimelineTab::setupFormPanel()
     fieldLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     gridLayout->addWidget(fieldLabel, row, 3); // Col 3
 
+    // Field combo (only display selected field name)
     fieldCombo = new QComboBox(formPanel);
     fieldCombo->setEnabled(false);
     fieldCombo->setMinimumWidth(200);
@@ -265,7 +286,7 @@ void TimelineTab::setupFormPanel()
     gridLayout->addWidget(nameFieldLabel, row, 0);
 
     nameEdit = new QLineEdit(formPanel);
-    nameEdit->setPlaceholderText("Tên khách hàng");
+    nameEdit->setPlaceholderText("Nhập tên");
     nameEdit->setMinimumWidth(200);
     nameEdit->setMaximumWidth(200);
     nameEdit->setReadOnly(false);
@@ -368,9 +389,10 @@ void TimelineTab::setupFormPanel()
     gridLayout->addWidget(statusLabel, row, 3); // Col 3
 
     statusCombo = new QComboBox(formPanel);
-    statusCombo->addItem("Đã đặt");
-    statusCombo->addItem("Hoàn thành");
-    statusCombo->addItem("Đã hủy");
+    statusCombo->addItem("Còn trống");  // Index 0
+    statusCombo->addItem("Đã đặt");     // Index 1
+    statusCombo->addItem("Hoàn thành"); // Index 2
+    statusCombo->addItem("Đã hủy");     // Index 3
     statusCombo->setEnabled(false);
     statusCombo->setMinimumWidth(200);
     statusCombo->setMaximumWidth(200);
@@ -398,9 +420,9 @@ void TimelineTab::setupFormPanel()
     dateEdit->setReadOnly(true); // Chỉ đọc, không cho chỉnh sửa
     dateEdit->setMinimumWidth(95);
     dateEdit->setMaximumWidth(110);
-    dateEdit->setMinimumHeight(26); // Reduced height
-    dateEdit->setMaximumHeight(26);
-    dateEdit->setStyleSheet("QDateEdit { " + readOnlyDateTimeStyle + " min-height: 26px; max-height: 26px; padding: 2px 8px; }"); // Reduced padding
+    dateEdit->setMinimumHeight(30); // Increased height to prevent overflow
+    dateEdit->setMaximumHeight(30);
+    dateEdit->setStyleSheet("QDateEdit { " + readOnlyDateTimeStyle + " min-height: 30px; max-height: 30px; padding: 2px 8px; }");
     dateTimeLayout->addWidget(dateEdit, 0, Qt::AlignVCenter);
 
     // "từ" label - IN ĐẬM
@@ -416,9 +438,9 @@ void TimelineTab::setupFormPanel()
     fromTimeEdit->setButtonSymbols(QAbstractSpinBox::NoButtons);
     fromTimeEdit->setMinimumWidth(60);
     fromTimeEdit->setMaximumWidth(70);
-    fromTimeEdit->setMinimumHeight(26); // Reduced height
-    fromTimeEdit->setMaximumHeight(26);
-    fromTimeEdit->setStyleSheet("QTimeEdit { " + readOnlyDateTimeStyle + " min-height: 26px; max-height: 26px; padding: 2px 8px; }"); // Reduced padding
+    fromTimeEdit->setMinimumHeight(30); // Increased height
+    fromTimeEdit->setMaximumHeight(30);
+    fromTimeEdit->setStyleSheet("QTimeEdit { " + readOnlyDateTimeStyle + " min-height: 30px; max-height: 30px; padding: 2px 8px; }");
     dateTimeLayout->addWidget(fromTimeEdit, 0, Qt::AlignVCenter);
 
     // "đến" label - IN ĐẬM
@@ -434,15 +456,15 @@ void TimelineTab::setupFormPanel()
     toTimeEdit->setButtonSymbols(QAbstractSpinBox::NoButtons);
     toTimeEdit->setMinimumWidth(60);
     toTimeEdit->setMaximumWidth(70);
-    toTimeEdit->setMinimumHeight(26); // Reduced height
-    toTimeEdit->setMaximumHeight(26);
-    toTimeEdit->setStyleSheet("QTimeEdit { " + readOnlyDateTimeStyle + " min-height: 26px; max-height: 26px; padding: 2px 8px; }"); // Reduced padding
+    toTimeEdit->setMinimumHeight(30); // Increased height
+    toTimeEdit->setMaximumHeight(30);
+    toTimeEdit->setStyleSheet("QTimeEdit { " + readOnlyDateTimeStyle + " min-height: 30px; max-height: 30px; padding: 2px 8px; }");
     dateTimeLayout->addWidget(toTimeEdit, 0, Qt::AlignVCenter);
 
     // Duration label - màu xanh dương
     durationLabel = new QLabel("0h", formPanel); // Default 0h
-    durationLabel->setMinimumHeight(26);
-    durationLabel->setMaximumHeight(26);
+    durationLabel->setMinimumHeight(30);         // Increased height
+    durationLabel->setMaximumHeight(30);
     durationLabel->setAlignment(Qt::AlignCenter);
     durationLabel->setStyleSheet(
         "color: #1e40af; " // Dark blue text
@@ -519,14 +541,33 @@ void TimelineTab::setupFormPanel()
                        "} "
                        "QPushButton:hover { background-color: %2; } ";
 
-    saveBtn = new QPushButton("✓ Lưu", formPanel);
+    saveBtn = new QPushButton("💾 Lưu Đặt Sân", formPanel);
     saveBtn->setStyleSheet(btnStyle.arg("#16a34a").arg("#15803d"));
     rightColumnLayout->addWidget(saveBtn);
 
-    deleteBtn = new QPushButton("✗ Hủy", formPanel);
+    deleteBtn = new QPushButton("Hủy", formPanel);
     deleteBtn->setStyleSheet(btnStyle.arg("#ef4444").arg("#dc2626"));
     deleteBtn->setEnabled(true);
     rightColumnLayout->addWidget(deleteBtn);
+
+    // Add Customer Button (Moved below Cancel button)
+    addCustomerBtn = new QPushButton("Thêm KH mới", formPanel);
+    addCustomerBtn->setStyleSheet(
+        "QPushButton { "
+        "background-color: #3b82f6; " // Blue
+        "color: white; "
+        "border: none; "
+        "border-radius: 4px; "
+        "padding: 8px 10px; "
+        "font-weight: bold; "
+        "font-size: 13px; "
+        "min-width: 200px; " // Full width
+        "max-width: 200px; "
+        "min-height: 36px; "
+        "max-height: 36px; "
+        "} "
+        "QPushButton:hover { background-color: #2563eb; }");
+    rightColumnLayout->addWidget(addCustomerBtn);
 
     rightColumnLayout->addStretch();
 
@@ -541,28 +582,131 @@ void TimelineTab::setupTimelinePanel()
 {
     timelinePanel = new QFrame(this);
     timelinePanel->setObjectName("timelinePanel");
+    // Common light gray background for the container
     timelinePanel->setStyleSheet(
         "#timelinePanel { "
-        "background-color: white; "
-        "border: 1px solid #e5e7eb; "
-        "border-radius: 8px; "
+        "background-color: #f3f4f6; " // Light gray background
+        "border: none; "
         "}");
 
-    timelineLayout = new QVBoxLayout(timelinePanel);
-    timelineLayout->setContentsMargins(10, 10, 10, 10);
+    // Use HBox for 90/10 split with spacing
+    timelineLayout = new QHBoxLayout(timelinePanel);
+    timelineLayout->setContentsMargins(0, 0, 0, 0);
+    timelineLayout->setSpacing(10); // Spacing between timeline and filter
 
-    // Scroll area for timeline grid
-    QScrollArea *scrollArea = new QScrollArea(timelinePanel);
-    scrollArea->setWidgetResizable(false);
-    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    scrollArea->setStyleSheet("QScrollArea { border: none; background-color: white; }");
+    // --- LEFT: TIMELINE (90%) ---
+    // Wrap timeline in a white frame
+    QFrame *timelineContainer = new QFrame(timelinePanel);
+    timelineContainer->setStyleSheet(
+        "background-color: white; "
+        "border: 1px solid #e5e7eb; "
+        "border-radius: 8px; ");
 
-    // Timeline grid widget
-    timelineGrid = new TimelineGridWidget();
-    scrollArea->setWidget(timelineGrid);
+    // Use Grid Layout for the 4-part split view
+    QGridLayout *timelineGridLayout = new QGridLayout(timelineContainer);
+    timelineGridLayout->setContentsMargins(0, 0, 0, 0);
+    timelineGridLayout->setSpacing(0);
 
-    timelineLayout->addWidget(scrollArea);
+    // 1. Corner Widget (Top-Left)
+    cornerWidget = new TimelineGridWidget(TimelineGridWidget::CornerOnly);
+    timelineGridLayout->addWidget(cornerWidget, 0, 0);
+
+    // 2. Header Widget (Top-Right) - Field Names
+    headerWidget = new TimelineGridWidget(TimelineGridWidget::HeaderOnly);
+    headerScrollArea = new QScrollArea(timelineContainer);
+    headerScrollArea->setWidget(headerWidget);
+    headerScrollArea->setWidgetResizable(false);                            // Widget calculates its own size
+    headerScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff); // Hidden, controlled by grid
+    headerScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    headerScrollArea->setFrameShape(QFrame::NoFrame);
+    // Set fixed height for header area
+    headerScrollArea->setFixedHeight(TimelineGridWidget::HEADER_HEIGHT);
+    timelineGridLayout->addWidget(headerScrollArea, 0, 1);
+
+    // 3. Time Widget (Bottom-Left) - Time Labels
+    timeWidget = new TimelineGridWidget(TimelineGridWidget::TimeOnly);
+    timeScrollArea = new QScrollArea(timelineContainer);
+    timeScrollArea->setWidget(timeWidget);
+    timeScrollArea->setWidgetResizable(false);
+    timeScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    timeScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff); // Hidden, controlled by grid
+    timeScrollArea->setFrameShape(QFrame::NoFrame);
+    // Set fixed width for time area
+    timeScrollArea->setFixedWidth(TimelineGridWidget::TIME_LABEL_WIDTH);
+    timelineGridLayout->addWidget(timeScrollArea, 1, 0);
+
+    // 4. Main Grid Widget (Bottom-Right)
+    timelineGrid = new TimelineGridWidget(TimelineGridWidget::GridOnly);
+    gridScrollArea = new QScrollArea(timelineContainer);
+    gridScrollArea->setWidget(timelineGrid);
+    gridScrollArea->setWidgetResizable(false);
+    gridScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    gridScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    gridScrollArea->setFrameShape(QFrame::NoFrame);
+    timelineGridLayout->addWidget(gridScrollArea, 1, 1);
+
+    // ===== SYNCHRONIZE SCROLL BARS =====
+    // Sync Horizontal: Header <-> Grid
+    connect(gridScrollArea->horizontalScrollBar(), &QScrollBar::valueChanged,
+            headerScrollArea->horizontalScrollBar(), &QScrollBar::setValue);
+    connect(headerScrollArea->horizontalScrollBar(), &QScrollBar::valueChanged,
+            gridScrollArea->horizontalScrollBar(), &QScrollBar::setValue);
+
+    // Sync Vertical: Time <-> Grid
+    connect(gridScrollArea->verticalScrollBar(), &QScrollBar::valueChanged,
+            timeScrollArea->verticalScrollBar(), &QScrollBar::setValue);
+    connect(timeScrollArea->verticalScrollBar(), &QScrollBar::valueChanged,
+            gridScrollArea->verticalScrollBar(), &QScrollBar::setValue);
+
+    timelineLayout->addWidget(timelineContainer, 9); // Stretch 9
+
+    // --- RIGHT: FILTERS (10%) ---
+    QFrame *filterFrame = new QFrame(timelinePanel);
+    // White background, rounded corners
+    filterFrame->setStyleSheet(
+        "background-color: white; "
+        "border: 1px solid #e5e7eb; "
+        "border-radius: 8px;");
+
+    QVBoxLayout *filterLayout = new QVBoxLayout(filterFrame);
+    filterLayout->setContentsMargins(10, 15, 10, 10);
+    filterLayout->setSpacing(15);
+    filterLayout->setAlignment(Qt::AlignTop);
+
+    // Label Header
+    QLabel *filterHeader = new QLabel("🔍 Lọc nhanh", filterFrame);
+    filterHeader->setStyleSheet("font-weight: bold; color: #1f2937; font-size: 14px; border: none;");
+    filterLayout->addWidget(filterHeader);
+
+    // Type Filter
+    QLabel *typeLabel = new QLabel("Loại sân:", filterFrame);
+    typeLabel->setStyleSheet("color: #4b5563; font-size: 12px; border: none; font-weight: bold;");
+    filterLayout->addWidget(typeLabel);
+
+    filterTypeCombo = new QComboBox(filterFrame);
+    filterTypeCombo->addItem("Tất cả", -1);
+    filterTypeCombo->addItem("Sân 5", static_cast<int>(LoaiSan::SAN_5));
+    filterTypeCombo->addItem("Sân 7", static_cast<int>(LoaiSan::SAN_7));
+    filterTypeCombo->setStyleSheet("QComboBox { border: 1px solid #d1d5db; border-radius: 4px; padding: 4px; background: white; min-height: 30px; }");
+    filterLayout->addWidget(filterTypeCombo);
+
+    // Area Filter
+    QLabel *areaLabel = new QLabel("Khu vực:", filterFrame);
+    areaLabel->setStyleSheet("color: #4b5563; font-size: 12px; border: none; margin-top: 10px; font-weight: bold;");
+    filterLayout->addWidget(areaLabel);
+
+    filterAreaCombo = new QComboBox(filterFrame);
+    filterAreaCombo->addItem("Tất cả", -1);
+    filterAreaCombo->addItem("Khu A", static_cast<int>(KhuVuc::A));
+    filterAreaCombo->addItem("Khu B", static_cast<int>(KhuVuc::B));
+    filterAreaCombo->addItem("Khu C", static_cast<int>(KhuVuc::C));
+    filterAreaCombo->addItem("Khu D", static_cast<int>(KhuVuc::D));
+    filterAreaCombo->setStyleSheet("QComboBox { border: 1px solid #d1d5db; border-radius: 4px; padding: 4px; background: white; min-height: 30px; }");
+    filterLayout->addWidget(filterAreaCombo);
+
+    filterLayout->addStretch(); // Push everything up
+
+    timelineLayout->addWidget(filterFrame, 1); // Stretch 1
 }
 
 void TimelineTab::setupConnections()
@@ -573,6 +717,8 @@ void TimelineTab::setupConnections()
     // Form - auto-search on phone text changed
     // connect(phoneEdit, &QLineEdit::textChanged, this, &TimelineTab::onPhoneSearchClicked); // Removed to avoid double trigger with completer
     connect(phoneEdit, &QLineEdit::returnPressed, this, &TimelineTab::onPhoneSearchClicked);
+    // Allow searching by pressing Enter in name field
+    connect(nameEdit, &QLineEdit::returnPressed, this, &TimelineTab::onPhoneSearchClicked);
 
     // Completer connection
     connect(phoneCompleter, QOverload<const QString &>::of(&QCompleter::activated),
@@ -611,10 +757,14 @@ void TimelineTab::setupConnections()
 
     connect(fieldCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TimelineTab::onFieldChanged);
 
+    // Filter connections
+    connect(filterTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TimelineTab::onFilterChanged);
+    connect(filterAreaCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TimelineTab::onFilterChanged);
+
     // Buttons
     connect(saveBtn, &QPushButton::clicked, this, &TimelineTab::onSaveClicked);
     connect(deleteBtn, &QPushButton::clicked, this, &TimelineTab::onCancelSelectionClicked); // Cancel selection button
-    // Removed: checkin button connection
+    connect(addCustomerBtn, &QPushButton::clicked, this, &TimelineTab::onAddCustomerClicked);
 
     // Duration quick select
     connect(duration30Btn, &QPushButton::clicked, this, &TimelineTab::onDuration30Clicked);
@@ -630,25 +780,15 @@ void TimelineTab::setupConnections()
 void TimelineTab::loadFields()
 {
     fieldCombo->clear();
+    fields.clear();
+    allFields.clear();
 
     QuanLySan *quanLySan = system->layQuanLySan();
     if (quanLySan)
     {
-        fields = quanLySan->layDanhSachSan();
-
-        for (int i = 0; i < fields.size(); i++)
-        {
-            San *san = fields[i];
-            QString fieldName = QString::fromStdString(san->layTenSan());
-            // Removed suffix as requested
-            fieldCombo->addItem(fieldName, i);
-        }
-    }
-
-    if (fieldCombo->count() > 0)
-    {
-        fieldCombo->setCurrentIndex(0);
-        onFieldChanged(0);
+        allFields = quanLySan->layDanhSachSan();
+        // Initial population will be handled by onFilterChanged
+        onFilterChanged();
     }
 
     // Load customers into combo
@@ -673,6 +813,59 @@ void TimelineTab::loadFields()
                 }
             }
         }
+    }
+}
+
+void TimelineTab::onFilterChanged()
+{
+    if (!filterTypeCombo || !filterAreaCombo)
+        return;
+
+    int typeIndex = filterTypeCombo->currentData().toInt();
+    int areaIndex = filterAreaCombo->currentData().toInt();
+
+    fields.clear();
+    fieldCombo->clear();
+
+    for (int i = 0; i < allFields.size(); i++)
+    {
+        San *san = allFields[i];
+
+        // Chỉ hiện sân đang hoạt động trong timeline
+        if (!san->dangHoatDong())
+            continue;
+
+        bool typeMatch = (typeIndex == -1) || (static_cast<int>(san->layLoaiSan()) == typeIndex);
+        bool areaMatch = (areaIndex == -1) || (static_cast<int>(san->layKhuVuc()) == areaIndex);
+
+        if (typeMatch && areaMatch)
+        {
+            fields.push_back(san);
+        }
+    }
+
+    // Re-populate fieldCombo with correct indices
+    for (int i = 0; i < fields.size(); ++i)
+    {
+        fieldCombo->addItem(QString::fromStdString(fields[i]->layTenSan()), i);
+    }
+
+    // Update timeline grid
+    if (timelineGrid)
+    {
+        timelineGrid->setFields(fields);
+    }
+    if (headerWidget)
+    {
+        headerWidget->setFields(fields);
+    }
+    // TimeWidget and CornerWidget don't depend on fields (except for geometry maybe? No, Time is fixed width)
+
+    // Select first field if available
+    if (fieldCombo->count() > 0)
+    {
+        fieldCombo->setCurrentIndex(0);
+        onFieldChanged(0);
     }
 }
 
@@ -718,8 +911,10 @@ void TimelineTab::clearForm()
     phoneEdit->clear();
     phoneEdit->setProperty("hasCustomer", false);
     nameEdit->clear();
-    nameEdit->setReadOnly(true);
-    nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+    // Allow name input for searching
+    nameEdit->setReadOnly(false);
+    nameEdit->setPlaceholderText("Nhập tên");
+    nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
 
     // Reset customer combo to "-- Chọn khách hàng --"
     QComboBox *customerCombo = formPanel->findChild<QComboBox *>("customerCombo");
@@ -747,20 +942,37 @@ void TimelineTab::clearForm()
     currentBooking = nullptr;
     isEditMode = false;
 
+    // Reset reschedule mode
+    isRescheduleMode = false;
+    reschedulingBooking = nullptr;
+    isNewCustomerPending = false;
+
+    if (timelineGrid)
+    {
+        timelineGrid->setExcludedBooking(nullptr);
+    }
+
     // Reset buttons state
-    saveBtn->setEnabled(true);
-    saveBtn->setStyleSheet("QPushButton { background-color: #16a34a; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #15803d; }");
+    saveBtn->setText("💾 Lưu Đặt Sân");
+    saveBtn->setEnabled(false); // Disabled until slot selected
+    saveBtn->setStyleSheet("QPushButton { background-color: #9ca3af; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; }");
 
-    deleteBtn->setText("✗ Hủy");
+    deleteBtn->setText("Hủy");
     deleteBtn->setEnabled(false); // Disable by default when clearing form
-    deleteBtn->setStyleSheet("QPushButton { background-color: #ef4444; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #dc2626; }");
+    deleteBtn->setStyleSheet("QPushButton { background-color: #9ca3af; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; }");
 
-    // Reset inputs to editable
-    phoneEdit->setReadOnly(false);
-    phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
+    addCustomerBtn->setEnabled(false); // Disabled until slot selected
+    addCustomerBtn->setStyleSheet("QPushButton { background-color: #9ca3af; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; }");
 
-    noteEdit->setReadOnly(false);
-    noteEdit->setStyleSheet("QTextEdit { padding: 6px 10px; border: 1px solid #4b5563; border-radius: 4px; background-color: white; font-size: 13px; } QTextEdit:focus { border: 2px solid #16a34a; }");
+    // Reset inputs to disabled (read-only style)
+    phoneEdit->setReadOnly(true);
+    phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+
+    nameEdit->setReadOnly(true);
+    nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+
+    noteEdit->setReadOnly(true);
+    noteEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px;");
 
     updateDuration();
 }
@@ -784,8 +996,9 @@ void TimelineTab::populateForm(DatSan *booking)
         phoneEdit->setText(phone);
         phoneEdit->setProperty("hasCustomer", true);
         nameEdit->setText(QString::fromStdString(customer->layHoTen()));
-        nameEdit->setReadOnly(true);
-        nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+        // Keep editable as requested
+        nameEdit->setReadOnly(false);
+        nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
 
         // Sync customer combo
         QComboBox *customerCombo = formPanel->findChild<QComboBox *>("customerCombo");
@@ -829,23 +1042,29 @@ void TimelineTab::populateForm(DatSan *booking)
     }
 
     // Status
+    // Map enum to combo index:
+    // Enum: 0=DA_DAT, 1=HOAN_THANH, 2=DA_HUY
+    // Combo: 0=ConTrong, 1=DaDat, 2=HoanThanh, 3=DaHuy
     int statusIndex = static_cast<int>(booking->getTrangThai());
-    if (statusIndex >= 0 && statusIndex < statusCombo->count())
+    if (statusIndex >= 0)
     {
-        statusCombo->setCurrentIndex(statusIndex);
+        statusCombo->setCurrentIndex(statusIndex + 1);
     }
 
     // Date & Time
     NgayGio ngayGio = booking->getThoiGianDat();
     QDate date(ngayGio.getNam(), ngayGio.getThang(), ngayGio.getNgay());
-    QTime time(ngayGio.getGio(), ngayGio.getPhut());
     dateEdit->setDate(date);
-    fromTimeEdit->setTime(time);
 
-    // Calculate end time from KhungGio
+    // Use KhungGio for both start and end time to ensure consistency
     KhungGio khungGio = booking->getKhungGio();
+    ThoiGian gioBD = khungGio.getGioBatDau();
     ThoiGian gioKT = khungGio.getGioKetThuc();
+
+    QTime startTime(gioBD.getGio(), gioBD.getPhut());
     QTime endTime(gioKT.getGio(), gioKT.getPhut());
+
+    fromTimeEdit->setTime(startTime);
     toTimeEdit->setTime(endTime);
 
     // Note (if available)
@@ -856,6 +1075,10 @@ void TimelineTab::populateForm(DatSan *booking)
     phoneEdit->setReadOnly(true);
     phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
 
+    // Name is also read-only for existing bookings
+    nameEdit->setReadOnly(true);
+    nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+
     noteEdit->setReadOnly(true);
     noteEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px;");
 
@@ -863,11 +1086,15 @@ void TimelineTab::populateForm(DatSan *booking)
     saveBtn->setEnabled(false);
     saveBtn->setStyleSheet("QPushButton { background-color: #9ca3af; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; }");
 
-    deleteBtn->setText("✗ Hủy đặt sân");
+    deleteBtn->setText("Hủy");
     deleteBtn->setEnabled(false); // Disabled as requested (cancellation moved to Tab 2)
     deleteBtn->setStyleSheet("QPushButton { background-color: #9ca3af; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; }");
 
     updateDuration();
+
+    // Overwrite prices with actual booking data (must be after updateDuration)
+    priceLabel->setText(formatCurrency(booking->getTongTien()));
+    depositLabel->setText(formatCurrency(booking->getTienCoc()));
 }
 
 void TimelineTab::updateDuration()
@@ -959,26 +1186,21 @@ void TimelineTab::onPhoneSearchClicked()
     {
         // Found - auto fill name
         nameEdit->setText(QString::fromStdString(customer->layHoTen()));
+        // Lock fields immediately
         nameEdit->setReadOnly(true);
         nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
-        phoneEdit->setProperty("hasCustomer", true);
+        phoneEdit->setReadOnly(true);
+        phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
 
-        // If the text was just the phone number, update it to show "Phone - Name" for consistency?
-        // No, keep it as is or what the user typed.
-        // But if the user typed just phone, maybe we want to show the name in the name box (already doing that).
+        phoneEdit->setProperty("hasCustomer", true);
     }
     else
     {
-        // Not found - allow entering new name
-        // Only if it looks like a phone number (digits)
-        QRegularExpression phoneRegex("^0[0-9]{9}$");
-        if (phoneRegex.match(phone).hasMatch())
-        {
-            nameEdit->setReadOnly(false);
-            nameEdit->setPlaceholderText("Nhập tên khách hàng mới...");
-            nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
-            phoneEdit->setProperty("hasCustomer", false);
-        }
+        // Not found - Show warning and clear
+        QMessageBox::warning(this, "Không tìm thấy", "Khách hàng không tồn tại.\nVui lòng nhấn nút 'Thêm KH mới' để tạo khách hàng.");
+        phoneEdit->clear();
+        nameEdit->clear();
+        phoneEdit->setFocus();
     }
 }
 
@@ -1019,6 +1241,95 @@ void TimelineTab::onFieldChanged(int index)
 
         // Update duration and price
         updateDuration();
+    }
+}
+
+void TimelineTab::filterFieldsByType(LoaiSan type)
+{
+    fieldCombo->clear();
+    fields.clear();
+
+    // Filter allFields by type, chỉ lấy sân đang hoạt động
+    for (int i = 0; i < allFields.size(); i++)
+    {
+        San *san = allFields[i];
+        if (san->layLoaiSan() == type && san->dangHoatDong())
+        {
+            fields.push_back(san);
+        }
+    }
+
+    // Populate combo with filtered fields
+    for (int i = 0; i < fields.size(); i++)
+    {
+        San *san = fields[i];
+        QString fieldName = QString::fromStdString(san->layTenSan());
+        fieldCombo->addItem(fieldName, i);
+    }
+}
+
+void TimelineTab::loadBookingForReschedule(DatSan *booking)
+{
+    if (!booking)
+        return;
+
+    // Set reschedule mode
+    isRescheduleMode = true;
+    reschedulingBooking = booking;
+
+    // Get customer info
+    KhachHang *customer = booking->getKhachHang();
+    if (customer)
+    {
+        QString phone = QString::fromStdString(customer->laySoDienThoai());
+        QString name = QString::fromStdString(customer->layHoTen());
+
+        phoneEdit->setText(phone);
+        nameEdit->setText(name);
+        phoneEdit->setProperty("hasCustomer", true);
+    }
+
+    // Update button text
+    saveBtn->setText("💾 Lưu Đổi Lịch");
+    saveBtn->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #f59e0b;" // Orange for reschedule
+        "   color: white;"
+        "   font-weight: bold;"
+        "   font-size: 14px;"
+        "   padding: 8px 16px;"
+        "   border: none;"
+        "   border-radius: 6px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #d97706;"
+        "}");
+
+    // Enable Cancel button as "Hủy đổi lịch"
+    deleteBtn->setText("Hủy đổi lịch");
+    deleteBtn->setEnabled(true);
+    deleteBtn->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #ef4444;"
+        "   color: white;"
+        "   font-weight: bold;"
+        "   font-size: 14px;"
+        "   padding: 8px 16px;"
+        "   border: none;"
+        "   border-radius: 6px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #dc2626;"
+        "}");
+
+    // Show message
+    QMessageBox::information(this, "Đổi Lịch",
+                             "Thông tin khách hàng đã được tải.\nVui lòng chọn ngày và khung giờ mới trên lịch.");
+
+    // Hide the old booking from timeline
+    if (timelineGrid)
+    {
+        timelineGrid->setExcludedBooking(reschedulingBooking);
     }
 }
 
@@ -1082,51 +1393,15 @@ void TimelineTab::onSaveClicked()
     // If customer not found but name is entered -> Create new customer
     if (!customer)
     {
-        if (name.isEmpty())
+        if (isNewCustomerPending)
         {
-            QMessageBox::warning(this, "Lỗi", "Khách hàng chưa tồn tại. Vui lòng nhập tên khách hàng!");
-            nameEdit->setFocus();
-            return;
+            // This is a new customer flow, proceed to confirmation
+            // We will create the customer object AFTER confirmation
         }
-
-        QMessageBox::StandardButton reply = QMessageBox::question(
-            this,
-            "Khách hàng mới",
-            QString("Số điện thoại %1 chưa có trong hệ thống.\nBạn có muốn thêm khách hàng '%2' và tiếp tục đặt sân?").arg(phone).arg(name),
-            QMessageBox::Yes | QMessageBox::No);
-
-        if (reply == QMessageBox::No)
+        else
         {
-            return;
-        }
-
-        // Create new customer
-        try
-        {
-            customer = new KhachHang(
-                name.toStdString(),
-                phoneStd,
-                "", // empty address
-                quanLyKH->taoMaKhachHangMoi());
-            quanLyKH->themKhachHang(customer);
-
-            // Save system immediately to persist customer
-            try
-            {
-                system->luuHeThong("D:/PBL2-/Data/data.bin");
-            }
-            catch (...)
-            {
-                qDebug() << "Warning: Could not save to data.bin";
-            }
-
-            phoneEdit->setProperty("hasCustomer", true);
-            nameEdit->setReadOnly(true);
-            nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
-        }
-        catch (const std::exception &e)
-        {
-            QMessageBox::critical(this, "Lỗi", QString("Không thể tạo khách hàng mới: %1").arg(e.what()));
+            // Should not happen if logic is correct (search or add button required)
+            QMessageBox::warning(this, "Lỗi", "Khách hàng chưa tồn tại. Vui lòng dùng nút 'Thêm KH mới'!");
             return;
         }
     }
@@ -1163,8 +1438,85 @@ void TimelineTab::onSaveClicked()
         }
     }
 
+    // ===== CONFIRMATION DIALOG =====
+    QString rankName = customer ? QString::fromStdString(customer->layTenHang()) : "Thành viên mới";
+    int discount = customer ? customer->layPhanTramGiamGia() : 0;
+    QString rankDisplay = QString("%1 (giảm %2%)").arg(rankName).arg(discount);
+
+    QString fieldType = (san->layLoaiSan() == LoaiSan::SAN_5) ? "Sân 5" : "Sân 7";
+
+    QString areaStr;
+    switch (san->layKhuVuc())
+    {
+    case KhuVuc::A:
+        areaStr = "Khu A";
+        break;
+    case KhuVuc::B:
+        areaStr = "Khu B";
+        break;
+    case KhuVuc::C:
+        areaStr = "Khu C";
+        break;
+    case KhuVuc::D:
+        areaStr = "Khu D";
+        break;
+    default:
+        areaStr = "Không xác định";
+        break;
+    }
+
+    QString note = noteEdit->toPlainText();
+    if (note.isEmpty())
+        note = "Không có";
+
+    QString confirmMsg = QString("Xác nhận đặt sân?\n\n"
+                                 "📞 SĐT: %1\n"
+                                 "👤 Khách hàng: %2\n"
+                                 "🏆 Hạng: %3\n"
+                                 "⚽ Sân: %4\n"
+                                 "⛳ Loại sân: %5\n"
+                                 "📍 Khu vực: %6\n"
+                                 "📝 Ghi chú: %7\n"
+                                 "💰 Giá sân: %8\n"
+                                 "💵 Cọc: %9")
+                             .arg(phone)
+                             .arg(name)
+                             .arg(rankDisplay)
+                             .arg(QString::fromStdString(san->layTenSan()))
+                             .arg(fieldType)
+                             .arg(areaStr)
+                             .arg(note)
+                             .arg(priceLabel->text())
+                             .arg(depositLabel->text());
+
+    QMessageBox::StandardButton confirmReply = QMessageBox::question(this, "Xác nhận", confirmMsg, QMessageBox::Yes | QMessageBox::No);
+    if (confirmReply == QMessageBox::No)
+        return;
+
     try
     {
+        // If new customer pending, create customer NOW
+        if (isNewCustomerPending && !customer)
+        {
+            try
+            {
+                customer = new KhachHang(
+                    name.toStdString(),
+                    phoneStd,
+                    "", // empty address
+                    quanLyKH->taoMaKhachHangMoi());
+                quanLyKH->themKhachHang(customer);
+
+                // Reset flag
+                isNewCustomerPending = false;
+            }
+            catch (const std::exception &e)
+            {
+                QMessageBox::critical(this, "Lỗi", QString("Không thể tạo khách hàng mới: %1").arg(e.what()));
+                return;
+            }
+        }
+
         QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
         if (!quanLyDS)
         {
@@ -1188,6 +1540,60 @@ void TimelineTab::onSaveClicked()
                                     .arg(QString::fromStdString(currentBooking->getKhungGio().layGioKetThuc().toString()))
                                     .arg(QString::fromStdString(currentBooking->getThoiGianDat().getNgayThang().toString()));
             QMessageBox::information(this, "✅ Thành công", updateMsg);
+        }
+        else if (isRescheduleMode && reschedulingBooking)
+        {
+            // Reschedule existing booking - update with new date/time/field
+            reschedulingBooking->setSan(san);
+            reschedulingBooking->setThoiGianDat(ngayGio);
+            reschedulingBooking->setKhungGio(khungGio);
+
+            // Recalculate deposit for new time slot
+            reschedulingBooking->tinhTienCoc();
+
+            // Save to file
+            try
+            {
+                system->luuHeThong("D:/PBL2-/Data/data.bin");
+            }
+            catch (...)
+            {
+                qDebug() << "Warning: Could not save to data.bin";
+            }
+
+            // Refresh timeline
+            timelineGrid->clearPendingSelection();
+            timelineGrid->setExcludedBooking(nullptr); // Clear excluded booking
+            timelineGrid->setDate(selectedDate);
+            timelineGrid->loadBookings();
+            timelineGrid->repaint();
+
+            if (timelineGrid)
+            {
+                timelineGrid->setProperty("isLocked", false);
+            }
+
+            emit bookingDataChanged();
+
+            // Prepare success message before clearing
+            QString msg = QString(
+                              "✅ ĐỔI LỊCH THÀNH CÔNG\n\n"
+                              "📋 Mã đặt sân: %1\n"
+                              "⚽ Sân: %2\n"
+                              "🕐 Thời gian: %3 - %4\n"
+                              "📅 Ngày: %5\n\n"
+                              "💰 Tiền cọc mới: %6")
+                              .arg(QString::fromStdString(reschedulingBooking->getMaDatSan()))
+                              .arg(QString::fromStdString(san->layTenSan()))
+                              .arg(from.toString("HH:mm"))
+                              .arg(to.toString("HH:mm"))
+                              .arg(date.toString("dd/MM/yyyy"))
+                              .arg(formatCurrency(reschedulingBooking->getTienCoc()));
+
+            // Clear form and reset reschedule mode (this will null reschedulingBooking)
+            clearForm();
+
+            QMessageBox::information(this, "✅ Thành công", msg);
         }
         else
         {
@@ -1258,7 +1664,52 @@ void TimelineTab::onCancelSelectionClicked()
         return;
     }
 
-    // Clear pending selection in timeline grid
+    // Handle Reschedule Mode
+    if (isRescheduleMode)
+    {
+        // If a slot is selected (grid is locked), cancel the selection but stay in reschedule mode
+        if (timelineGrid && timelineGrid->property("isLocked").toBool())
+        {
+            timelineGrid->clearPendingSelection();
+            timelineGrid->setProperty("isLocked", false);
+
+            // Reset time fields
+            fromTimeEdit->setTime(QTime(0, 0));
+            toTimeEdit->setTime(QTime(0, 0));
+            updateDuration();
+
+            // Disable Save button
+            saveBtn->setEnabled(false);
+            saveBtn->setStyleSheet("QPushButton { background-color: #9ca3af; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; }");
+
+            // Change Cancel button back to "Hủy đổi lịch"
+            deleteBtn->setText("Hủy đổi lịch");
+            deleteBtn->setStyleSheet("QPushButton { background-color: #ef4444; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #dc2626; }");
+
+            if (calendar)
+                calendar->setEnabled(true);
+
+            return;
+        }
+        else
+        {
+            // If no slot selected, exit reschedule mode completely
+            isRescheduleMode = false;
+            reschedulingBooking = nullptr;
+
+            // Restore the excluded booking
+            if (timelineGrid)
+            {
+                timelineGrid->setExcludedBooking(nullptr);
+            }
+
+            clearForm();
+            QMessageBox::information(this, "Thông báo", "Đã hủy chế độ đổi lịch.");
+            return;
+        }
+    }
+
+    // Normal Mode: Clear pending selection in timeline grid
     if (timelineGrid)
     {
         timelineGrid->clearPendingSelection();
@@ -1279,46 +1730,70 @@ void TimelineTab::onDeleteClicked()
         return;
     }
 
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this,
-        "Xác nhận",
-        "Bạn có chắc chắn muốn hủy đặt sân này?",
-        QMessageBox::Yes | QMessageBox::No);
+    // 1. Ask for confirmation and penalty option
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Xác nhận hủy");
+    msgBox.setText("Bạn có chắc chắn muốn hủy đặt sân này?");
+    msgBox.setInformativeText("Vui lòng chọn hình thức hủy:");
 
-    if (reply == QMessageBox::Yes)
+    QPushButton *refundBtn = msgBox.addButton("Hủy & Hoàn Cọc", QMessageBox::ActionRole);
+    Q_UNUSED(refundBtn);
+    QPushButton *penaltyBtn = msgBox.addButton("Hủy & Phạt Cọc", QMessageBox::ActionRole);
+    QPushButton *cancelBtn = msgBox.addButton("Thoát", QMessageBox::RejectRole);
+
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == cancelBtn)
+        return;
+
+    bool isPenalty = (msgBox.clickedButton() == penaltyBtn);
+
+    try
     {
-        try
+        QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
+        if (quanLyDS)
         {
-            QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
-            if (quanLyDS)
+            // Update deposit status based on user choice
+            if (isPenalty)
             {
-                bool success = quanLyDS->huyDatSan(currentBooking->getMaDatSan());
-                if (success)
+                currentBooking->setTrangThaiCoc(TrangThaiCoc::MAT_COC);
+                std::string currentNote = currentBooking->getGhiChu();
+                currentBooking->setGhiChu(currentNote + " [MAT_COC]");
+            }
+            else
+            {
+                currentBooking->setTrangThaiCoc(TrangThaiCoc::HOAN_COC);
+                std::string currentNote = currentBooking->getGhiChu();
+                currentBooking->setGhiChu(currentNote + " [HOAN_COC]");
+            }
+
+            bool success = quanLyDS->huyDatSan(currentBooking->getMaDatSan());
+            if (success)
+            {
+                // ===== SAVE DATA TO FILE =====
+                try
                 {
-                    // ===== SAVE DATA TO FILE =====
-                    try
-                    {
-                        system->luuHeThong("D:/PBL2-/Data/data.bin");
-                    }
-                    catch (...)
-                    {
-                        qDebug() << "Warning: Could not save to data.bin";
-                    }
-
-                    QMessageBox::information(this, "✅ Thành công", "Đã hủy đặt sân!");
-
-                    // Emit signal to refresh table view
-                    emit bookingDataChanged();
-
-                    clearForm();
-                    refreshData();
+                    system->luuHeThong("D:/PBL2-/Data/data.bin");
                 }
+                catch (...)
+                {
+                    qDebug() << "Warning: Could not save to data.bin";
+                }
+
+                QString msg = isPenalty ? "Đã hủy đặt sân và ghi nhận PHẠT CỌC!" : "Đã hủy đặt sân và ghi nhận HOÀN CỌC!";
+                QMessageBox::information(this, "✅ Thành công", msg);
+
+                // Emit signal to refresh table view
+                emit bookingDataChanged();
+
+                clearForm();
+                refreshData();
             }
         }
-        catch (const std::exception &e)
-        {
-            QMessageBox::critical(this, "Lỗi", QString("Không thể hủy đặt sân: %1").arg(e.what()));
-        }
+    }
+    catch (const std::exception &e)
+    {
+        QMessageBox::critical(this, "Lỗi", QString("Không thể hủy đặt sân: %1").arg(e.what()));
     }
 }
 
@@ -1333,11 +1808,21 @@ void TimelineTab::onTimelineSlotSelected(int fieldIndex, int startHour, int star
 
     if (selectedDate < currentDate)
     {
+        // Clear any pending selection in grid before showing error
+        if (timelineGrid)
+        {
+            timelineGrid->clearPendingSelection();
+        }
         QMessageBox::warning(this, "Lỗi", "Không thể đặt sân ở quá khứ!");
         return;
     }
     else if (selectedDate == currentDate && slotTime < currentTime)
     {
+        // Clear any pending selection in grid before showing error
+        if (timelineGrid)
+        {
+            timelineGrid->clearPendingSelection();
+        }
         QMessageBox::warning(this, "Lỗi", "Không thể đặt sân ở khung giờ đã qua!");
         return;
     }
@@ -1352,8 +1837,31 @@ void TimelineTab::onTimelineSlotSelected(int fieldIndex, int startHour, int star
         return;
     }
 
-    // IMPORTANT: Don't call clearForm() - keep customer selection!
-    // Just reset time and field, keep customer info
+    // IMPORTANT: Clear form to allow new customer entry
+    if (!isRescheduleMode)
+    {
+        phoneEdit->clear();
+        phoneEdit->setProperty("hasCustomer", false);
+        nameEdit->clear();
+        nameEdit->setReadOnly(false);
+        nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
+
+        // Reset customer combo
+        QComboBox *customerCombo = formPanel->findChild<QComboBox *>("customerCombo");
+        if (customerCombo)
+        {
+            customerCombo->setCurrentIndex(0);
+        }
+    }
+    else
+    {
+        // In Reschedule Mode: Keep customer info read-only
+        phoneEdit->setReadOnly(true);
+        phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+
+        nameEdit->setReadOnly(true);
+        nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+    }
 
     // Reset booking mode
     currentBooking = nullptr;
@@ -1378,6 +1886,9 @@ void TimelineTab::onTimelineSlotSelected(int fieldIndex, int startHour, int star
     // Clear note
     noteEdit->clear();
 
+    // Set status to "Còn trống"
+    statusCombo->setCurrentIndex(0);
+
     // LOCK timeline grid to prevent re-selection
     timelineGrid->setProperty("isLocked", true);
     if (calendar)
@@ -1392,9 +1903,17 @@ void TimelineTab::onTimelineSlotSelected(int fieldIndex, int startHour, int star
     saveBtn->setEnabled(true);
     saveBtn->setStyleSheet("QPushButton { background-color: #16a34a; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #15803d; }");
 
+    // Enable Add Customer button
+    addCustomerBtn->setEnabled(true);
+    addCustomerBtn->setStyleSheet("QPushButton { background-color: #3b82f6; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #2563eb; }");
+
     // Enable inputs
     phoneEdit->setReadOnly(false);
     phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
+
+    nameEdit->setReadOnly(false);
+    nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
+
     noteEdit->setReadOnly(false);
     noteEdit->setStyleSheet("QTextEdit { padding: 6px 10px; border: 1px solid #4b5563; border-radius: 4px; background-color: white; font-size: 13px; } QTextEdit:focus { border: 2px solid #16a34a; }");
 
@@ -1416,25 +1935,31 @@ void TimelineTab::onAddCustomerClicked()
 {
     // Quick add customer dialog
     QDialog *dialog = new QDialog(this);
-    dialog->setWindowTitle("Thêm khách hàng nhanh");
+    dialog->setWindowTitle("Thêm khách hàng mới");
     dialog->setMinimumWidth(350);
 
     QVBoxLayout *layout = new QVBoxLayout(dialog);
 
     QLabel *nameLabel = new QLabel("Họ tên:", dialog);
-    QLineEdit *nameEdit = new QLineEdit(dialog);
-    nameEdit->setPlaceholderText("Nhập họ tên");
+    QLineEdit *nameNewEdit = new QLineEdit(dialog);
+    nameNewEdit->setPlaceholderText("Nhập họ tên");
 
     QLabel *phoneLabel = new QLabel("Số điện thoại:", dialog);
     QLineEdit *phoneNewEdit = new QLineEdit(dialog);
     phoneNewEdit->setPlaceholderText("Nhập số điện thoại");
-    phoneNewEdit->setText(phoneEdit->text()); // Pre-fill from search box
+
+    // If there's text in the main phone edit, pre-fill it
+    QString currentPhone = phoneEdit->text().trimmed();
+    if (!currentPhone.isEmpty() && !currentPhone.contains(" - "))
+    {
+        phoneNewEdit->setText(currentPhone);
+    }
 
     QHBoxLayout *btnLayout = new QHBoxLayout();
-    QPushButton *saveBtn = new QPushButton("Lưu", dialog);
+    QPushButton *saveBtn = new QPushButton("Xác nhận", dialog);
     QPushButton *cancelBtn = new QPushButton("Hủy", dialog);
 
-    saveBtn->setStyleSheet("background-color: #16a34a; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;");
+    saveBtn->setStyleSheet("background-color: #3b82f6; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;");
     cancelBtn->setStyleSheet("background-color: #6b7280; color: white; padding: 8px 16px; border-radius: 4px;");
 
     btnLayout->addStretch();
@@ -1442,7 +1967,7 @@ void TimelineTab::onAddCustomerClicked()
     btnLayout->addWidget(cancelBtn);
 
     layout->addWidget(nameLabel);
-    layout->addWidget(nameEdit);
+    layout->addWidget(nameNewEdit);
     layout->addWidget(phoneLabel);
     layout->addWidget(phoneNewEdit);
     layout->addSpacing(10);
@@ -1450,7 +1975,7 @@ void TimelineTab::onAddCustomerClicked()
 
     connect(saveBtn, &QPushButton::clicked, [=]()
             {
-        QString name = nameEdit->text().trimmed();
+        QString name = nameNewEdit->text().trimmed();
         QString phone = phoneNewEdit->text().trimmed();
         
         if (name.isEmpty() || phone.isEmpty()) {
@@ -1463,35 +1988,27 @@ void TimelineTab::onAddCustomerClicked()
             return;
         }
         
+        // Check if customer already exists
         QuanLyKhachHang *qlkh = system->layQuanLyKhachHang();
-        if (qlkh) {
-            try {
-                // Create new customer
-                KhachHang *newCustomer = new KhachHang(
-                    name.toStdString(),
-                    phone.toStdString(),
-                    "", // empty address
-                    qlkh->taoMaKhachHangMoi()
-                );
-                
-                qlkh->themKhachHang(newCustomer);
-                
-                // Save to binary file
-                HeThongQuanLy::getInstance()->luuHeThong("D:/PBL2-/Data/data.bin");
-                
-                QMessageBox::information(dialog, "Thành công", "Đã thêm khách hàng!");
-                
-                // Update form
-                phoneEdit->setText(phone);
-                nameEdit->setText(name);
-                nameEdit->setReadOnly(true);
-                phoneEdit->setProperty("hasCustomer", true);
-                
-                dialog->accept();
-            } catch (const std::exception &e) {
-                QMessageBox::critical(dialog, "Lỗi", QString("Không thể thêm khách hàng: %1").arg(e.what()));
-            }
-        } });
+        if (qlkh && qlkh->timKhachHangTheoSDT(phone.toStdString())) {
+             QMessageBox::warning(dialog, "Lỗi", "Khách hàng với số điện thoại này đã tồn tại!");
+             return;
+        }
+        
+        // Don't create customer yet, just fill form and set flag
+        phoneEdit->setText(phone);
+        nameEdit->setText(name);
+        
+        // Lock fields
+        nameEdit->setReadOnly(true);
+        nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+        phoneEdit->setReadOnly(true);
+        phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 4px; background-color: #f9fafb; color: #6b7280; font-size: 13px; min-height: 36px;");
+        
+        phoneEdit->setProperty("hasCustomer", true);
+        isNewCustomerPending = true; // Set flag
+        
+        dialog->accept(); });
 
     connect(cancelBtn, &QPushButton::clicked, dialog, &QDialog::reject);
 
@@ -1530,10 +2047,15 @@ void TimelineTab::reloadFields()
 
 void TimelineTab::updateCalendarDates()
 {
-    // Reset formatting
-    QTextCharFormat defaultFormat;
-    calendar->setDateTextFormat(QDate(), defaultFormat);
+    // Reset formatting is handled by setWeekdayTextFormat in setupCalendarPanel
+    // We only need to ensure we don't override it with green text for bookings if the user doesn't want it.
+    // The user specifically asked to fix the colors to Black/Red.
+    // So we will NOT apply the green text format for bookings anymore.
 
+    // If we want to show bookings, maybe use a bold font but keep the color?
+    // For now, I will disable the green text highlighting to strictly follow the "Black/Red" requirement.
+
+    /*
     QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
     if (!quanLyDS)
         return;
@@ -1565,6 +2087,7 @@ void TimelineTab::updateCalendarDates()
     {
         calendar->setDateTextFormat(pair.first, hasBookingFormat);
     }
+    */
 }
 
 bool TimelineTab::checkBookingConflict(San *san, const NgayGio &ngayGio, const KhungGio &khungGio)

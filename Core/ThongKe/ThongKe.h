@@ -2,16 +2,16 @@
 #define THONGKE_H
 #include <string>
 
-#include "../CauTrucDuLieu/NgayThang.h"
+#include "../CauTrucDuLieu/NgayGio.h"
 
 // Lớp cơ sở trừu tượng cho các loại thống kê
 class ThongKe
 {
 protected:
-    std::string tieuDe;  // Tiêu đề báo cáo
-    NgayThang tuNgay;  // Từ ngày
-    NgayThang denNgay; // Đến ngày
-    NgayThang ngayTao; // Ngày tạo báo cáo
+    std::string tieuDe; // Tiêu đề báo cáo
+    NgayThang tuNgay;   // Từ ngày
+    NgayThang denNgay;  // Đến ngày
+    NgayThang ngayTao;  // Ngày tạo báo cáo
 
 public:
     // Constructor & Destructor
@@ -35,8 +35,8 @@ public:
     void setDenNgay(const NgayThang &den);
 
     // Abstract methods
-    virtual void tinhToan() = 0;                               // Tính toán thống kê
-    virtual void hienThi() const = 0;                          // Hiển thị báo cáo
+    virtual void tinhToan() = 0;                                 // Tính toán thống kê
+    virtual void hienThi() const = 0;                            // Hiển thị báo cáo
     virtual void xuatFile(const std::string &tenFile) const = 0; // Xuất ra file
 };
 

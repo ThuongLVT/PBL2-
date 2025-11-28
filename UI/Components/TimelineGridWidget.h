@@ -52,13 +52,27 @@ class TimelineGridWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit TimelineGridWidget(QWidget *parent = nullptr);
+    enum DisplayMode
+    {
+        Full,       // Draw everything (default)
+        HeaderOnly, // Draw only field headers (top row)
+        TimeOnly,   // Draw only time labels (left column)
+        GridOnly,   // Draw only the grid content (no headers, no time labels)
+        CornerOnly  // Draw only the top-left corner
+    };
+
+    explicit TimelineGridWidget(DisplayMode mode = Full, QWidget *parent = nullptr);
     ~TimelineGridWidget();
 
     /**
      * @brief Set selected date
      */
     void setDate(const QDate &date);
+
+    /**
+     * @brief Set fields to display in timeline
+     */
+    void setFields(const MangDong<San *> &newFields);
 
     /**
      * @brief Load bookings for current date
@@ -69,6 +83,20 @@ public:
      * @brief Clear pending selection (when user cancels)
      */
     void clearPendingSelection();
+
+    /**
+     * @brief Set a booking to exclude from rendering (used for reschedule)
+     */
+    void setExcludedBooking(DatSan *booking);
+
+    // ===== CONSTANTS =====
+    static constexpr int START_HOUR = 6;   // 06:00
+    static constexpr int END_HOUR = 22;    // 22:00
+    static constexpr int HOUR_HEIGHT = 60; // pixels per hour
+    static constexpr int HEADER_HEIGHT = 40;
+    static constexpr int TIME_LABEL_WIDTH = 60; // Width for time column
+    static constexpr int MIN_FIELD_WIDTH = 100;
+    static constexpr int MIN_DURATION_MINUTES = 60; // Cố định 1 tiếng
 
 signals:
     /**
@@ -112,20 +140,13 @@ private:
     void calculateGeometry();
 
 private:
-    // ===== CONSTANTS =====
-    static constexpr int START_HOUR = 6;   // 06:00
-    static constexpr int END_HOUR = 22;    // 22:00
-    static constexpr int HOUR_HEIGHT = 60; // pixels per hour
-    static constexpr int HEADER_HEIGHT = 40;
-    static constexpr int TIME_LABEL_WIDTH = 60; // Width for time column
-    static constexpr int MIN_FIELD_WIDTH = 100;
-    static constexpr int MIN_DURATION_MINUTES = 60; // Cố định 1 tiếng
-
     // ===== DATA =====
     HeThongQuanLy *system;
     QDate currentDate;
     MangDong<San *> fields;
     QVector<BookingBlock *> bookingBlocks;
+    DisplayMode displayMode;
+    DatSan *excludedBooking = nullptr;
 
     // ===== DRAG STATE =====
     bool isDragging;

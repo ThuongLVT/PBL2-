@@ -8,7 +8,6 @@
 #include "../Models/San.h"
 #include "../Models/DichVu.h"
 #include "../Models/DatSan.h"
-#include "../Models/ThanhToan.h"
 #include "../CauTrucDuLieu/MangDong.h"
 
 // Import các lớp quản lý
@@ -18,8 +17,6 @@
 #include "QuanLyDichVu.h"
 #include "QuanLyDonHangDichVu.h"
 #include "QuanLyDatSan.h"
-#include "QuanLyThanhToan.h"
-#include "BackupManager.h"
 
 /**
  * @class HeThongQuanLy
@@ -40,8 +37,6 @@ private:
     QuanLyDichVu *quanLyDichVu;
     QuanLyDonHangDichVu *quanLyDonHangDichVu;
     QuanLyDatSan *quanLyDatSan;
-    QuanLyThanhToan *quanLyThanhToan;
-    BackupManager *backupManager;
 
     // ===== NHÂN VIÊN & QUẢN TRỊ VIÊN (Quản lý trực tiếp) =====
     MangDong<NhanVien *> danhSachNhanVien;
@@ -67,8 +62,6 @@ public:
     QuanLyDichVu *layQuanLyDichVu() const { return quanLyDichVu; }
     QuanLyDonHangDichVu *layQuanLyDonHangDichVu() const { return quanLyDonHangDichVu; }
     QuanLyDatSan *layQuanLyDatSan() const { return quanLyDatSan; }
-    QuanLyThanhToan *layQuanLyThanhToan() const { return quanLyThanhToan; }
-    BackupManager *layBackupManager() const { return backupManager; }
 
     // ===== KHÁCH HÀNG (Delegate to QuanLyKhachHang) =====
     bool themKhachHang(KhachHang *kh);
@@ -131,14 +124,6 @@ public:
     MangDong<DatSan *> timDatSanTheoNgay(const NgayThang &ngay);
     bool kiemTraSanTrong(San *san, const NgayGio &thoiGian, const KhungGio &khung);
 
-    // ===== THANH TOÁN (Delegate to QuanLyThanhToan) =====
-    ThanhToan *taoThanhToan(DatSan *datSan, PhuongThucThanhToan phuongThuc);
-    bool xoaThanhToan(const std::string &ma);
-    ThanhToan *timThanhToan(const std::string &ma);
-    ThanhToan *timThanhToanTheoDatSan(const std::string &maDatSan);
-    const MangDong<ThanhToan *> &layDanhSachThanhToan() const;
-    void hienThiDanhSachThanhToan() const;
-
     // ===== FILE I/O (BINARY ONLY) =====
     bool luuHeThong(const std::string &tenFile);
     bool docHeThong(const std::string &tenFile);
@@ -149,10 +134,6 @@ public:
      * @details Dùng khi chạy lần đầu hoặc không có data.bin
      */
     void khoiTaoDuLieuMau();
-
-    // ===== BACKUP/RESTORE =====
-    bool saoLuuHeThong(const std::string &fileGoc);
-    bool khoiPhucHeThong(const std::string &fileBackup, const std::string &fileDich);
 
     // ===== CSV I/O (NEW) =====
     bool luuKhachHangCSV(const std::string &filename);
@@ -175,7 +156,12 @@ public:
     int tongSoDichVu() const;
     int tongSoDonHangDichVu() const;
     int tongSoDatSan() const;
-    int tongSoThanhToan() const;
+
+    /**
+     * @brief Tính lại tổng chi tiêu cho tất cả khách hàng dựa trên lịch sử đặt sân và đơn hàng
+     * @details Dùng để đồng bộ dữ liệu khi có sự sai lệch
+     */
+    void tinhLaiTongChiTieuKhachHang();
 };
 
 #endif // HETHONGQUANLY_H

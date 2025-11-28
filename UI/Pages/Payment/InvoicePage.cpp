@@ -1,12 +1,17 @@
 #include "InvoicePage.h"
+#include "InvoiceDetailDialog.h"
 #include "Core/QuanLy/HeThongQuanLy.h"
 #include <QDateTime>
 #include <QHeaderView>
 #include <QDebug>
 
 InvoicePage::InvoicePage(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent), m_isAdmin(true)
 {
+    // Default date range: this month
+    m_toDate = QDate::currentDate();
+    m_fromDate = QDate(m_toDate.year(), m_toDate.month(), 1);
+
     setupUI();
     refreshData();
 }
@@ -21,13 +26,26 @@ void InvoicePage::setupUI()
     mainLayout->setContentsMargins(20, 20, 20, 20);
     mainLayout->setSpacing(20);
 
+    // Header Layout (Title + Date Picker)
+    QHBoxLayout *headerLayout = new QHBoxLayout();
+
     // Title
     QLabel *titleLabel = new QLabel("Quản Lý Hoá Đơn", this);
     QFont titleFont;
     titleFont.setPointSize(24);
     titleFont.setBold(true);
     titleLabel->setFont(titleFont);
-    mainLayout->addWidget(titleLabel);
+    headerLayout->addWidget(titleLabel);
+
+    headerLayout->addStretch();
+
+    // Date Picker
+    m_datePicker = new DateRangePicker(this);
+    m_datePicker->setDateRange(m_fromDate, m_toDate);
+    connect(m_datePicker, &DateRangePicker::dateRangeChanged, this, &InvoicePage::onDateRangeChanged);
+    headerLayout->addWidget(m_datePicker);
+
+    mainLayout->addLayout(headerLayout);
 
     // Tabs
     m_tabWidget = new QTabWidget(this);
@@ -63,12 +81,18 @@ void InvoicePage::setupBookingTab()
 
     // Table
     m_bookingTable = new QTableWidget();
-    m_bookingTable->setColumnCount(7);
-    m_bookingTable->setHorizontalHeaderLabels({"Mã Đặt Sân", "Khách Hàng", "Sân", "Ngày", "Giờ", "Tổng Tiền", "Trạng Thái"});
+    m_bookingTable->setColumnCount(8);
+    m_bookingTable->setHorizontalHeaderLabels({"Mã Đặt Sân", "Khách Hàng", "Sân", "Ngày Đặt", "Giờ Đặt", "Thời Gian Thanh Toán", "Tổng Tiền", "Trạng Thái"});
     m_bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_bookingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_bookingTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_bookingTable->setStyleSheet("QTableWidget { border: none; gridline-color: #f0f0f0; } QHeaderView::section { background-color: #f8f9fa; padding: 8px; border: none; font-weight: bold; }");
+    m_bookingTable->setFocusPolicy(Qt::NoFocus); // Remove focus frame
+    m_bookingTable->setStyleSheet(
+        "QTableWidget { border: none; gridline-color: #f0f0f0; outline: none; }"
+        "QHeaderView::section { background-color: #f8f9fa; padding: 8px; border: none; font-weight: bold; }"
+        "QTableWidget::item:focus { border: none; outline: none; }" // Remove focus border
+    );
+    connect(m_bookingTable, &QTableWidget::itemDoubleClicked, this, &InvoicePage::onTableItemDoubleClicked);
 
     layout->addWidget(m_bookingTable);
 }
@@ -95,7 +119,13 @@ void InvoicePage::setupServiceTab()
     m_serviceTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_serviceTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_serviceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_serviceTable->setStyleSheet("QTableWidget { border: none; gridline-color: #f0f0f0; } QHeaderView::section { background-color: #f8f9fa; padding: 8px; border: none; font-weight: bold; }");
+    m_serviceTable->setFocusPolicy(Qt::NoFocus); // Remove focus frame
+    m_serviceTable->setStyleSheet(
+        "QTableWidget { border: none; gridline-color: #f0f0f0; outline: none; }"
+        "QHeaderView::section { background-color: #f8f9fa; padding: 8px; border: none; font-weight: bold; }"
+        "QTableWidget::item:focus { border: none; outline: none; }" // Remove focus border
+    );
+    connect(m_serviceTable, &QTableWidget::itemDoubleClicked, this, &InvoicePage::onTableItemDoubleClicked);
 
     layout->addWidget(m_serviceTable);
 }
@@ -106,6 +136,13 @@ void InvoicePage::refreshData()
     loadServiceData();
 }
 
+void InvoicePage::onDateRangeChanged(const QDate &from, const QDate &to)
+{
+    m_fromDate = from;
+    m_toDate = to;
+    refreshData();
+}
+
 void InvoicePage::loadBookingData()
 {
     m_bookingTable->setRowCount(0);
@@ -114,10 +151,61 @@ void InvoicePage::loadBookingData()
     for (int i = 0; i < bookings.size(); ++i)
     {
         DatSan *ds = bookings[i];
-        // Only show completed bookings
-        if (ds->getTrangThai() != TrangThaiDatSan::HOAN_THANH)
+
+        // Logic hiển thị hóa đơn:
+        // 1. Hoàn thành (Đã thanh toán full)
+        // 2. Đã hủy (Có thể là Phạt cọc hoặc Hoàn cọc)
+        bool isCompleted = (ds->getTrangThai() == TrangThaiDatSan::HOAN_THANH);
+        bool isCancelled = (ds->getTrangThai() == TrangThaiDatSan::DA_HUY);
+
+        if (!isCompleted && !isCancelled)
+        {
+            continue; // Bỏ qua các trạng thái khác (Đã đặt, Chờ duyệt...)
+        }
+
+        // Determine Payment Date
+        NgayGio ngayThanhToan = ds->getNgayThanhToan();
+
+        // Fallback for existing data or if not set
+        if (ngayThanhToan.getNam() == 0)
+        {
+            if (isCompleted)
+            {
+                // If completed but no payment date, assume date of play
+                ngayThanhToan = ds->getThoiGianDat();
+            }
+            else if (isCancelled)
+            {
+                // If cancelled, assume date of creation (deposit date) or date of play
+                ngayThanhToan = ds->getNgayTao();
+            }
+        }
+
+        // Date Filter based on Payment Date
+        QDate paymentDate(ngayThanhToan.getNam(), ngayThanhToan.getThang(), ngayThanhToan.getNgay());
+        if (paymentDate < m_fromDate || paymentDate > m_toDate)
         {
             continue;
+        }
+
+        // Kiểm tra xem có phải phạt cọc không
+        bool isPenalty = false;
+        if (isCancelled)
+        {
+            // Check deposit status directly
+            if (ds->getTrangThaiCoc() == TrangThaiCoc::MAT_COC)
+            {
+                isPenalty = true;
+            }
+            // Fallback to note check for old data
+            else
+            {
+                QString note = QString::fromStdString(ds->getGhiChu());
+                if (note.contains("[MAT_COC]") || note.contains("[PHAT_COC]"))
+                {
+                    isPenalty = true;
+                }
+            }
         }
 
         m_bookingTable->insertRow(m_bookingTable->rowCount());
@@ -126,28 +214,60 @@ void InvoicePage::loadBookingData()
         m_bookingTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(ds->getMaDatSan())));
         m_bookingTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(ds->getKhachHang()->layHoTen())));
         m_bookingTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(ds->getSan()->layTenSan())));
-        m_bookingTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(ds->getThoiGianDat().toString())));
 
+        // Ngày đặt sân (chỉ ngày)
+        NgayGio thoiGianDat = ds->getThoiGianDat();
+        QString ngayDat = QString("%1/%2/%3")
+                              .arg(thoiGianDat.getNgay(), 2, 10, QChar('0'))
+                              .arg(thoiGianDat.getThang(), 2, 10, QChar('0'))
+                              .arg(thoiGianDat.getNam());
+        m_bookingTable->setItem(row, 3, new QTableWidgetItem(ngayDat));
+
+        // Giờ đặt sân
         std::string khungGioStr = ds->getKhungGio().layGioBatDau().toString() + " - " + ds->getKhungGio().layGioKetThuc().toString();
         m_bookingTable->setItem(row, 4, new QTableWidgetItem(QString::fromStdString(khungGioStr)));
 
-        double price = ds->getTongTien();
-        m_bookingTable->setItem(row, 5, new QTableWidgetItem(QString::number(price, 'f', 0) + " VND"));
+        // Ngày thanh toán (Thời gian thanh toán)
+        QString ngayThanhToanStr = QString("%1/%2/%3 %4:%5:%6")
+                                       .arg(ngayThanhToan.getNgay(), 2, 10, QChar('0'))
+                                       .arg(ngayThanhToan.getThang(), 2, 10, QChar('0'))
+                                       .arg(ngayThanhToan.getNam())
+                                       .arg(ngayThanhToan.getGio(), 2, 10, QChar('0'))
+                                       .arg(ngayThanhToan.getPhut(), 2, 10, QChar('0'))
+                                       .arg(ngayThanhToan.getGiay(), 2, 10, QChar('0'));
+        m_bookingTable->setItem(row, 5, new QTableWidgetItem(ngayThanhToanStr));
 
-        QString status;
-        switch (ds->getTrangThai())
+        // Tổng tiền & Trạng thái
+        double price = 0;
+        QString statusText;
+        QColor statusColor;
+
+        if (isCompleted)
         {
-        case TrangThaiDatSan::DA_DAT:
-            status = "Đã Đặt";
-            break;
-        case TrangThaiDatSan::DA_HUY:
-            status = "Đã Hủy";
-            break;
-        case TrangThaiDatSan::HOAN_THANH:
-            status = "Hoàn Tất";
-            break;
+            price = ds->getTongTien();
+            statusText = "Hoàn Tất";
+            statusColor = QColor("#16a34a"); // Green
         }
-        m_bookingTable->setItem(row, 6, new QTableWidgetItem(status));
+        else if (isPenalty)
+        {
+            price = ds->getTienCoc(); // Phạt cọc thì thu tiền cọc
+            statusText = "Phạt Cọc (Đã Hủy)";
+            statusColor = QColor("#dc2626"); // Red
+        }
+        else
+        {
+            price = 0; // Hoàn cọc thì doanh thu = 0 (hoặc hiển thị tiền cọc nhưng gạch ngang?)
+            // Để 0 cho đúng bản chất doanh thu thực thu
+            statusText = "Hoàn Cọc (Đã Hủy)";
+            statusColor = QColor("#9ca3af"); // Gray
+        }
+
+        m_bookingTable->setItem(row, 6, new QTableWidgetItem(QString::number(price, 'f', 0) + " VND"));
+
+        QTableWidgetItem *statusItem = new QTableWidgetItem(statusText);
+        statusItem->setForeground(statusColor);
+        statusItem->setFont(QFont("Segoe UI", 9, QFont::Bold));
+        m_bookingTable->setItem(row, 7, statusItem);
     }
 }
 
@@ -160,19 +280,29 @@ void InvoicePage::loadServiceData()
     for (int i = 0; i < orders.size(); ++i)
     {
         DonHangDichVu *dh = orders[i];
-        m_serviceTable->insertRow(i);
 
-        m_serviceTable->setItem(i, 0, new QTableWidgetItem(QString::fromStdString(dh->getMaDonHang())));
+        // Date Filter
+        NgayGio ngayTao = dh->getNgayTao();
+        QDate orderDate(ngayTao.getNam(), ngayTao.getThang(), ngayTao.getNgay());
+        if (orderDate < m_fromDate || orderDate > m_toDate)
+        {
+            continue;
+        }
+
+        m_serviceTable->insertRow(m_serviceTable->rowCount());
+        int row = m_serviceTable->rowCount() - 1;
+
+        m_serviceTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(dh->getMaDonHang())));
 
         QString customerName = "Khách Vãng Lai";
         if (dh->getKhachHang())
         {
             customerName = QString::fromStdString(dh->getKhachHang()->layHoTen());
         }
-        m_serviceTable->setItem(i, 1, new QTableWidgetItem(customerName));
+        m_serviceTable->setItem(row, 1, new QTableWidgetItem(customerName));
 
-        m_serviceTable->setItem(i, 2, new QTableWidgetItem(QString::fromStdString(dh->getNgayTao().toString())));
-        m_serviceTable->setItem(i, 3, new QTableWidgetItem(QString::number(dh->getThanhTien(), 'f', 0) + " VND"));
+        m_serviceTable->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(dh->getNgayTao().toString())));
+        m_serviceTable->setItem(row, 3, new QTableWidgetItem(QString::number(dh->getThanhTien(), 'f', 0) + " VND"));
 
         QString status;
         switch (dh->getTrangThai())
@@ -190,8 +320,31 @@ void InvoicePage::loadServiceData()
             status = "Đã Hủy";
             break;
         }
-        m_serviceTable->setItem(i, 4, new QTableWidgetItem(status));
+        m_serviceTable->setItem(row, 4, new QTableWidgetItem(status));
     }
+}
+
+void InvoicePage::onTableItemDoubleClicked(QTableWidgetItem *item)
+{
+    if (!item)
+        return;
+
+    QTableWidget *table = item->tableWidget();
+    int row = item->row();
+    QString id = table->item(row, 0)->text();
+
+    InvoiceDetailDialog::InvoiceType type;
+    if (table == m_bookingTable)
+    {
+        type = InvoiceDetailDialog::BOOKING;
+    }
+    else
+    {
+        type = InvoiceDetailDialog::SERVICE;
+    }
+
+    InvoiceDetailDialog dialog(id, type, this);
+    dialog.exec();
 }
 
 void InvoicePage::filterBookingData(const QString &text)
@@ -227,5 +380,33 @@ void InvoicePage::filterServiceData(const QString &text)
             }
         }
         m_serviceTable->setRowHidden(i, !match);
+    }
+}
+
+void InvoicePage::setUserRole(bool isAdmin)
+{
+    m_isAdmin = isAdmin;
+    if (!m_isAdmin)
+    {
+        // Force date range to today
+        m_fromDate = QDate::currentDate();
+        m_toDate = QDate::currentDate();
+
+        // Update date picker and disable it
+        if (m_datePicker)
+        {
+            m_datePicker->setDateRange(m_fromDate, m_toDate);
+            m_datePicker->setEnabled(false);
+        }
+
+        refreshData();
+    }
+    else
+    {
+        // Enable date picker for admin
+        if (m_datePicker)
+        {
+            m_datePicker->setEnabled(true);
+        }
     }
 }

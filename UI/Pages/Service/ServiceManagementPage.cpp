@@ -86,3 +86,34 @@ void ServiceManagementPage::applyStyles()
         }
     )");
 }
+
+void ServiceManagementPage::setUserRole(bool isAdmin)
+{
+    // If not admin, remove or disable the management tab
+    if (!isAdmin)
+    {
+        // Check if tab 1 exists and is the management widget
+        if (tabWidget->count() > 1 && tabWidget->widget(1) == managementWidget)
+        {
+            tabWidget->removeTab(1);
+        }
+    }
+    else
+    {
+        // If admin and tab is missing, add it back
+        bool hasManagementTab = false;
+        for (int i = 0; i < tabWidget->count(); ++i)
+        {
+            if (tabWidget->widget(i) == managementWidget)
+            {
+                hasManagementTab = true;
+                break;
+            }
+        }
+
+        if (!hasManagementTab)
+        {
+            tabWidget->addTab(managementWidget, "⚙️ Quản Lý Dịch Vụ");
+        }
+    }
+}

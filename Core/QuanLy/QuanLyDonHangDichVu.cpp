@@ -5,7 +5,7 @@
 
 #include "QuanLyDonHangDichVu.h"
 #include "HeThongQuanLy.h" // Add this include
-#include "../Utils/CSVManager.h"
+#include "../Utils/CSVHelper.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -323,13 +323,13 @@ bool QuanLyDonHangDichVu::luuCSV(const string &filePath) const
         }
     }
 
-    return CSVManager::writeCSV(filePath, headers, rows);
+    return CSVHelper::writeCSV(filePath, headers, rows);
 }
 
 bool QuanLyDonHangDichVu::docCSV(const string &filePath)
 {
     cout << "[DEBUG] QuanLyDonHangDichVu::docCSV - Loading from: " << filePath << endl;
-    vector<vector<string>> rows = CSVManager::readCSV(filePath);
+    vector<vector<string>> rows = CSVHelper::readCSV(filePath);
     if (rows.empty())
     {
         cout << "[DEBUG] QuanLyDonHangDichVu::docCSV - File empty or read failed." << endl;

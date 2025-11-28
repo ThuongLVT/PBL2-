@@ -558,6 +558,13 @@ void ServiceOrderWidget::onPayClicked()
     donHang->tinhThanhTien();
     donHang->setTrangThai(TrangThaiDonHang::HOAN_THANH); // Auto complete for now
 
+    // Cập nhật chi tiêu cho khách hàng
+    if (kh)
+    {
+        kh->themChiTieu(donHang->getThanhTien());
+        kh->capNhatHang();
+    }
+
     // Save System
     HeThongQuanLy::getInstance()->luuHeThong("D:/PBL2-/Data/data.bin");
 

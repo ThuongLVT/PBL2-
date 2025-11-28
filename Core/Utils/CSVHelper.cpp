@@ -1,23 +1,112 @@
+/**
+ * @file CSVHelper.cpp
+ * @brief Implementation of CSVHelper
+ *
+ * @author Football Field Management System
+ * @date 2025-11-26
+ */
+
 #include "CSVHelper.h"
+#include <fstream>
+#include <sstream>
 #include <iostream>
+#include <sys/stat.h>
 
-using namespace std;
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#else
+#include <sys/stat.h>
+#define MKDIR(path) mkdir(path, 0755)
+#endif
 
-bool CSVHelper::writeCSV(const string &filename,
-                         const vector<string> &headers,
-                         const vector<vector<string>> &rows)
+std::string CSVHelper::getDataPath()
 {
-    ofstream file(filename);
+    return "D:/PBL2-/Data/";
+}
+
+bool CSVHelper::ensureDataDirectory()
+{
+    std::string dataPath = getDataPath();
+    struct stat info;
+
+    if (stat(dataPath.c_str(), &info) != 0)
+    {
+        // Directory doesn't exist, create it
+        if (MKDIR(dataPath.c_str()) != 0)
+        {
+            std::cerr << "Failed to create Data directory: " << dataPath << std::endl;
+            return false;
+        }
+        std::cout << "Created Data directory: " << dataPath << std::endl;
+    }
+    return true;
+}
+
+bool CSVHelper::fileExists(const std::string &filename)
+{
+    std::string fullPath = getDataPath() + filename;
+    std::ifstream file(fullPath);
+    return file.good();
+}
+
+std::vector<std::vector<std::string>> CSVHelper::readCSV(const std::string &filename, bool skipHeader)
+{
+    std::vector<std::vector<std::string>> data;
+    std::string fullPath = getDataPath() + filename;
+
+    std::ifstream file(fullPath);
     if (!file.is_open())
     {
-        cerr << "Error: Cannot open file for writing: " << filename << endl;
+        std::cerr << "Cannot open CSV file: " << fullPath << std::endl;
+        return data;
+    }
+
+    std::string line;
+    bool firstLine = true;
+
+    while (std::getline(file, line))
+    {
+        if (firstLine && skipHeader)
+        {
+            firstLine = false;
+            continue;
+        }
+
+        if (line.empty())
+            continue;
+
+        std::vector<std::string> row = parseLine(line);
+        data.push_back(row);
+        firstLine = false;
+    }
+
+    file.close();
+    return data;
+}
+
+bool CSVHelper::writeCSV(const std::string &filename,
+                         const std::vector<std::string> &headers,
+                         const std::vector<std::vector<std::string>> &rows)
+{
+    if (!ensureDataDirectory())
+    {
         return false;
     }
 
-    // Write header
+    std::string fullPath = getDataPath() + filename;
+    std::ofstream file(fullPath);
+
+    if (!file.is_open())
+    {
+        std::cerr << "Cannot create CSV file: " << fullPath << std::endl;
+        return false;
+    }
+
+    // Write headers
     for (size_t i = 0; i < headers.size(); i++)
     {
-        file << escapeCSV(headers[i]);
+        file << escapeField(headers[i]);
         if (i < headers.size() - 1)
             file << ",";
     }
@@ -28,7 +117,7 @@ bool CSVHelper::writeCSV(const string &filename,
     {
         for (size_t i = 0; i < row.size(); i++)
         {
-            file << escapeCSV(row[i]);
+            file << escapeField(row[i]);
             if (i < row.size() - 1)
                 file << ",";
         }
@@ -36,84 +125,58 @@ bool CSVHelper::writeCSV(const string &filename,
     }
 
     file.close();
-    cout << "✓ Saved CSV: " << filename << " (" << rows.size() << " rows)" << endl;
+    std::cout << "Saved CSV file: " << fullPath << std::endl;
     return true;
 }
 
-bool CSVHelper::readCSV(const string &filename, vector<vector<string>> &rows)
+std::string CSVHelper::escapeField(const std::string &field)
 {
-    ifstream file(filename);
-    if (!file.is_open())
+    // If field contains comma, newline, or quote, wrap in quotes
+    if (field.find(',') != std::string::npos ||
+        field.find('\n') != std::string::npos ||
+        field.find('"') != std::string::npos)
     {
-        cerr << "Error: Cannot open file for reading: " << filename << endl;
-        return false;
-    }
-
-    rows.clear();
-    string line;
-
-    // Skip header
-    getline(file, line);
-
-    // Read data rows
-    while (getline(file, line))
-    {
-        if (line.empty())
-            continue;
-
-        vector<string> fields = parseCSVLine(line);
-        rows.push_back(fields);
-    }
-
-    file.close();
-    cout << "✓ Loaded CSV: " << filename << " (" << rows.size() << " rows)" << endl;
-    return true;
-}
-
-string CSVHelper::escapeCSV(const string &value)
-{
-    // If value contains comma or quote, wrap in quotes and escape internal quotes
-    if (value.find(',') != string::npos || value.find('"') != string::npos)
-    {
-        string escaped = "\"";
-        for (char c : value)
+        std::string escaped = "\"";
+        for (char c : field)
         {
             if (c == '"')
-                escaped += "\"\""; // Double the quote
+                escaped += "\"\""; // Escape quote with double quote
             else
                 escaped += c;
         }
         escaped += "\"";
         return escaped;
     }
-    return value;
+    return field;
 }
 
-vector<string> CSVHelper::parseCSVLine(const string &line)
+std::vector<std::string> CSVHelper::parseLine(const std::string &line)
 {
-    vector<string> fields;
-    string field;
+    std::vector<std::string> fields;
+    std::string field;
     bool inQuotes = false;
 
-    for (size_t i = 0; i < line.length(); i++)
+    for (size_t i = 0; i < line.size(); i++)
     {
         char c = line[i];
 
         if (c == '"')
         {
-            // Check for escaped quote ("")
-            if (inQuotes && i + 1 < line.length() && line[i + 1] == '"')
+            if (inQuotes && i + 1 < line.size() && line[i + 1] == '"')
             {
+                // Double quote = escaped quote
                 field += '"';
                 i++; // Skip next quote
             }
             else
             {
+                // Toggle quote mode
                 inQuotes = !inQuotes;
             }
         }
         else if (c == ',' && !inQuotes)
         {
+            // End of field
             fields.push_back(field);
             field.clear();
         }
@@ -125,5 +188,13 @@ vector<string> CSVHelper::parseCSVLine(const string &line)
 
     // Add last field
     fields.push_back(field);
+
     return fields;
+}
+
+bool CSVHelper::createEmptyCSV(const std::string &filename,
+                               const std::vector<std::string> &headers)
+{
+    std::vector<std::vector<std::string>> emptyRows;
+    return writeCSV(filename, headers, emptyRows);
 }

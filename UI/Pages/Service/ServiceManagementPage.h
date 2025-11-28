@@ -16,6 +16,8 @@ public:
     explicit ServiceManagementPage(QWidget *parent = nullptr);
     ~ServiceManagementPage();
 
+    void setUserRole(bool isAdmin);
+
 private:
     void setupUI();
     void applyStyles();

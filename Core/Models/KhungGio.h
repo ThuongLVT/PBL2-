@@ -11,7 +11,7 @@
 #define KHUNGGIO_H
 #include <string>
 
-#include "../CauTrucDuLieu/ThoiGian.h"
+#include "../CauTrucDuLieu/NgayGio.h"
 #include <iostream>
 #include <fstream>
 

@@ -9,7 +9,6 @@
 
 #include "HeThongQuanLy.h"
 #include "../Utils/CSVHelper.h"
-#include "../Utils/CSVManager.h" // Add this include
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -29,8 +28,6 @@ HeThongQuanLy::HeThongQuanLy()
     quanLyDichVu = new QuanLyDichVu();
     quanLyDonHangDichVu = new QuanLyDonHangDichVu();
     quanLyDatSan = new QuanLyDatSan();
-    quanLyThanhToan = new QuanLyThanhToan();
-    backupManager = new BackupManager();
 
     // NOTE: Do NOT auto-load CSV here
     // CSV will be loaded by main.cpp via docHeThong() to avoid duplicate loading
@@ -48,8 +45,6 @@ HeThongQuanLy::~HeThongQuanLy()
     delete quanLyDichVu;
     delete quanLyDonHangDichVu;
     delete quanLyDatSan;
-    delete quanLyThanhToan;
-    delete backupManager;
 }
 
 // Get singleton instance
@@ -331,52 +326,45 @@ bool HeThongQuanLy::kiemTraSanTrong(San *san, const NgayGio &thoiGian, const Khu
     return quanLyDatSan->kiemTraTrungLich(san, thoiGian, khung) == false;
 }
 
-// ===== THANH TOÁN (Delegate to QuanLyThanhToan) =====
-ThanhToan *HeThongQuanLy::taoThanhToan(DatSan *datSan, PhuongThucThanhToan phuongThuc)
-{
-    return quanLyThanhToan->taoThanhToan(datSan, phuongThuc);
-}
-
-bool HeThongQuanLy::xoaThanhToan(const string &ma)
-{
-    return quanLyThanhToan->xoaThanhToan(ma);
-}
-
-ThanhToan *HeThongQuanLy::timThanhToan(const string &ma)
-{
-    return quanLyThanhToan->timThanhToan(ma);
-}
-
-ThanhToan *HeThongQuanLy::timThanhToanTheoDatSan(const string &maDatSan)
-{
-    return quanLyThanhToan->timThanhToanTheoDatSan(maDatSan);
-}
-
-const MangDong<ThanhToan *> &HeThongQuanLy::layDanhSachThanhToan() const
-{
-    return quanLyThanhToan->layDanhSachThanhToan();
-}
-
-void HeThongQuanLy::hienThiDanhSachThanhToan() const
-{
-    quanLyThanhToan->hienThiDanhSachThanhToan();
-}
-
 // ===== FILE I/O =====
 bool HeThongQuanLy::luuHeThong(const string &tenFile)
 {
     // Save each manager to separate CSV files
     bool success = true;
 
-    if (!luuKhachHangCSV("khachhang.csv")) { cout << "Failed to save khachhang.csv" << endl; success = false; }
-    if (!luuSanCSV("san.csv")) { cout << "Failed to save san.csv" << endl; success = false; }
-    if (!luuDichVuCSV("dichvu.csv")) { cout << "Failed to save dichvu.csv" << endl; success = false; }
-    if (!luuDatSanCSV("datsan.csv")) { cout << "Failed to save datsan.csv" << endl; success = false; }
-    
-    // Use CSV for DonHangDichVu
-    if (!quanLyDonHangDichVu->luuCSV("donhangdichvu.csv")) { cout << "Failed to save donhangdichvu.csv" << endl; success = false; }
+    if (!luuKhachHangCSV("khachhang.csv"))
+    {
+        cout << "Failed to save khachhang.csv" << endl;
+        success = false;
+    }
+    if (!luuSanCSV("san.csv"))
+    {
+        cout << "Failed to save san.csv" << endl;
+        success = false;
+    }
+    if (!luuDichVuCSV("dichvu.csv"))
+    {
+        cout << "Failed to save dichvu.csv" << endl;
+        success = false;
+    }
+    if (!luuDatSanCSV("datsan.csv"))
+    {
+        cout << "Failed to save datsan.csv" << endl;
+        success = false;
+    }
 
-    if (!luuQuanTriVienCSV("admin.csv")) { cout << "Failed to save admin.csv" << endl; success = false; }
+    // Use CSV for DonHangDichVu
+    if (!quanLyDonHangDichVu->luuCSV("donhangdichvu.csv"))
+    {
+        cout << "Failed to save donhangdichvu.csv" << endl;
+        success = false;
+    }
+
+    if (!luuQuanTriVienCSV("admin.csv"))
+    {
+        cout << "Failed to save admin.csv" << endl;
+        success = false;
+    }
 
     if (success)
     {
@@ -401,7 +389,7 @@ bool HeThongQuanLy::docHeThong(const string &tenFile)
     success &= docDichVuCSV("dichvu.csv");
     success &= docNhanVienCSV("nhanvien.csv");
     success &= docDatSanCSV("datsan.csv");
-    
+
     // Use CSV for DonHangDichVu
     success &= quanLyDonHangDichVu->docCSV("donhangdichvu.csv");
 
@@ -437,25 +425,11 @@ void HeThongQuanLy::xoaTatCaDuLieu()
     if (quanLyDatSan != nullptr)
         quanLyDatSan->xoaTatCa();
 
-    if (quanLyThanhToan != nullptr)
-        quanLyThanhToan->xoaTatCa();
-
     // Xóa nhân viên
     // Handled by quanLyNhanVien->xoaTatCa()
 
     // Xóa quản trị viên
     // Handled by quanLyNhanVien->xoaTatCa()
-}
-
-// ===== BACKUP/RESTORE =====
-bool HeThongQuanLy::saoLuuHeThong(const string &fileGoc)
-{
-    return backupManager->saoLuu(fileGoc);
-}
-
-bool HeThongQuanLy::khoiPhucHeThong(const string &fileBackup, const string &fileDich)
-{
-    return backupManager->khoiPhuc(fileBackup, fileDich);
 }
 
 // ===== UTILITY =====
@@ -489,9 +463,40 @@ int HeThongQuanLy::tongSoDatSan() const
     return quanLyDatSan->tongSoDatSan();
 }
 
-int HeThongQuanLy::tongSoThanhToan() const
+void HeThongQuanLy::tinhLaiTongChiTieuKhachHang()
 {
-    return quanLyThanhToan->tongSoThanhToan();
+    const MangDong<KhachHang *> &customers = quanLyKhachHang->layDanhSachKhachHang();
+    for (int i = 0; i < customers.size(); i++)
+    {
+        KhachHang *kh = customers[i];
+        if (!kh)
+            continue;
+
+        double total = 0;
+        string maKH = kh->layMaKhachHang();
+
+        // 1. Sum from Bookings
+        MangDong<DatSan *> bookings = quanLyDatSan->timDatSanTheoKhachHang(maKH);
+        for (int j = 0; j < bookings.size(); j++)
+        {
+            if (bookings[j]->getTrangThai() == TrangThaiDatSan::HOAN_THANH)
+            {
+                total += bookings[j]->getTongTien();
+            }
+        }
+
+        // 2. Sum from Service Orders
+        MangDong<DonHangDichVu *> orders = quanLyDonHangDichVu->timDonHangTheoKhachHang(maKH);
+        for (int k = 0; k < orders.size(); k++)
+        {
+            if (orders[k]->getTrangThai() == TrangThaiDonHang::HOAN_THANH)
+            {
+                total += orders[k]->getThanhTien();
+            }
+        }
+
+        kh->datTongChiTieu(total); // This also calls capNhatHang()
+    }
 }
 
 // ===== SAMPLE DATA INITIALIZATION =====
@@ -499,4 +504,70 @@ void HeThongQuanLy::khoiTaoDuLieuMau()
 {
     cout << "\n=== SAMPLE DATA GENERATION DISABLED ===" << endl;
     // Data generation code removed as per request
+}
+
+// ========== CUSTOMERS CSV ==========
+bool HeThongQuanLy::luuKhachHangCSV(const string &filename)
+{
+    return quanLyKhachHang->luuCSV(filename);
+}
+
+bool HeThongQuanLy::docKhachHangCSV(const string &filename)
+{
+    return quanLyKhachHang->docCSV(filename);
+}
+
+// ========== FIELDS CSV ==========
+bool HeThongQuanLy::luuSanCSV(const string &filename)
+{
+    return quanLySan->saveToCSV();
+}
+
+bool HeThongQuanLy::docSanCSV(const string &filename)
+{
+    return quanLySan->loadFromCSV(filename);
+}
+
+// ========== SERVICES CSV ==========
+bool HeThongQuanLy::luuDichVuCSV(const string &filename)
+{
+    return quanLyDichVu->luuDuLieuRaCSV(filename);
+}
+
+bool HeThongQuanLy::docDichVuCSV(const string &filename)
+{
+    return quanLyDichVu->taiDuLieuTuCSV(filename);
+}
+
+// ========== STAFF CSV ==========
+bool HeThongQuanLy::luuNhanVienCSV(const string &filename)
+{
+    return quanLyNhanVien->luuCSV(filename);
+}
+
+bool HeThongQuanLy::docNhanVienCSV(const string &filename)
+{
+    return quanLyNhanVien->docCSV(filename);
+}
+
+// ========== BOOKINGS CSV ==========
+bool HeThongQuanLy::luuDatSanCSV(const string &filename)
+{
+    return quanLyDatSan->saveToCSV(filename);
+}
+
+bool HeThongQuanLy::docDatSanCSV(const string &filename)
+{
+    return quanLyDatSan->loadFromCSV(filename, quanLyKhachHang, quanLySan);
+}
+
+// ========== ADMIN CSV ==========
+bool HeThongQuanLy::luuQuanTriVienCSV(const string &filename)
+{
+    return quanLyNhanVien->luuAdminCSV(filename);
+}
+
+bool HeThongQuanLy::docQuanTriVienCSV(const string &filename)
+{
+    return quanLyNhanVien->docAdminCSV(filename);
 }

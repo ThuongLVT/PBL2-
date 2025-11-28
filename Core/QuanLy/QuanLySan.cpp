@@ -7,7 +7,7 @@
  */
 
 #include "QuanLySan.h"
-#include "../Utils/CSVManager.h"
+#include "../Utils/CSVHelper.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -423,7 +423,7 @@ bool QuanLySan::loadFromCSV(const string &filePath)
         csvFilePath = filePath;
     }
 
-    vector<vector<string>> rows = CSVManager::readCSV(csvFilePath, true);
+    vector<vector<string>> rows = CSVHelper::readCSV(csvFilePath, true);
 
     if (rows.empty())
     {
@@ -495,7 +495,7 @@ bool QuanLySan::saveToCSV()
         rows.push_back(row);
     }
 
-    bool success = CSVManager::writeCSV(csvFilePath, headers, rows);
+    bool success = CSVHelper::writeCSV(csvFilePath, headers, rows);
     if (success)
     {
         cout << "Saved " << danhSachSan.size() << " fields to CSV: " << csvFilePath << endl;

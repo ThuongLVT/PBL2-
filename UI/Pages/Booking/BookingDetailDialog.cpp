@@ -6,7 +6,6 @@
 #include "BookingDetailDialog.h"
 #include "CancelBookingDialog.h"
 #include "../../Dialogs/ServiceSelectionDialog.h"
-#include "../../../Core/QuanLy/QuanLyThanhToan.h"
 #include <QMessageBox>
 #include <QSpinBox>
 #include <QDialog>
@@ -408,6 +407,11 @@ QFrame *BookingDetailDialog::createPaymentSection()
     layout->addWidget(payNowBtn);
 
     connect(payNowBtn, &QPushButton::clicked, this, &BookingDetailDialog::onPaymentClicked);
+    connect(rescheduleBtn, &QPushButton::clicked, [this]()
+            {
+                emit rescheduleRequested(currentBooking);
+                accept(); // Close the dialog
+            });
 
     return card;
 }
@@ -489,7 +493,12 @@ void BookingDetailDialog::populateForm()
     NgayGio tg = currentBooking->getThoiGianDat();
     dateLabel->setText(QString("%1/%2/%3").arg(tg.getNgay()).arg(tg.getThang()).arg(tg.getNam()));
 
-    QString timeStr = QString("%1:00 - %2:00").arg(tg.getGio()).arg(tg.getGio() + 1);
+    KhungGio kg = currentBooking->getKhungGio();
+    QString timeStr = QString("%1:%2 - %3:%4")
+                          .arg(kg.getGioBatDau().getGio(), 2, 10, QChar('0'))
+                          .arg(kg.getGioBatDau().getPhut(), 2, 10, QChar('0'))
+                          .arg(kg.getGioKetThuc().getGio(), 2, 10, QChar('0'))
+                          .arg(kg.getGioKetThuc().getPhut(), 2, 10, QChar('0'));
     timeLabel->setText(timeStr);
     timeLabel->setStyleSheet("color: #2563eb; font-weight: bold;");
 
@@ -659,54 +668,42 @@ void BookingDetailDialog::onPaymentClicked()
 
     if (reply == QMessageBox::Yes)
     {
-        // Sử dụng QuanLyThanhToan để tạo thanh toán và cập nhật chi tiêu
-        QuanLyThanhToan *qltt = system->layQuanLyThanhToan();
-        if (qltt)
+        // Set Payment Date
+        currentBooking->setNgayThanhToan(NgayGio::layThoiGianHienTai());
+
+        // Update stock for services - REMOVED as it is now done when adding services
+        /*
+        const MangDong<DichVuDat> &services = currentBooking->getDanhSachDichVu();
+        for (int i = 0; i < services.size(); i++)
         {
-            // Mặc định thanh toán tiền mặt
-            ThanhToan *tt = qltt->taoThanhToan(currentBooking, PhuongThucThanhToan::TIEN_MAT);
-
-            if (tt)
+            DichVu *dv = services[i].getDichVu();
+            if (dv)
             {
-                // Update stock for services
-                const MangDong<DichVuDat> &services = currentBooking->getDanhSachDichVu();
-                for (int i = 0; i < services.size(); i++)
-                {
-                    DichVu *dv = services[i].getDichVu();
-                    if (dv)
-                    {
-                        int qty = services[i].getSoLuong();
-                        dv->datSoLuongTon(dv->laySoLuongTon() - qty);
-                        dv->datSoLuongBan(dv->laySoLuongBan() + qty);
-                    }
-                }
-
-                currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
-
-                if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
-                {
-                    // Lưu thêm dữ liệu thanh toán nếu cần (tùy thuộc vào implementation của system)
-                    // system->luuHeThong("D:/PBL2-/Data/thanhtoan.dat"); // Giả sử có file này
-
-                    QMessageBox::information(this, "Thành công", "Thanh toán thành công!");
-                    accept();
-                }
-                else
-                {
-                    QMessageBox::critical(this, "Lỗi", "Không thể lưu dữ liệu!");
-                }
+                int qty = services[i].getSoLuong();
+                dv->datSoLuongTon(dv->laySoLuongTon() - qty);
+                dv->datSoLuongBan(dv->laySoLuongBan() + qty);
             }
-            else
-            {
-                QMessageBox::critical(this, "Lỗi", "Không thể tạo thanh toán (có thể đã thanh toán rồi)!");
-            }
+        }
+        */
+
+        currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
+
+        // Cập nhật chi tiêu cho khách hàng
+        KhachHang *kh = currentBooking->getKhachHang();
+        if (kh)
+        {
+            kh->themChiTieu(currentBooking->getTongTien());
+            kh->capNhatHang();
+        }
+
+        if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
+        {
+            QMessageBox::information(this, "Thành công", "Thanh toán thành công!");
+            accept();
         }
         else
         {
-            // Fallback nếu không lấy được quản lý thanh toán
-            currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
-            system->luuHeThong("D:/PBL2-/Data/booking.dat");
-            accept();
+            QMessageBox::critical(this, "Lỗi", "Không thể lưu dữ liệu!");
         }
     }
 }
@@ -730,11 +727,15 @@ void BookingDetailDialog::onAddServiceClicked()
             std::string serviceId = it.key();
             int quantity = it.value();
 
+            // Validate quantity
+            if (quantity <= 0 || serviceId.empty())
+                continue;
+
             // Find the service object
             DichVu *service = nullptr;
             for (int i = 0; i < allServices.size(); i++)
             {
-                if (allServices[i]->layMaDichVu() == serviceId)
+                if (allServices[i] != nullptr && allServices[i]->layMaDichVu() == serviceId)
                 {
                     service = allServices[i];
                     break;
@@ -745,22 +746,19 @@ void BookingDetailDialog::onAddServiceClicked()
             {
                 DichVuDat dvDat(service, quantity);
                 currentBooking->themDichVu(dvDat);
+
+                // Update stock immediately
+                service->datSoLuongTon(service->laySoLuongTon() - quantity);
+                service->datSoLuongBan(service->laySoLuongBan() + quantity);
             }
         }
 
         // Refresh table and totals
         loadServices();
 
-        // Optional: Save changes immediately if required, or wait for a "Save" action.
-        // The original code didn't save immediately in onAddServiceClicked,
-        // but onPaymentClicked does save.
-        // However, since we are modifying the booking in memory,
-        // and this dialog seems to be a "viewer/editor",
-        // we should probably save the system state if we want it to persist
-        // after closing the dialog without paying.
-        // But looking at onCancelBookingClicked, it saves.
-        // The original onAddServiceClicked didn't save to file, just updated memory.
-        // I will stick to updating memory and refreshing UI.
+        // Save system state to persist stock changes
+        system->luuHeThong("D:/PBL2-/Data/booking.dat");
+        system->luuHeThong("D:/PBL2-/Data/dichvu.csv"); // Ensure services are saved
     }
 }
 
@@ -777,7 +775,13 @@ void BookingDetailDialog::onRemoveServiceClicked()
     }
 
     // Get Service ID from column 1 (Mã DV)
-    QString serviceId = serviceTable->item(currentRow, 1)->text();
+    QTableWidgetItem *idItem = serviceTable->item(currentRow, 1);
+    if (!idItem)
+    {
+        QMessageBox::warning(this, "Lỗi", "Không thể lấy thông tin dịch vụ!");
+        return;
+    }
+    QString serviceId = idItem->text();
 
     // Confirm deletion
     QMessageBox::StandardButton reply = QMessageBox::question(
@@ -793,6 +797,12 @@ void BookingDetailDialog::onRemoveServiceClicked()
         {
             if (services[i].getDichVu() && services[i].getDichVu()->layMaDichVu() == serviceId.toStdString())
             {
+                // Restore stock
+                DichVu *dv = services[i].getDichVu();
+                int qty = services[i].getSoLuong();
+                dv->datSoLuongTon(dv->laySoLuongTon() + qty);
+                dv->datSoLuongBan(dv->laySoLuongBan() - qty);
+
                 currentBooking->xoaDichVu(i);
                 break;
             }
@@ -800,6 +810,10 @@ void BookingDetailDialog::onRemoveServiceClicked()
 
         loadServices();
         removeServiceBtn->setEnabled(false);
+
+        // Save system state to persist stock changes
+        system->luuHeThong("D:/PBL2-/Data/booking.dat");
+        system->luuHeThong("D:/PBL2-/Data/dichvu.csv");
     }
 }
 void BookingDetailDialog::onPayDepositClicked() { /* Not used in new UI */ }

@@ -421,9 +421,10 @@ QWidget *ServiceSelectionDialog::createServiceCard(DichVu *service)
     unit->setStyleSheet("color: #6b7280; font-size: 12px; border: none;");
     unit->setAlignment(Qt::AlignLeft);
 
-    // Calculate available stock (Total - In Cart)
+    // Calculate available stock (Total - In Cart - Currently Selected)
     int inCartQty = existingCart.value(service->layMaDichVu(), 0);
-    int displayStock = service->laySoLuongTon() - inCartQty;
+    int currentSelectedQty = selectedQuantities.value(service->layMaDichVu(), 0);
+    int displayStock = service->laySoLuongTon() - inCartQty - currentSelectedQty;
     if (displayStock < 0)
         displayStock = 0;
 
@@ -451,9 +452,13 @@ QWidget *ServiceSelectionDialog::createServiceCard(DichVu *service)
 
 void ServiceSelectionDialog::onServiceCardClicked(DichVu *service)
 {
+    if (!service)
+        return;
+
     int currentQty = selectedQuantities.value(service->layMaDichVu(), 0);
     int inCartQty = existingCart.value(service->layMaDichVu(), 0);
-    int maxQty = service->laySoLuongTon() - currentQty - inCartQty;
+    int stock = service->laySoLuongTon();
+    int maxQty = stock - currentQty - inCartQty;
 
     if (maxQty <= 0)
     {
@@ -466,12 +471,20 @@ void ServiceSelectionDialog::onServiceCardClicked(DichVu *service)
 
 void ServiceSelectionDialog::onTableDoubleClicked(int row, int column)
 {
+    // Check if row is valid and item exists
+    if (row < 0 || row >= selectedTable->rowCount())
+        return;
+
+    QTableWidgetItem *nameItem = selectedTable->item(row, 1);
+    if (!nameItem)
+        return;
+
     // Name is at column 1 (0: Image, 1: Name)
-    QString name = selectedTable->item(row, 1)->text();
+    QString name = nameItem->text();
     DichVu *target = nullptr;
     for (auto s : allServices)
     {
-        if (QString::fromStdString(s->layTenDichVu()) == name)
+        if (s && QString::fromStdString(s->layTenDichVu()) == name)
         {
             target = s;
             break;
@@ -496,6 +509,9 @@ void ServiceSelectionDialog::onTableDoubleClicked(int row, int column)
 
 void ServiceSelectionDialog::openQuantityDialog(DichVu *service, int maxQty)
 {
+    if (!service || maxQty <= 0)
+        return;
+
     ServiceQuantityDialog dlg(service, maxQty, this);
     if (dlg.exec() == QDialog::Accepted)
     {
@@ -505,6 +521,7 @@ void ServiceSelectionDialog::openQuantityDialog(DichVu *service, int maxQty)
             selectedQuantities[service->layMaDichVu()] += newQty;
         }
         updateTable();
+        updateGrid(); // Refresh grid to update stock display
     }
 }
 
@@ -512,56 +529,73 @@ void ServiceSelectionDialog::updateTable()
 {
     selectedTable->setRowCount(0);
 
+    // Create a list of IDs to remove (services that no longer exist)
+    QList<std::string> idsToRemove;
+
     for (auto it = selectedQuantities.begin(); it != selectedQuantities.end(); ++it)
     {
         std::string id = it.key();
         int qty = it.value();
 
+        if (qty <= 0)
+        {
+            idsToRemove.append(id);
+            continue;
+        }
+
         DichVu *dv = nullptr;
         for (auto s : allServices)
         {
-            if (s->layMaDichVu() == id)
+            if (s && s->layMaDichVu() == id)
             {
                 dv = s;
                 break;
             }
         }
 
-        if (dv)
+        if (!dv)
         {
-            int row = selectedTable->rowCount();
-            selectedTable->insertRow(row);
-            selectedTable->setRowHeight(row, 60); // Reduced row height to 60
-
-            // Image (Col 0)
-            QTableWidgetItem *imgItem = new QTableWidgetItem();
-            QString imgPath = "D:/PBL2-/Data/images/" + QString::fromStdString(dv->layMaDichVu()) + ".png";
-            QPixmap pixmap(imgPath);
-            if (!pixmap.isNull())
-            {
-                imgItem->setIcon(QIcon(pixmap));
-            }
-            else
-            {
-                imgItem->setText("No Img");
-            }
-            selectedTable->setItem(row, 0, imgItem);
-
-            // Name (Col 1)
-            selectedTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(dv->layTenDichVu())));
-            // Price (Col 2)
-            selectedTable->setItem(row, 2, new QTableWidgetItem(QString::number(dv->layDonGia(), 'f', 0) + "đ"));
-            // Desc (Col 3)
-            selectedTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(dv->layMoTa())));
-            // Unit (Col 4)
-            selectedTable->setItem(row, 4, new QTableWidgetItem(QString::fromStdString(dv->layDonVi())));
-            // Qty (Col 5)
-            selectedTable->setItem(row, 5, new QTableWidgetItem(QString::number(qty)));
-
-            double total = dv->layDonGia() * qty;
-            // Total (Col 6)
-            selectedTable->setItem(row, 6, new QTableWidgetItem(QString::number(total, 'f', 0) + "đ"));
+            idsToRemove.append(id);
+            continue;
         }
+        int row = selectedTable->rowCount();
+        selectedTable->insertRow(row);
+        selectedTable->setRowHeight(row, 60); // Reduced row height to 60
+
+        // Image (Col 0)
+        QTableWidgetItem *imgItem = new QTableWidgetItem();
+        QString imgPath = "D:/PBL2-/Data/images/" + QString::fromStdString(dv->layMaDichVu()) + ".png";
+        QPixmap pixmap(imgPath);
+        if (!pixmap.isNull())
+        {
+            imgItem->setIcon(QIcon(pixmap));
+        }
+        else
+        {
+            imgItem->setText("No Img");
+        }
+        selectedTable->setItem(row, 0, imgItem);
+
+        // Name (Col 1)
+        selectedTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(dv->layTenDichVu())));
+        // Price (Col 2)
+        selectedTable->setItem(row, 2, new QTableWidgetItem(QString::number(dv->layDonGia(), 'f', 0) + "đ"));
+        // Desc (Col 3)
+        selectedTable->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(dv->layMoTa())));
+        // Unit (Col 4)
+        selectedTable->setItem(row, 4, new QTableWidgetItem(QString::fromStdString(dv->layDonVi())));
+        // Qty (Col 5)
+        selectedTable->setItem(row, 5, new QTableWidgetItem(QString::number(qty)));
+
+        double total = dv->layDonGia() * qty;
+        // Total (Col 6)
+        selectedTable->setItem(row, 6, new QTableWidgetItem(QString::number(total, 'f', 0) + "đ"));
+    }
+
+    // Remove invalid entries
+    for (const std::string &id : idsToRemove)
+    {
+        selectedQuantities.remove(id);
     }
 }
 
@@ -578,14 +612,19 @@ void ServiceSelectionDialog::onFilterChanged(int index) { updateGrid(); }
 void ServiceSelectionDialog::onRemoveServiceClicked()
 {
     int row = selectedTable->currentRow();
-    if (row < 0)
+    if (row < 0 || row >= selectedTable->rowCount())
     {
         QMessageBox::warning(this, "Thông báo", "Vui lòng chọn dịch vụ để xoá!");
         return;
     }
 
+    // Check if item exists at column 1
+    QTableWidgetItem *nameItem = selectedTable->item(row, 1);
+    if (!nameItem)
+        return;
+
     // Name is at column 1
-    QString name = selectedTable->item(row, 1)->text();
+    QString name = nameItem->text();
 
     std::string idToRemove = "";
     for (auto s : allServices)
@@ -601,6 +640,7 @@ void ServiceSelectionDialog::onRemoveServiceClicked()
     {
         selectedQuantities.remove(idToRemove);
         updateTable();
+        updateGrid(); // Refresh grid to update stock display
     }
 }
 

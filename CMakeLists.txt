@@ -11,8 +11,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Find Qt6 packages - Core, Widgets only (NO Charts - no dashboard)
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+# Find Qt6 packages - Core, Widgets, Charts for Statistics Dashboard
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Charts)
 
 # Include directories
 include_directories(
@@ -32,8 +32,6 @@ include_directories(
 
 # Source files - Core/CauTrucDuLieu
 set(CORE_CAUTRUCDULIEU_SOURCES
-    Core/CauTrucDuLieu/ThoiGian.cpp
-    Core/CauTrucDuLieu/NgayThang.cpp
     Core/CauTrucDuLieu/NgayGio.cpp
 )
 
@@ -42,8 +40,6 @@ set(CORE_CAUTRUCDULIEU_HEADERS
     Core/CauTrucDuLieu/DanhSachLienKet.h
     Core/CauTrucDuLieu/Ngan.h
     Core/CauTrucDuLieu/HangDoi.h
-    Core/CauTrucDuLieu/ThoiGian.h
-    Core/CauTrucDuLieu/NgayThang.h
     Core/CauTrucDuLieu/NgayGio.h
 )
 
@@ -60,10 +56,6 @@ set(CORE_MODELS_SOURCES
     Core/Models/DichVuDat.cpp
     Core/Models/DatSan.cpp
     Core/Models/DonHangDichVu.cpp
-    Core/Models/ThanhToan.cpp
-    Core/Models/ThanhToanTienMat.cpp
-    Core/Models/ThanhToanThe.cpp
-    Core/Models/ThanhToanChuyenKhoan.cpp
 )
 
 set(CORE_MODELS_HEADERS
@@ -78,39 +70,30 @@ set(CORE_MODELS_HEADERS
     Core/Models/DichVuDat.h
     Core/Models/DatSan.h
     Core/Models/DonHangDichVu.h
-    Core/Models/ThanhToan.h
-    Core/Models/ThanhToanTienMat.h
-    Core/Models/ThanhToanThe.h
-    Core/Models/ThanhToanChuyenKhoan.h
 )
 
 # Source files - Core/QuanLy
 set(CORE_QUANLY_SOURCES
     Core/QuanLy/HeThongQuanLy.cpp
-    Core/QuanLy/HeThongQuanLyCSV.cpp
     Core/QuanLy/FileManager.cpp
-    Core/QuanLy/BackupManager.cpp
     Core/QuanLy/QuanLySan.cpp
     Core/QuanLy/QuanLyKhachHang.cpp
     Core/QuanLy/QuanLyNhanVien.cpp
     Core/QuanLy/QuanLyDichVu.cpp
     Core/QuanLy/QuanLyDonHangDichVu.cpp
     Core/QuanLy/QuanLyDatSan.cpp
-    Core/QuanLy/QuanLyThanhToan.cpp
     Core/Utils/CSVHelper.cpp
 )
 
 set(CORE_QUANLY_HEADERS
     Core/QuanLy/HeThongQuanLy.h
     Core/QuanLy/FileManager.h
-    Core/QuanLy/BackupManager.h
     Core/QuanLy/QuanLySan.h
     Core/QuanLy/QuanLyKhachHang.h
     Core/QuanLy/QuanLyNhanVien.h
     Core/QuanLy/QuanLyDichVu.h
     Core/QuanLy/QuanLyDonHangDichVu.h
     Core/QuanLy/QuanLyDatSan.h
-    Core/QuanLy/QuanLyThanhToan.h
     Core/Utils/CSVHelper.h
 )
 
@@ -119,12 +102,16 @@ set(CORE_THONGKE_SOURCES
     Core/ThongKe/ThongKe.cpp
     Core/ThongKe/ThongKeDoanhThu.cpp
     Core/ThongKe/ThongKeKhachHang.cpp
+    Core/ThongKe/ThongKeBooking.cpp
+    Core/ThongKe/ThongKeDichVu.cpp
 )
 
 set(CORE_THONGKE_HEADERS
     Core/ThongKe/ThongKe.h
     Core/ThongKe/ThongKeDoanhThu.h
     Core/ThongKe/ThongKeKhachHang.h
+    Core/ThongKe/ThongKeBooking.h
+    Core/ThongKe/ThongKeDichVu.h
 )
 
 # Source files - Core/ThuatToan (header-only templates)
@@ -137,14 +124,10 @@ set(CORE_THUATTOAN_HEADERS
 
 # Source files - Core/Utils (header-only)
 set(CORE_UTILS_SOURCES
-    Core/Utils/CSVHandler.cpp
-    Core/Utils/CSVManager.cpp
 )
 
 set(CORE_UTILS_HEADERS
     Core/Utils/FileHelper.h
-    Core/Utils/CSVHandler.h
-    Core/Utils/CSVManager.h
 )
 
 # ============================================
@@ -165,12 +148,17 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Components/Sidebar.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/Header.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/TimelineGridWidget.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Components/SummaryCard.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Components/RankingTable.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Components/DateRangePicker.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Components/ChartContainer.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/TimelineTab.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingTableTab.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingDetailDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/CancelBookingDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoicePage.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoiceDetailDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementPage.cpp
@@ -178,6 +166,10 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementWidget.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Staff/StaffManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/StatisticsPage.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/RevenueTab.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/BookingFieldTab.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/CustomerTab.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/ServiceTab.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Account/AccountPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/EditPersonalInfoDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/ChangePasswordDialog.cpp
@@ -193,12 +185,17 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Components/Sidebar.h
     ${CMAKE_SOURCE_DIR}/UI/Components/Header.h
     ${CMAKE_SOURCE_DIR}/UI/Components/TimelineGridWidget.h
+    ${CMAKE_SOURCE_DIR}/UI/Components/SummaryCard.h
+    ${CMAKE_SOURCE_DIR}/UI/Components/RankingTable.h
+    ${CMAKE_SOURCE_DIR}/UI/Components/DateRangePicker.h
+    ${CMAKE_SOURCE_DIR}/UI/Components/ChartContainer.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/TimelineTab.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingTableTab.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingDetailDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/CancelBookingDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoicePage.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoiceDetailDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementPage.h
@@ -206,6 +203,10 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementWidget.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Staff/StaffManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/StatisticsPage.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/RevenueTab.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/BookingFieldTab.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/CustomerTab.h
+    ${CMAKE_SOURCE_DIR}/UI/Pages/Statistics/ServiceTab.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Account/AccountPage.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/EditPersonalInfoDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/ChangePasswordDialog.h
@@ -268,10 +269,11 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_RESOURCES}
 )
 
-# Link Qt libraries (NO Charts - no dashboard)
+# Link Qt libraries (with Charts for Statistics Dashboard)
 target_link_libraries(${PROJECT_NAME}
     Qt6::Core
     Qt6::Widgets
+    Qt6::Charts
 )
 
 # Compiler warnings

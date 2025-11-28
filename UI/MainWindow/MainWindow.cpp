@@ -120,8 +120,15 @@ void MainWindow::setupUI()
     // Set current user for account page and staff page
     m_accountPage->setCurrentUser(m_currentUser);
 
+    // Set HeThongQuanLy for statistics page
+    m_statisticsPage->setHeThong(HeThongQuanLy::getInstance());
+
+    // Set user role for pages that need it
+    m_servicePage->setUserRole(isAdmin);
+    m_paymentPage->setUserRole(isAdmin);
+
     // Staff page needs admin access - cast if user is admin
-    if (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN)
+    if (isAdmin)
     {
         QuanTriVien *admin = dynamic_cast<QuanTriVien *>(m_currentUser);
         if (admin)
@@ -170,8 +177,8 @@ void MainWindow::onMenuItemClicked(int index)
     // Prevent staff from accessing admin-only pages
     bool isAdmin = (m_currentUser->layVaiTro() == VaiTro::QUAN_TRI_VIEN);
 
-    // Index 1 = Invoice, Index 5 = Staff Management, Index 6 = Statistics (admin only)
-    if (!isAdmin && (index == 1 || index == 5 || index == 6))
+    // Index 2 = Field, Index 3 = Customer, Index 5 = Staff, Index 6 = Statistics (admin only)
+    if (!isAdmin && (index == 2 || index == 3 || index == 5 || index == 6))
     {
         QMessageBox::warning(this, "Không có quyền", "Bạn không có quyền truy cập trang này!");
         return;
@@ -196,6 +203,10 @@ void MainWindow::onMenuItemClicked(int index)
         else if (index == 3) // Customer Page
         {
             m_customerPage->refreshData();
+        }
+        else if (index == 6) // Statistics Page
+        {
+            m_statisticsPage->refreshData();
         }
     }
 }

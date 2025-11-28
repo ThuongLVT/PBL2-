@@ -7,7 +7,7 @@
  */
 
 #include "QuanLyKhachHang.h"
-#include "../Utils/CSVManager.h"
+#include "../Utils/CSVHelper.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -294,7 +294,7 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
         rows.push_back(row);
     }
 
-    bool success = CSVManager::writeCSV(filename, headers, rows);
+    bool success = CSVHelper::writeCSV(filename, headers, rows);
     if (success)
     {
         cout << "Saved " << danhSachKhachHang.size() << " customers to CSV: " << filename << endl;
@@ -304,7 +304,7 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
 
 bool QuanLyKhachHang::docCSV(const string &filename)
 {
-    vector<vector<string>> rows = CSVManager::readCSV(filename, false);
+    vector<vector<string>> rows = CSVHelper::readCSV(filename, false);
 
     if (rows.empty())
     {

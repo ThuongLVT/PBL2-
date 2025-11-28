@@ -10,6 +10,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QHeaderView>
+#include "../../Components/DateRangePicker.h"
 
 class InvoicePage : public QWidget
 {
@@ -19,7 +20,12 @@ public:
     explicit InvoicePage(QWidget *parent = nullptr);
     ~InvoicePage();
 
+    void setUserRole(bool isAdmin);
     void refreshData(); // To reload data when switching to this page
+
+private slots:
+    void onDateRangeChanged(const QDate &from, const QDate &to);
+    void onTableItemDoubleClicked(QTableWidgetItem *item);
 
 private:
     QTabWidget *m_tabWidget;
@@ -31,6 +37,11 @@ private:
 
     QLineEdit *m_searchBookingInput;
     QLineEdit *m_searchServiceInput;
+
+    DateRangePicker *m_datePicker;
+    QDate m_fromDate;
+    QDate m_toDate;
+    bool m_isAdmin;
 
     void setupUI();
     void setupBookingTab();

@@ -665,6 +665,12 @@ void BookingTableTab::onTableRowDoubleClicked(int row, int column)
 
     // Open detail dialog
     BookingDetailDialog dialog(booking, this);
+    
+    // Connect reschedule signal
+    connect(&dialog, &BookingDetailDialog::rescheduleRequested, this, [this](DatSan *booking) {
+        emit rescheduleRequested(booking);
+    });
+    
     if (dialog.exec() == QDialog::Accepted)
     {
         // Refresh table after changes

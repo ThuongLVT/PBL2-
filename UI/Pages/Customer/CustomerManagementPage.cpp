@@ -256,7 +256,7 @@ void CustomerManagementPage::setupRightPanel()
     rightBottomLayout->setSpacing(0);
     rightBottomLayout->setContentsMargins(0, 0, 0, 0);
 
-    historyTitleLabel = new QLabel("Lịch sử đặt sân", this);
+    historyTitleLabel = new QLabel("Lịch sử chi tiêu", this);
     historyTitleLabel->setObjectName("sectionTitle");
     rightBottomLayout->addWidget(historyTitleLabel);
 
@@ -352,6 +352,9 @@ void CustomerManagementPage::loadCustomers()
 {
     if (!system)
         return;
+
+    // Recalculate total spending to ensure consistency
+    system->tinhLaiTongChiTieuKhachHang();
 
     customerTable->setRowCount(0);
     const MangDong<KhachHang *> &customers = system->layDanhSachKhachHang();
@@ -533,7 +536,7 @@ void CustomerManagementPage::onCustomerRowClicked(int row)
     deleteButton->setEnabled(true);
 
     // Load booking history
-    loadBookingHistory(maKH.toStdString());
+    loadSpendingHistory(maKH.toStdString());
 }
 
 void CustomerManagementPage::onAddCustomerClicked()
@@ -663,20 +666,15 @@ void CustomerManagementPage::onDeleteCustomerClicked()
     }
 }
 
-void CustomerManagementPage::loadBookingHistory(const std::string &maKH)
+void CustomerManagementPage::loadSpendingHistory(const std::string &maKH)
 {
     historyList->clear();
 
     if (!system)
         return;
 
+    // 1. Lịch sử đặt sân (Chỉ lấy đơn đã hoàn thành)
     MangDong<DatSan *> bookings = system->timDatSanTheoKhachHang(maKH);
-
-    if (bookings.size() == 0)
-    {
-        historyList->addItem("Chưa có lịch sử đặt sân");
-        return;
-    }
 
     for (int i = 0; i < bookings.size(); i++)
     {
@@ -684,19 +682,63 @@ void CustomerManagementPage::loadBookingHistory(const std::string &maKH)
         if (!ds)
             continue;
 
+        // Chỉ hiển thị đơn đã thanh toán
+        if (ds->getTrangThai() != TrangThaiDatSan::HOAN_THANH)
+            continue;
+
         San *san = ds->getSan();
         NgayGio thoiGian = ds->getThoiGianDat();
+        KhungGio khungGio = ds->getKhungGio();
 
-        QString itemText = QString("%1 - %2/%3/%4 %5:%6 - %7đ")
+        // Format: Sân [TenSan] - [Date] [Start]-[End] - [Total]đ
+        QString itemText = QString("Đặt sân %1 - %2/%3/%4 %5:%6-%7:%8 - %9")
                                .arg(san ? QString::fromStdString(san->layTenSan()) : "N/A")
                                .arg(thoiGian.getNgay(), 2, 10, QChar('0'))
                                .arg(thoiGian.getThang(), 2, 10, QChar('0'))
                                .arg(thoiGian.getNam())
-                               .arg(thoiGian.getGio(), 2, 10, QChar('0'))
-                               .arg(thoiGian.getPhut(), 2, 10, QChar('0'))
+                               .arg(khungGio.getGioBatDau().getGio(), 2, 10, QChar('0'))
+                               .arg(khungGio.getGioBatDau().getPhut(), 2, 10, QChar('0'))
+                               .arg(khungGio.getGioKetThuc().getGio(), 2, 10, QChar('0'))
+                               .arg(khungGio.getGioKetThuc().getPhut(), 2, 10, QChar('0'))
                                .arg(formatCurrency(ds->getTongTien()));
 
         historyList->addItem(itemText);
+    }
+
+    // 2. Lịch sử đơn hàng dịch vụ (Chỉ lấy đơn đã hoàn thành)
+    QuanLyDonHangDichVu *qlDH = system->layQuanLyDonHangDichVu();
+    if (qlDH)
+    {
+        MangDong<DonHangDichVu *> orders = qlDH->timDonHangTheoKhachHang(maKH);
+        for (int i = 0; i < orders.size(); i++)
+        {
+            DonHangDichVu *dh = orders[i];
+            if (!dh)
+                continue;
+
+            // Chỉ hiển thị đơn đã thanh toán
+            if (dh->getTrangThai() != TrangThaiDonHang::HOAN_THANH)
+                continue;
+
+            NgayGio ngayTao = dh->getNgayTao();
+
+            // Format: Dịch vụ [MaDH] - [Date] [Time] - [Total]đ
+            QString itemText = QString("Dịch vụ %1 - %2/%3/%4 %5:%6 - %7")
+                                   .arg(QString::fromStdString(dh->getMaDonHang()))
+                                   .arg(ngayTao.getNgay(), 2, 10, QChar('0'))
+                                   .arg(ngayTao.getThang(), 2, 10, QChar('0'))
+                                   .arg(ngayTao.getNam())
+                                   .arg(ngayTao.getGio(), 2, 10, QChar('0'))
+                                   .arg(ngayTao.getPhut(), 2, 10, QChar('0'))
+                                   .arg(formatCurrency(dh->getThanhTien()));
+
+            historyList->addItem(itemText);
+        }
+    }
+
+    if (historyList->count() == 0)
+    {
+        historyList->addItem("Chưa có lịch sử chi tiêu");
     }
 }
 

@@ -137,7 +137,7 @@ private:
     void applyStyles();
 
     void updateStatsCards();
-    void loadBookingHistory(const std::string &maKH);
+    void loadSpendingHistory(const std::string &maKH);
     void clearCustomerForm();
     bool validateCustomerData();
     QString formatCurrency(double amount) const;

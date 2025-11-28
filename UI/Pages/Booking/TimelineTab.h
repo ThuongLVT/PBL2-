@@ -35,10 +35,10 @@
 
 // Forward declaration
 class TimelineGridWidget;
+class QScrollArea;
 
 /**
  * @class TimelineTab
- * @brief Timeline view for visual booking management
  */
 class TimelineTab : public QWidget
 {
@@ -70,7 +70,12 @@ private slots:
     void onPhoneSearchClicked();
 
     /**
-     * @brief Field selection changed
+     * @brief Filter fields based on type and area
+     */
+    void onFilterChanged();
+
+    /**
+     * @brief Field changed event
      */
     void onFieldChanged(int index);
 
@@ -112,6 +117,13 @@ private slots:
     void onDuration90Clicked();
     void onDuration120Clicked();
 
+public slots:
+    /**
+     * @brief Fill form with booking data for rescheduling
+     * @param booking Booking to reschedule
+     */
+    void loadBookingForReschedule(DatSan *booking);
+
 signals:
     /**
      * @brief Emitted when booking data changes (create/update/delete)
@@ -140,6 +152,11 @@ private:
     void setupFilters();
     bool checkBookingConflict(San *san, const NgayGio &ngayGio, const KhungGio &khungGio);
     void setDuration(int minutes);
+    void filterFieldsByType(LoaiSan loaiSan);
+    void loadAllFields();
+
+    // Helper for sync scrolling
+    void syncScrollBars();
 
 private:
     // ===== MAIN LAYOUT =====
@@ -163,8 +180,10 @@ private:
     QLineEdit *phoneEdit;
     QLineEdit *nameEdit; // Changed from QLabel to QLineEdit
     QComboBox *fieldCombo;
+    QComboBox *filterTypeCombo; // New filter combo for field type
+    QComboBox *filterAreaCombo; // New filter combo for area
     QLabel *priceLabel;
-    QLabel *depositLabel; // Nh\u00e3n hi\u1ec3n th\u1ecb ti\u1ec1n c\u1ecdc (30% ti\u1ec1n s\u00e2n)
+    QLabel *depositLabel; // Nhãn hiển thị tiền cọc (30% tiền sân)
     QComboBox *statusCombo;
     QComboBox *typeCombo;
     QDateEdit *dateEdit;
@@ -181,18 +200,31 @@ private:
     // Action buttons
     QPushButton *saveBtn;
     QPushButton *deleteBtn;
-    // Removed: checkinBtn (no longer needed)
+    QPushButton *addCustomerBtn; // New button
 
     // ===== BOTTOM PANEL (60%) =====
     QFrame *timelinePanel;
-    QVBoxLayout *timelineLayout;
+    QHBoxLayout *timelineLayout;
+
+    // Widgets for fixed headers
+    TimelineGridWidget *cornerWidget;
+    TimelineGridWidget *headerWidget;
+    TimelineGridWidget *timeWidget;
     TimelineGridWidget *timelineGrid;
+
+    QScrollArea *headerScrollArea;
+    QScrollArea *timeScrollArea;
+    QScrollArea *gridScrollArea;
 
     // ===== DATA =====
     HeThongQuanLy *system;
     MangDong<San *> fields;
-    DatSan *currentBooking; // Current editing booking
+    MangDong<San *> allFields;   // Store all fields before filtering
+    DatSan *currentBooking;      // Current editing booking
+    DatSan *reschedulingBooking; // Booking being rescheduled
     bool isEditMode;
+    bool isRescheduleMode;
+    bool isNewCustomerPending; // Flag for new customer mode
     QCompleter *phoneCompleter;
     QCompleter *nameCompleter;
 };

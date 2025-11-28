@@ -2,12 +2,26 @@
 #define STATISTICSPAGE_H
 
 #include <QWidget>
-#include <QDateEdit>
-#include <QLabel>
-#include <QTableWidget>
-#include <QPushButton>
-#include <QFrame>
+#include <QVBoxLayout>
+#include <QTabWidget>
 
+// Forward declarations
+class RevenueTab;
+class BookingFieldTab;
+class CustomerTab;
+class ServiceTab;
+class HeThongQuanLy;
+
+/**
+ * @class StatisticsPage
+ * @brief Trang thống kê chính với 4 tab
+ *
+ * Bao gồm:
+ * - Tab 1: Doanh Thu (Revenue Analytics)
+ * - Tab 2: Booking & Sân
+ * - Tab 3: Khách Hàng
+ * - Tab 4: Dịch Vụ
+ */
 class StatisticsPage : public QWidget
 {
     Q_OBJECT
@@ -16,38 +30,31 @@ public:
     explicit StatisticsPage(QWidget *parent = nullptr);
     ~StatisticsPage();
 
+    void setHeThong(HeThongQuanLy *ht);
     void refreshData();
 
+protected:
+    void showEvent(QShowEvent *event) override;
+
 private slots:
-    void onAnalyzeClicked();
+    void onTabChanged(int index);
 
 private:
     void setupUI();
-    void setupHeader();
-    void setupSummaryCards();
-    void setupDetailsTable();
+    void styleTabWidget();
 
-    // Helper to create a stat card
-    QFrame *createStatCard(const QString &title, const QString &value, const QString &iconPath, const QString &color);
+    // UI Components
+    QVBoxLayout *m_mainLayout;
+    QTabWidget *m_tabWidget;
 
-    // UI Elements
-    QDateEdit *fromDateEdit;
-    QDateEdit *toDateEdit;
-    QPushButton *analyzeBtn;
+    // Tabs
+    RevenueTab *m_revenueTab;
+    BookingFieldTab *m_bookingFieldTab;
+    CustomerTab *m_customerTab;
+    ServiceTab *m_serviceTab;
 
-    // Summary Labels
-    QLabel *lblTotalRevenue;
-    QLabel *lblFieldRevenue;
-    QLabel *lblServiceRevenue;
-    QLabel *lblTotalBookings;
-    QLabel *lblCompleted;
-    QLabel *lblCancelled;
-
-    // Table
-    QTableWidget *detailsTable;
-
-    // Helper
-    QString formatCurrency(double amount);
+    // Data
+    HeThongQuanLy *m_heThong;
 };
 
 #endif // STATISTICSPAGE_H

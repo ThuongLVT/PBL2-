@@ -300,7 +300,12 @@ void Sidebar::setUserRole(bool isAdmin)
     m_isAdmin = isAdmin;
 
     // Show/hide admin-only menu items
-    m_paymentButton->setVisible(isAdmin); // Hide invoice for staff
+    // Invoice is now visible for everyone (staff can view daily invoices)
+    m_paymentButton->setVisible(true);
+
+    // Hide management features for staff
+    m_fieldButton->setVisible(isAdmin);
+    m_customerButton->setVisible(isAdmin);
     m_staffButton->setVisible(isAdmin);
     m_statisticsButton->setVisible(isAdmin);
 }

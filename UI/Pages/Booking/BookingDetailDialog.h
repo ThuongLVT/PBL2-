@@ -40,6 +40,12 @@ public:
     explicit BookingDetailDialog(DatSan *booking, QWidget *parent = nullptr);
     ~BookingDetailDialog();
 
+signals:
+    /**
+     * @brief Emitted when reschedule button is clicked
+     */
+    void rescheduleRequested(DatSan *booking);
+
 private slots:
     void onSaveClicked();
     void onCancelBookingClicked();

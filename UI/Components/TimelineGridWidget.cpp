@@ -14,13 +14,24 @@
 #include <cmath>
 #include <functional>
 
-TimelineGridWidget::TimelineGridWidget(QWidget *parent)
-    : QWidget(parent), system(nullptr), currentDate(QDate::currentDate()), isDragging(false), dragFieldIndex(-1), dragStartHour(0), dragStartMinute(0), hasPendingSelection(false), pendingFieldIndex(-1), pendingStartHour(0), pendingStartMinute(0), pendingDurationMinutes(0), totalWidth(0), totalHeight(0), fieldWidth(MIN_FIELD_WIDTH), numFields(0), numHours(END_HOUR - START_HOUR + 1)
+TimelineGridWidget::TimelineGridWidget(DisplayMode mode, QWidget *parent)
+    : QWidget(parent), system(nullptr), currentDate(QDate::currentDate()), isDragging(false), dragFieldIndex(-1), dragStartHour(0), dragStartMinute(0), hasPendingSelection(false), pendingFieldIndex(-1), pendingStartHour(0), pendingStartMinute(0), pendingDurationMinutes(0), totalWidth(0), totalHeight(0), fieldWidth(MIN_FIELD_WIDTH), numFields(0), numHours(END_HOUR - START_HOUR + 1), displayMode(mode)
 {
     system = HeThongQuanLy::getInstance();
 
     setMouseTracking(true);
-    setMinimumHeight(numHours * HOUR_HEIGHT + HEADER_HEIGHT);
+
+    // Adjust minimum height based on mode
+    if (displayMode == HeaderOnly || displayMode == CornerOnly)
+    {
+        setMinimumHeight(HEADER_HEIGHT);
+        setMaximumHeight(HEADER_HEIGHT);
+    }
+    else
+    {
+        setMinimumHeight(numHours * HOUR_HEIGHT);
+    }
+
     setContextMenuPolicy(Qt::DefaultContextMenu);
 
     // Load fields
@@ -33,6 +44,12 @@ TimelineGridWidget::TimelineGridWidget(QWidget *parent)
 
     calculateGeometry();
     loadBookings();
+}
+
+void TimelineGridWidget::setExcludedBooking(DatSan *booking)
+{
+    excludedBooking = booking;
+    loadBookings(); // Reload to apply changes
 }
 
 TimelineGridWidget::~TimelineGridWidget()
@@ -48,6 +65,15 @@ TimelineGridWidget::~TimelineGridWidget()
 void TimelineGridWidget::setDate(const QDate &date)
 {
     currentDate = date;
+    loadBookings();
+    update();
+}
+
+void TimelineGridWidget::setFields(const MangDong<San *> &newFields)
+{
+    fields = newFields;
+    numFields = fields.size();
+    calculateGeometry();
     loadBookings();
     update();
 }
@@ -75,6 +101,12 @@ void TimelineGridWidget::loadBookings()
         DatSan *booking = allBookings[i];
         if (!booking)
             continue;
+
+        // Skip excluded booking (for reschedule)
+        if (booking == excludedBooking)
+        {
+            continue;
+        }
 
         // Check if booking is on current date
         NgayGio ngayGio = booking->getThoiGianDat();
@@ -136,7 +168,7 @@ QColor TimelineGridWidget::getBookingColor(DatSan *booking) const
     if (!booking)
         return QColor("#3b82f6"); // Default blue
 
-    // D\u00e0nh s\u00e1ch m\u00e0u s\u1eafc \u0111a d\u1ea1ng (tr\u1eeb \u0111en x\u00e1m)
+    // D\u00e0nh s\u00e1ch m\u00e0u s\u1eaffc \u0111a d\u1ea1ng (tr\u1eeb \u0111en x\u00e1m)
     // S\u1eed d\u1ee5ng m\u00e3 \u0111\u1eb7t s\u00e2n \u0111\u1ec3 ch\u1ecdn m\u00e0u nh\u1ea5t qu\u00e1n
     static const QVector<QColor> colors = {
         QColor("#3b82f6"), // Blue
@@ -179,12 +211,44 @@ void TimelineGridWidget::calculateGeometry()
         fieldWidth = MIN_FIELD_WIDTH;
     }
 
-    // Add TIME_LABEL_WIDTH to total width
-    totalWidth = TIME_LABEL_WIDTH + numFields * fieldWidth;
-    totalHeight = HEADER_HEIGHT + numHours * HOUR_HEIGHT;
+    // Calculate dimensions based on mode
+    switch (displayMode)
+    {
+    case Full:
+        totalWidth = TIME_LABEL_WIDTH + numFields * fieldWidth;
+        totalHeight = HEADER_HEIGHT + numHours * HOUR_HEIGHT;
+        break;
+    case HeaderOnly:
+        totalWidth = numFields * fieldWidth;
+        totalHeight = HEADER_HEIGHT;
+        break;
+    case TimeOnly:
+        totalWidth = TIME_LABEL_WIDTH;
+        totalHeight = numHours * HOUR_HEIGHT;
+        break;
+    case GridOnly:
+        totalWidth = numFields * fieldWidth;
+        totalHeight = numHours * HOUR_HEIGHT;
+        break;
+    case CornerOnly:
+        totalWidth = TIME_LABEL_WIDTH;
+        totalHeight = HEADER_HEIGHT;
+        break;
+    }
 
     setMinimumWidth(totalWidth);
     setMinimumHeight(totalHeight);
+
+    // For HeaderOnly and CornerOnly, fix the height
+    if (displayMode == HeaderOnly || displayMode == CornerOnly)
+    {
+        setMaximumHeight(HEADER_HEIGHT);
+    }
+    // For TimeOnly and CornerOnly, fix the width
+    if (displayMode == TimeOnly || displayMode == CornerOnly)
+    {
+        setMaximumWidth(TIME_LABEL_WIDTH);
+    }
 }
 
 void TimelineGridWidget::paintEvent(QPaintEvent *event)
@@ -197,16 +261,43 @@ void TimelineGridWidget::paintEvent(QPaintEvent *event)
     // Background
     painter.fillRect(rect(), QColor(255, 255, 255));
 
-    drawGrid(painter);
-    drawTimeLabels(painter);
-    drawFieldHeaders(painter);
-    drawBookingBlocks(painter);
-
-    // Draw pending selection (if exists)
-    if (hasPendingSelection)
+    switch (displayMode)
     {
-        int x = TIME_LABEL_WIDTH + pendingFieldIndex * fieldWidth;
-        int startY = HEADER_HEIGHT + (pendingStartHour - START_HOUR) * HOUR_HEIGHT + (pendingStartMinute * HOUR_HEIGHT / 60);
+    case Full:
+        drawGrid(painter);
+        drawTimeLabels(painter);
+        drawFieldHeaders(painter);
+        drawBookingBlocks(painter);
+        break;
+    case HeaderOnly:
+        drawFieldHeaders(painter);
+        break;
+    case TimeOnly:
+        drawTimeLabels(painter);
+        break;
+    case GridOnly:
+        drawGrid(painter);
+        drawBookingBlocks(painter);
+        break;
+    case CornerOnly:
+        // Draw "Time" in top-left corner
+        painter.setPen(QColor(31, 41, 55)); // #1f2937
+        QFont font = painter.font();
+        font.setPointSize(9);
+        font.setBold(true);
+        painter.setFont(font);
+        painter.drawText(rect(), Qt::AlignCenter, "Time");
+        break;
+    }
+
+    // Draw pending selection (if exists) - Only in Full or GridOnly mode
+    if ((displayMode == Full || displayMode == GridOnly) && hasPendingSelection)
+    {
+        int xOffset = (displayMode == Full) ? TIME_LABEL_WIDTH : 0;
+        int yOffset = (displayMode == Full) ? HEADER_HEIGHT : 0;
+
+        int x = xOffset + pendingFieldIndex * fieldWidth;
+        int startY = yOffset + (pendingStartHour - START_HOUR) * HOUR_HEIGHT + (pendingStartMinute * HOUR_HEIGHT / 60);
         int height = pendingDurationMinutes * HOUR_HEIGHT / 60;
 
         QRect selectionRect(x + 2, startY, fieldWidth - 4, height);
@@ -236,21 +327,27 @@ void TimelineGridWidget::drawGrid(QPainter &painter)
 {
     painter.setPen(QPen(QColor(229, 231, 235), 1)); // #e5e7eb
 
-    // Vertical line after Time column
-    painter.drawLine(TIME_LABEL_WIDTH, 0, TIME_LABEL_WIDTH, totalHeight);
+    int xOffset = (displayMode == Full) ? TIME_LABEL_WIDTH : 0;
+    int yOffset = (displayMode == Full) ? HEADER_HEIGHT : 0;
+
+    // Vertical line after Time column (only in Full mode)
+    if (displayMode == Full)
+    {
+        painter.drawLine(TIME_LABEL_WIDTH, 0, TIME_LABEL_WIDTH, totalHeight);
+    }
 
     // Vertical lines (field columns)
     for (int i = 0; i <= numFields; i++)
     {
-        int x = TIME_LABEL_WIDTH + i * fieldWidth;
-        painter.drawLine(x, HEADER_HEIGHT, x, totalHeight);
+        int x = xOffset + i * fieldWidth;
+        painter.drawLine(x, 0, x, totalHeight);
     }
 
-    // Horizontal lines (time rows) - chỉ vẽ từ cột sân, không vẽ trong cột giờ
+    // Horizontal lines (time rows)
     for (int i = 0; i <= numHours; i++)
     {
-        int y = HEADER_HEIGHT + i * HOUR_HEIGHT;
-        painter.drawLine(TIME_LABEL_WIDTH, y, totalWidth, y);
+        int y = yOffset + i * HOUR_HEIGHT;
+        painter.drawLine(0, y, totalWidth, y);
     }
 }
 
@@ -261,13 +358,15 @@ void TimelineGridWidget::drawTimeLabels(QPainter &painter)
     font.setPointSize(10);
     painter.setFont(font);
 
+    int yOffset = (displayMode == Full) ? HEADER_HEIGHT : 0;
+
     // Draw time labels in left column
     for (int i = 0; i < numHours; i++)
     {
         int hour = START_HOUR + i;
         QString label = QString("%1:00").arg(hour, 2, 10, QChar('0'));
 
-        int y = HEADER_HEIGHT + i * HOUR_HEIGHT;
+        int y = yOffset + i * HOUR_HEIGHT;
         QRect timeRect(0, y, TIME_LABEL_WIDTH, HOUR_HEIGHT);
 
         // Draw label centered in the time cell
@@ -286,9 +385,14 @@ void TimelineGridWidget::drawFieldHeaders(QPainter &painter)
     // Header background - màu trắng
     painter.fillRect(0, 0, totalWidth, HEADER_HEIGHT, QColor(255, 255, 255));
 
-    // Draw "Time" in top-left corner
-    QRect timeHeaderRect(0, 0, TIME_LABEL_WIDTH, HEADER_HEIGHT);
-    painter.drawText(timeHeaderRect, Qt::AlignCenter, "Time");
+    int xOffset = (displayMode == Full) ? TIME_LABEL_WIDTH : 0;
+
+    // Draw "Time" in top-left corner (Only in Full mode)
+    if (displayMode == Full)
+    {
+        QRect timeHeaderRect(0, 0, TIME_LABEL_WIDTH, HEADER_HEIGHT);
+        painter.drawText(timeHeaderRect, Qt::AlignCenter, "Time");
+    }
 
     // Draw field headers
     for (int i = 0; i < numFields && i < fields.size(); i++)
@@ -296,7 +400,7 @@ void TimelineGridWidget::drawFieldHeaders(QPainter &painter)
         San *san = fields[i];
         QString fieldName = QString::fromStdString(san->layTenSan());
 
-        int x = TIME_LABEL_WIDTH + i * fieldWidth;
+        int x = xOffset + i * fieldWidth;
         QRect headerRect(x, 0, fieldWidth, HEADER_HEIGHT);
 
         painter.drawText(headerRect, Qt::AlignCenter, fieldName);
@@ -305,17 +409,20 @@ void TimelineGridWidget::drawFieldHeaders(QPainter &painter)
 
 void TimelineGridWidget::drawBookingBlocks(QPainter &painter)
 {
+    int xOffset = (displayMode == Full) ? TIME_LABEL_WIDTH : 0;
+    int yOffset = (displayMode == Full) ? HEADER_HEIGHT : 0;
+
     for (BookingBlock *block : bookingBlocks)
     {
         if (!block)
             continue;
 
-        // Calculate position (add TIME_LABEL_WIDTH offset)
-        int x = TIME_LABEL_WIDTH + block->fieldIndex * fieldWidth;
+        // Calculate position
+        int x = xOffset + block->fieldIndex * fieldWidth;
 
         // Calculate y from time
         int totalMinutesFromStart = (block->startHour - START_HOUR) * 60 + block->startMinute;
-        int y = HEADER_HEIGHT + (totalMinutesFromStart * HOUR_HEIGHT) / 60;
+        int y = yOffset + (totalMinutesFromStart * HOUR_HEIGHT) / 60;
 
         // Calculate height from duration
         int height = (block->durationMinutes * HOUR_HEIGHT) / 60;
@@ -451,6 +558,12 @@ void TimelineGridWidget::mousePressEvent(QMouseEvent *event)
         return;
     }
 
+    // Only allow interaction in Full or GridOnly mode
+    if (displayMode != Full && displayMode != GridOnly)
+    {
+        return;
+    }
+
     // Check if locked (selection active)
     if (property("isLocked").toBool())
     {
@@ -468,8 +581,11 @@ void TimelineGridWidget::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    // Check if clicked in valid grid area (below header and after time column)
-    if (pos.y() < HEADER_HEIGHT || pos.x() < TIME_LABEL_WIDTH)
+    // Check if clicked in valid grid area
+    int yOffset = (displayMode == Full) ? HEADER_HEIGHT : 0;
+    int xOffset = (displayMode == Full) ? TIME_LABEL_WIDTH : 0;
+
+    if (pos.y() < yOffset || pos.x() < xOffset)
     {
         return;
     }
@@ -524,66 +640,29 @@ void TimelineGridWidget::clearPendingSelection()
 
 void TimelineGridWidget::contextMenuEvent(QContextMenuEvent *event)
 {
-    // Check if right-click on booking block
-    BookingBlock *block = getBookingBlockAt(event->pos());
-    if (block && block->booking)
-    {
-        showBookingContextMenu(event->globalPos(), block);
-    }
+    // Context menu removed as requested
+    Q_UNUSED(event);
 }
 
 void TimelineGridWidget::showBookingContextMenu(const QPoint &pos, BookingBlock *block)
 {
-    QMenu menu(this);
-
-    QAction *viewAction = menu.addAction("📋 Xem chi tiết");
-    QAction *checkinAction = menu.addAction("✓ Check-in nhanh");
-    QAction *paymentAction = menu.addAction("💳 Thanh toán");
-    QAction *serviceAction = menu.addAction("🍺 Đặt thêm dịch vụ");
-    menu.addSeparator();
-    QAction *cancelAction = menu.addAction("🗑️ Hủy đặt sân");
-
-    // Style menu
-    menu.setStyleSheet(
-        "QMenu { background-color: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px; } "
-        "QMenu::item { padding: 6px 20px; font-size: 12px; } "
-        "QMenu::item:selected { background-color: #f0fdf4; color: #16a34a; } "
-        "QMenu::separator { height: 1px; background: #e5e7eb; margin: 4px 0; }");
-
-    QAction *selected = menu.exec(pos);
-
-    if (selected == viewAction)
-    {
-        emit bookingClicked(block->booking);
-    }
-    else if (selected == checkinAction)
-    {
-        QMessageBox::information(this, "Check-in", "Chức năng check-in nhanh sẽ được triển khai sau!");
-    }
-    else if (selected == paymentAction)
-    {
-        QMessageBox::information(this, "Thanh toán", "Chức năng thanh toán sẽ được triển khai ở Tab Table View!");
-    }
-    else if (selected == serviceAction)
-    {
-        QMessageBox::information(this, "Dịch vụ", "Chức năng đặt thêm dịch vụ sẽ được triển khai sau!");
-    }
-    else if (selected == cancelAction)
-    {
-        emit bookingClicked(block->booking);
-    }
+    // Function kept but empty to satisfy header declaration if any, or just remove body
+    Q_UNUSED(pos);
+    Q_UNUSED(block);
 }
 
 int TimelineGridWidget::getFieldIndexAtX(int x) const
 {
-    // Check if x is in time label column
-    if (x < TIME_LABEL_WIDTH)
+    int xOffset = (displayMode == Full) ? TIME_LABEL_WIDTH : 0;
+
+    // Check if x is in time label column (only for Full mode)
+    if (displayMode == Full && x < TIME_LABEL_WIDTH)
     {
         return -1;
     }
 
-    // Calculate field index from x position (after time column)
-    int fieldIndex = (x - TIME_LABEL_WIDTH) / fieldWidth;
+    // Calculate field index from x position
+    int fieldIndex = (x - xOffset) / fieldWidth;
 
     if (fieldIndex < 0 || fieldIndex >= numFields)
     {
@@ -595,14 +674,16 @@ int TimelineGridWidget::getFieldIndexAtX(int x) const
 
 int TimelineGridWidget::getTimeSlotAtY(int y, int &outHour, int &outMinute) const
 {
-    if (y < HEADER_HEIGHT)
+    int yOffset = (displayMode == Full) ? HEADER_HEIGHT : 0;
+
+    if (displayMode == Full && y < HEADER_HEIGHT)
     {
         outHour = START_HOUR;
         outMinute = 0;
         return 0;
     }
 
-    int relativeY = y - HEADER_HEIGHT;
+    int relativeY = y - yOffset;
     int totalMinutes = (relativeY * 60) / HOUR_HEIGHT;
 
     // Snap to 30-minute intervals

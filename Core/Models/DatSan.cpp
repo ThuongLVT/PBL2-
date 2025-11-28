@@ -40,6 +40,7 @@ DatSan::DatSan(const DatSan &other)
     tienCoc = other.tienCoc;
     trangThaiCoc = other.trangThaiCoc;
     ngayDatCoc = other.ngayDatCoc;
+    ngayThanhToan = other.ngayThanhToan;
     lyDoHuy = other.lyDoHuy;
     hoanCoc = other.hoanCoc;
 }
@@ -68,6 +69,7 @@ DatSan &DatSan::operator=(const DatSan &other)
         tienCoc = other.tienCoc;
         trangThaiCoc = other.trangThaiCoc;
         ngayDatCoc = other.ngayDatCoc;
+        ngayThanhToan = other.ngayThanhToan;
         lyDoHuy = other.lyDoHuy;
         hoanCoc = other.hoanCoc;
     }
@@ -94,6 +96,7 @@ std::string DatSan::getGhiChu() const { return ghiChu; }
 double DatSan::getTienCoc() const { return tienCoc; }
 TrangThaiCoc DatSan::getTrangThaiCoc() const { return trangThaiCoc; }
 NgayGio DatSan::getNgayDatCoc() const { return ngayDatCoc; }
+NgayGio DatSan::getNgayThanhToan() const { return ngayThanhToan; }
 std::string DatSan::getLyDoHuy() const { return lyDoHuy; }
 bool DatSan::isHoanCoc() const { return hoanCoc; }
 
@@ -116,12 +119,32 @@ void DatSan::setGhiChu(const std::string &gc) { ghiChu = gc; }
 void DatSan::setTienCoc(double tc) { tienCoc = tc; }
 void DatSan::setTrangThaiCoc(TrangThaiCoc ttc) { trangThaiCoc = ttc; }
 void DatSan::setNgayDatCoc(const NgayGio &ndc) { ngayDatCoc = ndc; }
+void DatSan::setNgayThanhToan(const NgayGio &ntt) { ngayThanhToan = ntt; }
 void DatSan::setLyDoHuy(const std::string &lyDo) { lyDoHuy = lyDo; }
 void DatSan::setHoanCoc(bool hoan) { hoanCoc = hoan; }
 
 // Methods
 void DatSan::themDichVu(const DichVuDat &dv)
 {
+    // Validate input
+    if (dv.getDichVu() == nullptr || dv.getSoLuong() <= 0)
+        return;
+
+    // Check if service already exists
+    for (int i = 0; i < danhSachDichVu.size(); i++)
+    {
+        DichVu *existingDv = danhSachDichVu[i].getDichVu();
+        if (existingDv != nullptr && existingDv == dv.getDichVu())
+        {
+            // Update quantity
+            int newQty = danhSachDichVu[i].getSoLuong() + dv.getSoLuong();
+            danhSachDichVu[i].setSoLuong(newQty);
+            tinhTongTien();
+            return;
+        }
+    }
+
+    // If not found, add new
     danhSachDichVu.push_back(dv);
     tinhTongTien();
 }

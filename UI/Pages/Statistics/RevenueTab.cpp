@@ -23,7 +23,6 @@ RevenueTab::RevenueTab(QWidget *parent)
       m_totalRevenueCard(nullptr),
       m_fieldRevenueCard(nullptr),
       m_serviceRevenueCard(nullptr),
-      m_avgRevenueCard(nullptr),
       m_chartsRow1(nullptr),
       m_chartsRow2(nullptr),
       m_lineChartContainer(nullptr),
@@ -147,15 +146,9 @@ void RevenueTab::createSummaryCards()
     m_serviceRevenueCard->setCardStyle(SummaryCard::Purple);
     m_serviceRevenueCard->setValue("0 VND");
 
-    // Average Revenue Card
-    m_avgRevenueCard = new SummaryCard("Trung Bình/Ngày", "📊", this);
-    m_avgRevenueCard->setCardStyle(SummaryCard::Info);
-    m_avgRevenueCard->setValue("0 VND");
-
     m_cardsLayout->addWidget(m_totalRevenueCard);
     m_cardsLayout->addWidget(m_fieldRevenueCard);
     m_cardsLayout->addWidget(m_serviceRevenueCard);
-    m_cardsLayout->addWidget(m_avgRevenueCard);
 
     m_contentLayout->addLayout(m_cardsLayout);
 }
@@ -213,10 +206,6 @@ void RevenueTab::updateSummaryCards()
     m_serviceRevenueCard->setValue(SummaryCard::formatCurrency(serviceRevenue));
     m_serviceRevenueCard->setTrend(m_thongKe->getPhanTramTangDV(),
                                    m_thongKe->getPhanTramTangDV() >= 0 ? SummaryCard::Up : SummaryCard::Down);
-
-    // Average Revenue
-    double avgRevenue = m_thongKe->getDoanhThuTrungBinh();
-    m_avgRevenueCard->setValue(SummaryCard::formatCurrency(avgRevenue));
 }
 
 void RevenueTab::updateLineChart()

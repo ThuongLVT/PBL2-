@@ -177,6 +177,13 @@ void ChartContainer::applyStyles()
         }
     )");
 
+    // Ensure chart view has transparent background to show container's white background
+    m_chartView->setBackgroundBrush(Qt::NoBrush);
+    if (m_chart)
+    {
+        m_chart->setBackgroundBrush(Qt::NoBrush);
+    }
+
     QString btnStyle = R"(
         QPushButton {
             background-color: #f1f5f9;

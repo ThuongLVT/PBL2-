@@ -183,8 +183,9 @@ void CustomerTab::createRankingTable()
     columns.append(RankingTable::ColumnConfig("Tổng Chi Tiêu", RankingTable::Currency, -1));
 
     m_topCustomersTable->setColumns(columns);
-    m_topCustomersTable->setMaxRows(10);
+    m_topCustomersTable->setMaxRows(5);
     m_topCustomersTable->setMinimumHeight(400);
+    m_topCustomersTable->setScrollable(false);
 
     m_contentLayout->addWidget(m_topCustomersTable);
 }
@@ -194,6 +195,7 @@ void CustomerTab::createMembershipTable()
     m_membershipTable = new RankingTable("🎖️ Phân Bổ Hạng Khách Hàng", this);
     m_membershipTable->setShowRankColumn(false);
     m_membershipTable->setShowMedals(false);
+    m_membershipTable->setScrollable(false);
 
     QList<RankingTable::ColumnConfig> columns;
     columns.append(RankingTable::ColumnConfig("Hạng", RankingTable::Text, 150));

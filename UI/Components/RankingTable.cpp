@@ -18,6 +18,7 @@ RankingTable::RankingTable(QWidget *parent)
       m_headerHeight(DEFAULT_HEADER_HEIGHT),
       m_alternatingColors(true),
       m_hoverHighlight(true),
+      m_scrollable(true),
       m_sortColumn(-1),
       m_sortOrder(Qt::DescendingOrder),
       m_shadowEffect(nullptr)
@@ -354,6 +355,21 @@ void RankingTable::setAlternatingRowColors(bool enable)
 void RankingTable::setHoverHighlight(bool enable)
 {
     m_hoverHighlight = enable;
+}
+
+void RankingTable::setScrollable(bool enable)
+{
+    m_scrollable = enable;
+    if (enable)
+    {
+        m_table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        m_table->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    }
+    else
+    {
+        m_table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    }
 }
 
 // ========== GETTERS ==========

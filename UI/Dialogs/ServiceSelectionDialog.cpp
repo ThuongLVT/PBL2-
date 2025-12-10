@@ -312,7 +312,10 @@ void ServiceSelectionDialog::loadServices()
     const MangDong<DichVu *> &ds = qldv->layDanhSachDichVu();
     for (int i = 0; i < ds.size(); ++i)
     {
-        allServices.push_back(ds[i]);
+        if (ds[i])
+        {
+            allServices.push_back(ds[i]);
+        }
     }
 
     updateGrid();
@@ -325,7 +328,7 @@ void ServiceSelectionDialog::updateGrid()
     while ((child = gridLayout->takeAt(0)) != nullptr)
     {
         if (child->widget())
-            delete child->widget();
+            child->widget()->deleteLater(); // Use deleteLater to avoid crash if widget is sender
         delete child;
     }
 
@@ -383,6 +386,11 @@ protected:
 
 QWidget *ServiceSelectionDialog::createServiceCard(DichVu *service)
 {
+    if (!service)
+    {
+        return new QWidget();
+    }
+
     ClickableFrame *card = new ClickableFrame();
     card->setFixedSize(210, 260); // Adjusted width for 960px dialog (4 items/row)
     card->setStyleSheet(

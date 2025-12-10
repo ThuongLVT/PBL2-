@@ -89,6 +89,12 @@ void ServiceManagementPage::applyStyles()
 
 void ServiceManagementPage::setUserRole(bool isAdmin)
 {
+    // Safety check: Ensure widgets are initialized
+    if (!tabWidget || !managementWidget)
+    {
+        return;
+    }
+
     // If not admin, remove or disable the management tab
     if (!isAdmin)
     {

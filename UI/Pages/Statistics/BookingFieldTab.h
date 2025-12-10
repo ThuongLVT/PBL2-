@@ -47,6 +47,7 @@ private:
     void updateSummaryCards();
     void updateDonutChart();
     void updateBarChart();
+    void updatePeakHoursChart();
     void updateRankingTable();
 
     // UI Components
@@ -67,8 +68,10 @@ private:
 
     // Charts
     QHBoxLayout *m_chartsRow;
+    QHBoxLayout *m_chartsRow2;
     ChartContainer *m_donutChartContainer;
     ChartContainer *m_barChartContainer;
+    ChartContainer *m_peakHoursChartContainer;
 
     // Ranking table
     RankingTable *m_topFieldsTable;

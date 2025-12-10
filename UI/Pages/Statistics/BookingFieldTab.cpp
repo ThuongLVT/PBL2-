@@ -23,8 +23,10 @@ BookingFieldTab::BookingFieldTab(QWidget *parent)
       m_cancelledCard(nullptr),
       m_goldenHourCard(nullptr),
       m_chartsRow(nullptr),
+      m_chartsRow2(nullptr),
       m_donutChartContainer(nullptr),
       m_barChartContainer(nullptr),
+      m_peakHoursChartContainer(nullptr),
       m_topFieldsTable(nullptr),
       m_heThong(nullptr),
       m_thongKe(nullptr)
@@ -75,6 +77,7 @@ void BookingFieldTab::refreshData()
     updateSummaryCards();
     updateDonutChart();
     updateBarChart();
+    updatePeakHoursChart();
     updateRankingTable();
 }
 
@@ -175,6 +178,16 @@ void BookingFieldTab::createCharts()
     m_chartsRow->addWidget(m_barChartContainer, 1);
 
     m_contentLayout->addLayout(m_chartsRow);
+
+    // Row 2: Peak Hours Chart
+    m_chartsRow2 = new QHBoxLayout();
+    m_chartsRow2->setSpacing(16);
+
+    m_peakHoursChartContainer = new ChartContainer("Phân Bổ Booking Theo Khung Giờ", this);
+    m_peakHoursChartContainer->setMinimumChartHeight(300);
+
+    m_chartsRow2->addWidget(m_peakHoursChartContainer);
+    m_contentLayout->addLayout(m_chartsRow2);
 }
 
 void BookingFieldTab::createRankingTable()
@@ -299,6 +312,54 @@ void BookingFieldTab::updateBarChart()
     chart->setBackgroundVisible(false);
 
     m_barChartContainer->setChart(chart);
+}
+
+void BookingFieldTab::updatePeakHoursChart()
+{
+    if (!m_thongKe)
+        return;
+
+    QChart *chart = new QChart();
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+
+    QBarSet *set = new QBarSet("Số lượt đặt");
+    set->setColor(QColor("#f59e0b")); // Orange color
+
+    const MangDong<ThongKeKhungGio> &khungGio = m_thongKe->getThongKeKhungGio();
+    QStringList categories;
+
+    // Find max value for Y axis
+    int maxValue = 0;
+
+    for (int i = 0; i < khungGio.size(); i++)
+    {
+        const ThongKeKhungGio &item = khungGio[i];
+        *set << item.soLuotDat;
+        categories << QString("%1h-%2h").arg(item.gioBatDau).arg(item.gioKetThuc);
+
+        if (item.soLuotDat > maxValue)
+            maxValue = item.soLuotDat;
+    }
+
+    QBarSeries *series = new QBarSeries();
+    series->append(set);
+    chart->addSeries(series);
+
+    QBarCategoryAxis *axisX = new QBarCategoryAxis();
+    axisX->append(categories);
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setRange(0, maxValue > 0 ? maxValue + 1 : 5);
+    axisY->setLabelFormat("%d");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+
+    chart->legend()->setVisible(false);
+    chart->setBackgroundVisible(false);
+
+    m_peakHoursChartContainer->setChart(chart);
 }
 
 void BookingFieldTab::updateRankingTable()

@@ -1,8 +1,8 @@
 MaDichVu,TenDichVu,DonGia,DonVi,SoLuongTon,SoLuongBan,TrangThai,LoaiDichVu,HinhAnh,MoTa
-DV001,Nước suối,10000,Chai,74,46,1,DO_UONG,Data/images/DV001.png,Nước khoáng thiên nhiên
-DV002,Coca Cola,15000,Lon,38,92,1,DO_UONG,Data/images/DV002.png,Nước ngọt có ga
-DV003,Pepsi,15000,Lon,34,116,1,DO_UONG,Data/images/DV003.png,Nước ngọt có ga
-DV004,7Up,15000,Lon,84,31,1,DO_UONG,Data/images/DV004.png,Nước ngọt vị chanh
+DV001,Nước suối,10000,Chai,67,53,1,DO_UONG,Data/images/DV001.png,Nước khoáng thiên nhiên
+DV002,Coca Cola,15000,Lon,32,98,1,DO_UONG,Data/images/DV002.png,Nước ngọt có ga
+DV003,Pepsi,15000,Lon,28,122,1,DO_UONG,Data/images/DV003.png,Nước ngọt có ga
+DV004,7Up,15000,Lon,77,38,1,DO_UONG,Data/images/DV004.png,Nước ngọt vị chanh
 DV005,Sting dâu,18000,Chai,80,40,1,DO_UONG,Data/images/DV005.png,Nước tăng lực hương dâu
 DV006,Redbull,20000,Lon,80,35,1,DO_UONG,Data/images/DV006.png,Nước tăng lực bò húc
 DV007,Trà xanh 0 độ,12000,Chai,90,10,1,DO_UONG,Data/images/DV007.png,Trà xanh giải nhiệt
@@ -12,12 +12,12 @@ DV010,Mì tôm trứng,25000,Tô,15,47,1,DO_AN,Data/images/DV010.png,Mì gói n�
 DV011,Mì xào bò,40000,Dĩa,10,25,1,DO_AN,Data/images/DV011.png,Mì xào thịt bò rau cải
 DV012,Cơm chiên dương châu,45000,Dĩa,15,18,1,DO_AN,Data/images/DV012.png,Cơm chiên thập cẩm
 DV013,Xúc xích nướng,15000,Cây,50,30,1,DO_AN,Data/images/DV013.png,Xúc xích đức nướng
-DV014,Snack khoai tây,10000,Gói,30,20,1,DO_AN,Data/images/DV014.png,Snack Oishi
+DV014,Snack khoai tây,10000,Gói,24,26,1,DO_AN,Data/images/DV014.png,Snack Oishi
 DV015,Áo Pitch,5000,Cái,180,70,1,THIET_BI,Data/images/DV015.png,Áo tập chia đội
 DV016,Giày đá bóng,50000,Đôi,20,2,1,THIET_BI,Data/images/DV016.png,Thuê giày đá bóng
-DV017,Găng tay thủ môn,20000,Đôi,10,1,1,THIET_BI,Data/images/DV017.png,Thuê găng tay
+DV017,Găng tay thủ môn,20000,Đôi,2,9,1,THIET_BI,Data/images/DV017.png,Thuê găng tay
 DV018,Bóng đá size 5,30000,Quả,10,10,1,THIET_BI,Data/images/DV018.png,Thuê bóng thi đấu
-DV019,Băng keo cao su non,10000,Cuộn,100,5,1,THIET_BI,Data/images/DV019.png,Băng keo cố định khớp
+DV019,Băng keo cao su non,10000,Cuộn,94,11,1,THIET_BI,Data/images/DV019.png,Băng keo cố định khớp
 DV020,Băng keo thể thao,15000,Cuộn,50,10,1,THIET_BI,Data/images/DV020.png,Băng keo quấn cơ
 DV021,Bánh mì tươi Kinh Đô,10000,Cái,50,10,1,DO_AN,Data/images/DV021.png,Bánh mì tươi vị bơ sữa
 DV023,Bánh mì Sandwich,20000,Gói,30,8,1,DO_AN,Data/images/DV023.png,Bánh mì sandwich lạt

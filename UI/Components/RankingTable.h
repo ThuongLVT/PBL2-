@@ -84,6 +84,7 @@ public:
     void setHeaderHeight(int height);
     void setAlternatingRowColors(bool enable);
     void setHoverHighlight(bool enable);
+    void setScrollable(bool enable);
 
     // ===== GETTERS =====
     QString title() const;
@@ -125,6 +126,7 @@ private:
     int m_headerHeight;
     bool m_alternatingColors;
     bool m_hoverHighlight;
+    bool m_scrollable;
 
     // Sort state
     int m_sortColumn;

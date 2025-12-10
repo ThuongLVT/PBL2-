@@ -21,7 +21,6 @@ ServiceTab::ServiceTab(QWidget *parent)
       m_chartsRow(nullptr),
       m_pieChartContainer(nullptr),
       m_topServicesTable(nullptr),
-      m_inventoryTable(nullptr),
       m_heThong(nullptr),
       m_thongKe(nullptr)
 {
@@ -71,7 +70,6 @@ void ServiceTab::refreshData()
     updateSummaryCards();
     updatePieChart();
     updateRankingTable();
-    updateInventoryTable();
 }
 
 // ========== SLOTS ==========
@@ -116,9 +114,6 @@ void ServiceTab::setupUI()
 
     // Ranking table
     createRankingTable();
-
-    // Inventory table
-    createInventoryTable();
 
     m_contentLayout->addStretch();
 
@@ -187,24 +182,6 @@ void ServiceTab::createRankingTable()
     m_topServicesTable->setMinimumHeight(400);
 
     m_contentLayout->addWidget(m_topServicesTable);
-}
-
-void ServiceTab::createInventoryTable()
-{
-    m_inventoryTable = new RankingTable("📦 Tình Trạng Tồn Kho", this);
-    m_inventoryTable->setShowRankColumn(false);
-    m_inventoryTable->setShowMedals(false);
-
-    QList<RankingTable::ColumnConfig> columns;
-    columns.append(RankingTable::ColumnConfig("Tên Sản Phẩm", RankingTable::Text, 200));
-    columns.append(RankingTable::ColumnConfig("SL Tồn", RankingTable::Number, 100, true, Qt::AlignCenter));
-    columns.append(RankingTable::ColumnConfig("SL Bán", RankingTable::Number, 100, true, Qt::AlignCenter));
-    columns.append(RankingTable::ColumnConfig("Trạng Thái", RankingTable::Text, -1));
-
-    m_inventoryTable->setColumns(columns);
-    m_inventoryTable->setMinimumHeight(300);
-
-    m_contentLayout->addWidget(m_inventoryTable);
 }
 
 // ========== UPDATE METHODS ==========
@@ -300,44 +277,6 @@ void ServiceTab::updateRankingTable()
             row << QString::number(item.soLuongBan);
             row << QString::number(item.doanhThu);
             m_topServicesTable->addRow(row);
-        }
-    }
-}
-
-void ServiceTab::updateInventoryTable()
-{
-    if (!m_thongKe)
-        return;
-
-    m_inventoryTable->clearData();
-
-    const MangDong<ThongKeTonKho> &tonKho = m_thongKe->getThongKeTonKho();
-
-    for (int i = 0; i < tonKho.size(); i++)
-    {
-        const ThongKeTonKho &item = tonKho[i];
-        if (item.dichVu)
-        {
-            QString status;
-            if (item.soLuongTon == 0)
-            {
-                status = "❌ Hết hàng";
-            }
-            else if (item.sapHet)
-            {
-                status = "⚠️ Sắp hết";
-            }
-            else
-            {
-                status = "✅ Còn hàng";
-            }
-
-            QStringList row;
-            row << QString::fromStdString(item.dichVu->layTenDichVu());
-            row << QString::number(item.soLuongTon);
-            row << QString::number(item.soLuongBan);
-            row << status;
-            m_inventoryTable->addRow(row);
         }
     }
 }

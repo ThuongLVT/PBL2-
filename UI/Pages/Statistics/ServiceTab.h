@@ -44,11 +44,9 @@ private:
     void createSummaryCards();
     void createCharts();
     void createRankingTable();
-    void createInventoryTable();
     void updateSummaryCards();
     void updatePieChart();
     void updateRankingTable();
-    void updateInventoryTable();
 
     // UI Components
     QVBoxLayout *m_mainLayout;
@@ -72,7 +70,6 @@ private:
 
     // Tables
     RankingTable *m_topServicesTable;
-    RankingTable *m_inventoryTable;
 
     // Data
     HeThongQuanLy *m_heThong;

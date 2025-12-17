@@ -10,6 +10,7 @@
 #include <QGraphicsDropShadowEffect>
 #include <QtCharts/QChartView>
 #include <QtCharts/QChart>
+#include <QPainter>
 
 /**
  * @class ChartContainer
@@ -75,6 +76,9 @@ private:
     void setupUI();
     void applyStyles();
     void updateLoadingState();
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
 
     // UI Components
     QVBoxLayout *m_mainLayout;

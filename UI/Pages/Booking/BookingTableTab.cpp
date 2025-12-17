@@ -5,6 +5,8 @@
 
 #include "BookingTableTab.h"
 #include "BookingDetailDialog.h"
+#include "../../Dialogs/InvoiceDialog.h"
+#include "../../../Core/Utils/InvoiceGenerator.h"
 #include <QMessageBox>
 #include <QHeaderView>
 #include <QDate>
@@ -65,17 +67,109 @@ void BookingTableTab::setupSearchAndFilters()
         "QLineEdit:focus { "
         "border: 2px solid #16a34a; "
         "}");
-    searchFilterLayout->addWidget(searchBox, 4);
+    searchFilterLayout->addWidget(searchBox, 3);
+
+    // Today button (Active by default)
+    todayButton = new QPushButton("Hôm nay");
+    todayButton->setMinimumHeight(42);
+    todayButton->setObjectName("todayButton");
+    todayButton->setStyleSheet(
+        "QPushButton { "
+        "padding: 8px 20px; "
+        "border: 2px solid #16a34a; "
+        "border-radius: 6px; "
+        "font-size: 14px; "
+        "font-weight: 600; "
+        "background-color: #16a34a; "
+        "color: white; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #15803d; "
+        "border-color: #15803d; "
+        "}");
+    searchFilterLayout->addWidget(todayButton);
+
+    // Tomorrow button
+    tomorrowButton = new QPushButton("Ngày mai");
+    tomorrowButton->setMinimumHeight(42);
+    tomorrowButton->setStyleSheet(
+        "QPushButton { "
+        "padding: 8px 20px; "
+        "border: 2px solid #e5e7eb; "
+        "border-radius: 6px; "
+        "font-size: 14px; "
+        "font-weight: 600; "
+        "background-color: white; "
+        "color: #374151; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #f9fafb; "
+        "border-color: #d1d5db; "
+        "}");
+    searchFilterLayout->addWidget(tomorrowButton);
+
+    // Date picker
+    datePickerEdit = new QDateEdit();
+    datePickerEdit->setCalendarPopup(true);
+    datePickerEdit->setDate(QDate::currentDate());
+    datePickerEdit->setDisplayFormat("📅 dd/MM/yyyy");
+    datePickerEdit->setMinimumHeight(42);
+    datePickerEdit->setStyleSheet(
+        "QDateEdit { "
+        "padding: 8px 15px; "
+        "border: 2px solid #e5e7eb; "
+        "border-radius: 6px; "
+        "font-size: 14px; "
+        "background-color: white; "
+        "} "
+        "QDateEdit:focus { "
+        "border: 2px solid #16a34a; "
+        "}");
+    searchFilterLayout->addWidget(datePickerEdit, 1);
+
+    // Status filter
+    statusFilterCombo = new QComboBox();
+    statusFilterCombo->addItem("Trạng thái: Đang phục vụ", static_cast<int>(TrangThaiDatSan::DA_DAT));
+    statusFilterCombo->addItem("Trạng thái: Tất cả", -1);
+    statusFilterCombo->addItem("Trạng thái: Đã hủy (Hoàn cọc)", static_cast<int>(TrangThaiDatSan::DA_HUY));
+    // Removed Completed and Cancelled options as they are now archived to Invoice Page
+    statusFilterCombo->setCurrentIndex(0); // Default: Đang phục vụ
+    statusFilterCombo->setMinimumHeight(42);
+    statusFilterCombo->setStyleSheet(
+        "QComboBox { "
+        "padding: 8px 15px; "
+        "border: 2px solid #e5e7eb; "
+        "border-radius: 6px; "
+        "font-size: 14px; "
+        "background-color: white; "
+        "} "
+        "QComboBox:focus { "
+        "border: 2px solid #16a34a; "
+        "} "
+        "QComboBox::drop-down { "
+        "border: none; "
+        "width: 30px; "
+        "} "
+        "QComboBox::down-arrow { "
+        "image: none; "
+        "border-left: 5px solid transparent; "
+        "border-right: 5px solid transparent; "
+        "border-top: 6px solid #6b7280; "
+        "width: 0; "
+        "height: 0; "
+        "margin-right: 8px; "
+        "}");
+    searchFilterLayout->addWidget(statusFilterCombo, 1);
 
     // Field filter
     fieldFilterCombo = new QComboBox();
-    fieldFilterCombo->addItem("🏟️ Tất cả sân", "ALL");
+    fieldFilterCombo->addItem("Sân: Tất cả", "ALL");
     for (int i = 0; i < fields.size(); i++)
     {
         San *field = fields[i];
         if (field)
         {
-            QString label = QString("Sân %1").arg(QString::fromStdString(field->getTenSan()));
+            QString label = QString("Sân: %1").arg(QString::fromStdString(field->getTenSan()));
             fieldFilterCombo->addItem(label, QString::fromStdString(field->getMaSan()));
         }
     }
@@ -90,67 +184,21 @@ void BookingTableTab::setupSearchAndFilters()
         "} "
         "QComboBox:focus { "
         "border: 2px solid #16a34a; "
+        "} "
+        "QComboBox::drop-down { "
+        "border: none; "
+        "width: 30px; "
+        "} "
+        "QComboBox::down-arrow { "
+        "image: none; "
+        "border-left: 5px solid transparent; "
+        "border-right: 5px solid transparent; "
+        "border-top: 6px solid #6b7280; "
+        "width: 0; "
+        "height: 0; "
+        "margin-right: 8px; "
         "}");
     searchFilterLayout->addWidget(fieldFilterCombo, 1);
-
-    // Status filter
-    statusFilterCombo = new QComboBox();
-    statusFilterCombo->addItem("📊 Tất cả trạng thái", -1);
-    statusFilterCombo->addItem("🟢 Đã đặt", static_cast<int>(TrangThaiDatSan::DA_DAT));
-    statusFilterCombo->addItem("✓ Hoàn thành", static_cast<int>(TrangThaiDatSan::HOAN_THANH));
-    statusFilterCombo->addItem("❌ Đã hủy", static_cast<int>(TrangThaiDatSan::DA_HUY));
-    statusFilterCombo->setMinimumHeight(42);
-    statusFilterCombo->setStyleSheet(
-        "QComboBox { "
-        "padding: 8px 15px; "
-        "border: 2px solid #e5e7eb; "
-        "border-radius: 6px; "
-        "font-size: 14px; "
-        "background-color: white; "
-        "} "
-        "QComboBox:focus { "
-        "border: 2px solid #16a34a; "
-        "}");
-    searchFilterLayout->addWidget(statusFilterCombo, 1);
-
-    // Date range filters
-    QLabel *fromLabel = new QLabel("📅 Từ:");
-    fromLabel->setStyleSheet("color: #374151; font-size: 14px; font-weight: 600;");
-    searchFilterLayout->addWidget(fromLabel);
-
-    fromDateEdit = new QDateEdit();
-    fromDateEdit->setCalendarPopup(true);
-    fromDateEdit->setDate(QDate::currentDate().addYears(-1)); // Default to 1 year back
-    fromDateEdit->setDisplayFormat("dd/MM/yyyy");
-    fromDateEdit->setMinimumHeight(42);
-    fromDateEdit->setStyleSheet(
-        "QDateEdit { "
-        "padding: 8px 12px; "
-        "border: 2px solid #e5e7eb; "
-        "border-radius: 6px; "
-        "font-size: 14px; "
-        "background-color: white; "
-        "}");
-    searchFilterLayout->addWidget(fromDateEdit, 1);
-
-    QLabel *toLabel = new QLabel("Đến:");
-    toLabel->setStyleSheet("color: #374151; font-size: 14px; font-weight: 600;");
-    searchFilterLayout->addWidget(toLabel);
-
-    toDateEdit = new QDateEdit();
-    toDateEdit->setCalendarPopup(true);
-    toDateEdit->setDate(QDate::currentDate().addYears(1)); // Default to 1 year forward
-    toDateEdit->setDisplayFormat("dd/MM/yyyy");
-    toDateEdit->setMinimumHeight(42);
-    toDateEdit->setStyleSheet(
-        "QDateEdit { "
-        "padding: 8px 12px; "
-        "border: 2px solid #e5e7eb; "
-        "border-radius: 6px; "
-        "font-size: 14px; "
-        "background-color: white; "
-        "}");
-    searchFilterLayout->addWidget(toDateEdit, 1);
 
     mainLayout->addLayout(searchFilterLayout);
 }
@@ -168,17 +216,17 @@ void BookingTableTab::setupStatsCards()
     statsLayout->setSpacing(15);
     statsLayout->setContentsMargins(0, 0, 0, 0);
 
-    // Card 1: Total bookings
+    // Card 1: TẤT CẢ (All bookings - Màu Tím/Trắng)
     totalCard = new QFrame();
     totalCard->setStyleSheet(
         "QFrame { "
-        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #3b82f6, stop:1 #2563eb); "
+        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #8b5cf6, stop:1 #7c3aed); "
         "border-radius: 12px; "
         "padding: 15px; "
         "}");
     QVBoxLayout *card1Layout = new QVBoxLayout(totalCard);
     card1Layout->setSpacing(8);
-    QLabel *card1Title = new QLabel("📊 Tổng đơn đặt sân");
+    QLabel *card1Title = new QLabel("📋 TẤT CẢ");
     card1Title->setStyleSheet("color: white; font-size: 14px; font-weight: 600;");
     totalLabel = new QLabel("0");
     totalLabel->setStyleSheet("color: white; font-size: 38px; font-weight: bold;");
@@ -187,17 +235,17 @@ void BookingTableTab::setupStatsCards()
     card1Layout->addStretch();
     statsLayout->addWidget(totalCard);
 
-    // Card 2: Confirmed
+    // Card 2: ĐANG PHỤC VỤ (DA_DAT - Màu Xanh Dương)
     confirmedCard = new QFrame();
     confirmedCard->setStyleSheet(
         "QFrame { "
-        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #16a34a, stop:1 #15803d); "
+        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #3b82f6, stop:1 #2563eb); "
         "border-radius: 12px; "
         "padding: 15px; "
         "}");
     QVBoxLayout *card2Layout = new QVBoxLayout(confirmedCard);
     card2Layout->setSpacing(8);
-    QLabel *card2Title = new QLabel("✅ Đã xác nhận");
+    QLabel *card2Title = new QLabel("⚽ ĐANG PHỤC VỤ");
     card2Title->setStyleSheet("color: white; font-size: 14px; font-weight: 600;");
     confirmedLabel = new QLabel("0");
     confirmedLabel->setStyleSheet("color: white; font-size: 38px; font-weight: bold;");
@@ -206,17 +254,17 @@ void BookingTableTab::setupStatsCards()
     card2Layout->addStretch();
     statsLayout->addWidget(confirmedCard);
 
-    // Card 3: Pending
+    // Card 3: HOÀN THÀNH (HOAN_THANH - Màu Xanh Lá)
     pendingCard = new QFrame();
     pendingCard->setStyleSheet(
         "QFrame { "
-        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #f59e0b, stop:1 #d97706); "
+        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #16a34a, stop:1 #15803d); "
         "border-radius: 12px; "
         "padding: 15px; "
         "}");
     QVBoxLayout *card3Layout = new QVBoxLayout(pendingCard);
     card3Layout->setSpacing(8);
-    QLabel *card3Title = new QLabel("⏰ Chờ xác nhận");
+    QLabel *card3Title = new QLabel("✅ HOÀN THÀNH");
     card3Title->setStyleSheet("color: white; font-size: 14px; font-weight: 600;");
     pendingLabel = new QLabel("0");
     pendingLabel->setStyleSheet("color: white; font-size: 38px; font-weight: bold;");
@@ -225,20 +273,20 @@ void BookingTableTab::setupStatsCards()
     card3Layout->addStretch();
     statsLayout->addWidget(pendingCard);
 
-    // Card 4: Revenue
+    // Card 4: ĐÃ HỦY (DA_HUY - Màu Đỏ)
     revenueCard = new QFrame();
     revenueCard->setStyleSheet(
         "QFrame { "
-        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #8b5cf6, stop:1 #7c3aed); "
+        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #ef4444, stop:1 #dc2626); "
         "border-radius: 12px; "
         "padding: 15px; "
         "}");
     QVBoxLayout *card4Layout = new QVBoxLayout(revenueCard);
     card4Layout->setSpacing(8);
-    QLabel *card4Title = new QLabel("💰 Tổng doanh thu");
+    QLabel *card4Title = new QLabel("❌ ĐÃ HỦY");
     card4Title->setStyleSheet("color: white; font-size: 14px; font-weight: 600;");
-    revenueLabel = new QLabel("0đ");
-    revenueLabel->setStyleSheet("color: white; font-size: 32px; font-weight: bold;");
+    revenueLabel = new QLabel("0");
+    revenueLabel->setStyleSheet("color: white; font-size: 38px; font-weight: bold;");
     card4Layout->addWidget(card4Title);
     card4Layout->addWidget(revenueLabel);
     card4Layout->addStretch();
@@ -251,9 +299,9 @@ void BookingTableTab::setupTable()
 {
     bookingTable = new QTableWidget();
     bookingTable->setObjectName("customerTable");
-    bookingTable->setColumnCount(11);
+    bookingTable->setColumnCount(12);
     bookingTable->setHorizontalHeaderLabels({"Mã đặt sân", "Khách hàng", "SĐT", "Sân",
-                                             "Ngày đặt", "Giờ", "Tổng tiền", "Tiền cọc", "Trạng thái", "Thanh toán", "Ghi chú"});
+                                             "Ngày đặt", "Giờ", "Tổng tiền", "Tiền cọc", "Trạng thái", "Thanh toán", "Ghi chú", "Chi tiết"});
     QFont headerFont;
     headerFont.setBold(true);
     headerFont.setPointSize(11);
@@ -272,17 +320,18 @@ void BookingTableTab::setupTable()
 
     bookingTable->horizontalHeader()->setStretchLastSection(true);
     bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
-    bookingTable->setColumnWidth(0, 110); // Mã đặt sân (-10px)
-    bookingTable->setColumnWidth(1, 150); // Khách hàng (-30px)
-    bookingTable->setColumnWidth(2, 120); // SĐT
-    bookingTable->setColumnWidth(3, 100); // Sân
-    bookingTable->setColumnWidth(4, 100); // Ngày đặt
-    bookingTable->setColumnWidth(5, 140); // Giờ (+40px)
-    bookingTable->setColumnWidth(6, 120); // Tổng tiền
-    bookingTable->setColumnWidth(7, 120); // Tiền cọc
-    bookingTable->setColumnWidth(8, 120); // Trạng thái
-    bookingTable->setColumnWidth(9, 130); // Thanh toán
-    // Ghi chú sẽ stretch
+    bookingTable->setColumnWidth(0, 110);  // Mã đặt sân (-10px)
+    bookingTable->setColumnWidth(1, 150);  // Khách hàng (-30px)
+    bookingTable->setColumnWidth(2, 120);  // SĐT
+    bookingTable->setColumnWidth(3, 100);  // Sân
+    bookingTable->setColumnWidth(4, 100);  // Ngày đặt
+    bookingTable->setColumnWidth(5, 140);  // Giờ (+40px)
+    bookingTable->setColumnWidth(6, 100);  // Tổng tiền
+    bookingTable->setColumnWidth(7, 100);  // Tiền cọc
+    bookingTable->setColumnWidth(8, 120);  // Trạng thái
+    bookingTable->setColumnWidth(9, 130);  // Thanh toán
+    bookingTable->setColumnWidth(10, 160); // Ghi chú (-160px)
+    bookingTable->setColumnWidth(11, 80);  // Chi tiết (+160px)
 
     bookingTable->verticalHeader()->setVisible(false);
     bookingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -330,13 +379,15 @@ void BookingTableTab::setupConnections()
     // Search & Filters
     connect(searchBox, &QLineEdit::textChanged,
             this, &BookingTableTab::onSearchTextChanged);
-    connect(fieldFilterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &BookingTableTab::onFilterChanged);
+    connect(todayButton, &QPushButton::clicked,
+            this, &BookingTableTab::onTodayButtonClicked);
+    connect(tomorrowButton, &QPushButton::clicked,
+            this, &BookingTableTab::onTomorrowButtonClicked);
+    connect(datePickerEdit, &QDateEdit::dateChanged,
+            this, &BookingTableTab::onDatePickerChanged);
     connect(statusFilterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &BookingTableTab::onFilterChanged);
-    connect(fromDateEdit, &QDateEdit::dateChanged,
-            this, &BookingTableTab::onFilterChanged);
-    connect(toDateEdit, &QDateEdit::dateChanged,
+    connect(fieldFilterCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &BookingTableTab::onFilterChanged);
 
     // Table double-click
@@ -362,13 +413,12 @@ void BookingTableTab::loadTableData()
     QString searchText = searchBox->text().toLower();
     QString fieldFilter = fieldFilterCombo->currentData().toString();
     int statusFilter = statusFilterCombo->currentData().toInt();
-    QDate fromDate = fromDateEdit->date();
-    QDate toDate = toDateEdit->date();
+    QDate selectedDate = datePickerEdit->date();
 
     int totalCount = 0;
-    int confirmedCount = 0;
-    int pendingCount = 0;
-    double totalRevenue = 0.0;
+    int servingCount = 0;   // ĐANG PHỤC VỤ (DA_DAT)
+    int completedCount = 0; // HOÀN THÀNH (HOAN_THANH)
+    int cancelledCount = 0; // ĐÃ HỦY (DA_HUY)
 
     for (int i = 0; i < allBookings.size(); i++)
     {
@@ -380,9 +430,19 @@ void BookingTableTab::loadTableData()
         NgayGio ngayGio = booking->getThoiGianDat();
         QDate bookingDate(ngayGio.getNam(), ngayGio.getThang(), ngayGio.getNgay());
 
-        // Date range filter
-        if (bookingDate < fromDate || bookingDate > toDate)
+        // Date filter (only show bookings on selected date)
+        if (bookingDate != selectedDate)
             continue;
+
+        // Update stats (Count based on Date only, ignore other filters)
+        TrangThaiDatSan currentStatus = booking->getTrangThai();
+        totalCount++;
+        if (currentStatus == TrangThaiDatSan::DA_DAT)
+            servingCount++;
+        else if (currentStatus == TrangThaiDatSan::HOAN_THANH)
+            completedCount++;
+        else if (currentStatus == TrangThaiDatSan::DA_HUY)
+            cancelledCount++;
 
         // Field filter
         if (fieldFilter != "ALL")
@@ -392,10 +452,24 @@ void BookingTableTab::loadTableData()
                 continue;
         }
 
-        // Status filter
+        // Global Archive Filter: Hide Completed and Cancelled (Lost Deposit)
+        // These are considered "Archived" and moved to Invoice Page
+        TrangThaiDatSan status = booking->getTrangThai();
+        TrangThaiCoc depositStatus = booking->getTrangThaiCoc();
+
+        if (status == TrangThaiDatSan::HOAN_THANH)
+            continue; // Hide completed
+
+        if (status == TrangThaiDatSan::DA_HUY && depositStatus == TrangThaiCoc::MAT_COC)
+            continue; // Hide cancelled (lost deposit)
+
+        // Status filter (Dropdown)
         if (statusFilter != -1)
         {
-            if (static_cast<int>(booking->getTrangThai()) != statusFilter)
+            // Keep the booking visible if it matches the filter OR if it was the last modified booking
+            bool isLastModified = (lastModifiedBooking != nullptr && booking == lastModifiedBooking);
+
+            if (static_cast<int>(status) != statusFilter && !isLastModified)
                 continue;
         }
 
@@ -503,7 +577,6 @@ void BookingTableTab::loadTableData()
         bookingTable->setItem(row, 7, depositItem);
 
         // Column 8: Trạng thái đặt sân
-        TrangThaiDatSan status = booking->getTrangThai();
         QTableWidgetItem *statusItem = new QTableWidgetItem(getStatusText(status));
         statusItem->setTextAlignment(Qt::AlignCenter);
         QColor statusColor = getStatusColor(status);
@@ -512,24 +585,13 @@ void BookingTableTab::loadTableData()
         bookingTable->setItem(row, 8, statusItem);
 
         // Column 9: Thanh toán (deposit status)
-        TrangThaiCoc depositStatus = booking->getTrangThaiCoc();
         QString paymentText;
         QColor paymentColor;
 
         // Logic hiển thị trạng thái thanh toán dựa trên trạng thái đặt sân và cọc
-        if (status == TrangThaiDatSan::HOAN_THANH)
+        if (status == TrangThaiDatSan::DA_HUY)
         {
-            paymentText = "Đã thanh toán";
-            paymentColor = QColor(22, 163, 74); // Green
-        }
-        else if (status == TrangThaiDatSan::DA_HUY)
-        {
-            if (depositStatus == MAT_COC)
-            {
-                paymentText = "Mất cọc";
-                paymentColor = QColor(239, 68, 68); // Red
-            }
-            else if (depositStatus == HOAN_COC)
+            if (depositStatus == HOAN_COC)
             {
                 paymentText = "Hoàn cọc";
                 paymentColor = QColor(59, 130, 246); // Blue
@@ -567,21 +629,47 @@ void BookingTableTab::loadTableData()
         noteItem->setForeground(QBrush(QColor(107, 114, 128))); // Gray
         bookingTable->setItem(row, 10, noteItem);
 
-        // Update stats
-        totalCount++;
-        if (status == TrangThaiDatSan::DA_DAT)
-            confirmedCount++;
-        if (status == TrangThaiDatSan::DA_DAT)
-            pendingCount++;
-        if (status == TrangThaiDatSan::HOAN_THANH)
-            totalRevenue += booking->getTongTien();
+        // Column 11: Chi tiết button
+        QPushButton *detailBtn = new QPushButton();
+        detailBtn->setIcon(QIcon("d:/PBL2-/UI/Resources/icons/eye.svg"));
+        detailBtn->setIconSize(QSize(20, 20));
+        detailBtn->setFixedSize(24, 24);
+        detailBtn->setCursor(Qt::PointingHandCursor);
+        detailBtn->setStyleSheet(
+            "QPushButton { "
+            "background: none; "
+            "border: none; "
+            "padding: 0; "
+            "} "
+            "QPushButton:hover { "
+            "background: none; "
+            "opacity: 0.6; "
+            "}");
+
+        // Connect to open detail dialog
+        connect(detailBtn, &QPushButton::clicked, this, [this, row]()
+                { onTableRowDoubleClicked(row, 0); });
+
+        // Center the button in cell (both horizontal and vertical)
+        QWidget *widget = new QWidget();
+        widget->setStyleSheet("background: transparent;");
+        QVBoxLayout *vLayout = new QVBoxLayout(widget);
+        QHBoxLayout *hLayout = new QHBoxLayout();
+        hLayout->addWidget(detailBtn);
+        hLayout->setAlignment(Qt::AlignCenter);
+        vLayout->addLayout(hLayout);
+        vLayout->setAlignment(Qt::AlignCenter);
+        vLayout->setContentsMargins(0, 0, 0, 0);
+        vLayout->setSpacing(0);
+        widget->setLayout(vLayout);
+        bookingTable->setCellWidget(row, 11, widget);
     }
 
     // Update stats cards
     totalLabel->setText(QString::number(totalCount));
-    confirmedLabel->setText(QString::number(confirmedCount));
-    pendingLabel->setText(QString::number(pendingCount));
-    revenueLabel->setText(formatCurrency(totalRevenue));
+    confirmedLabel->setText(QString::number(servingCount));
+    pendingLabel->setText(QString::number(completedCount));
+    revenueLabel->setText(QString::number(cancelledCount));
 }
 
 QString BookingTableTab::getStatusText(TrangThaiDatSan status) const
@@ -663,16 +751,44 @@ void BookingTableTab::onTableRowDoubleClicked(int row, int column)
     if (!booking)
         return;
 
-    // Open detail dialog
+    // Check if we should show Invoice Dialog instead of Booking Detail
+    // Case 1: Completed Booking -> Show Invoice
+    // Case 2: Cancelled with Penalty (Lost Deposit) -> Show Penalty Invoice
+    bool showInvoice = false;
+    std::string invoiceContent = "";
+
+    if (booking->getTrangThai() == TrangThaiDatSan::HOAN_THANH)
+    {
+        showInvoice = true;
+        invoiceContent = InvoiceGenerator::generateBookingInvoice(*booking);
+    }
+    else if (booking->getTrangThai() == TrangThaiDatSan::DA_HUY &&
+             booking->getTrangThaiCoc() == TrangThaiCoc::MAT_COC)
+    {
+        showInvoice = true;
+        invoiceContent = InvoiceGenerator::generateCancellationInvoice(*booking, booking->getLyDoHuy());
+    }
+
+    if (showInvoice && !invoiceContent.empty())
+    {
+        InvoiceDialog dialog(invoiceContent, this);
+        dialog.setReadOnly(true); // Invoices from history are read-only
+        dialog.exec();
+        return; // No changes possible, so no need to refresh
+    }
+
+    // Open detail dialog (For Active bookings or Refunded cancellations)
     BookingDetailDialog dialog(booking, this);
-    
+
     // Connect reschedule signal
-    connect(&dialog, &BookingDetailDialog::rescheduleRequested, this, [this](DatSan *booking) {
-        emit rescheduleRequested(booking);
-    });
-    
+    connect(&dialog, &BookingDetailDialog::rescheduleRequested, this, [this](DatSan *booking)
+            { emit rescheduleRequested(booking); });
+
     if (dialog.exec() == QDialog::Accepted)
     {
+        // Track this booking to keep it visible even if status changed
+        lastModifiedBooking = booking;
+
         // Refresh table after changes
         loadTableData();
         emit bookingDataChanged();
@@ -681,10 +797,215 @@ void BookingTableTab::onTableRowDoubleClicked(int row, int column)
 
 void BookingTableTab::onSearchTextChanged()
 {
+    lastModifiedBooking = nullptr;
     loadTableData();
 }
 
 void BookingTableTab::onFilterChanged()
 {
+    lastModifiedBooking = nullptr;
+    loadTableData();
+}
+
+void BookingTableTab::onTodayButtonClicked()
+{
+    lastModifiedBooking = nullptr;
+    datePickerEdit->setDate(QDate::currentDate());
+
+    // Auto-select status: today/future = "Đang phục vụ"
+    statusFilterCombo->setCurrentIndex(0); // Đang phục vụ
+
+    // Update button styles to show active state
+    todayButton->setStyleSheet(
+        "QPushButton { "
+        "padding: 8px 20px; "
+        "border: 2px solid #16a34a; "
+        "border-radius: 6px; "
+        "font-size: 14px; "
+        "font-weight: 600; "
+        "background-color: #16a34a; "
+        "color: white; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #15803d; "
+        "border-color: #15803d; "
+        "}");
+
+    tomorrowButton->setStyleSheet(
+        "QPushButton { "
+        "padding: 8px 20px; "
+        "border: 2px solid #e5e7eb; "
+        "border-radius: 6px; "
+        "font-size: 14px; "
+        "font-weight: 600; "
+        "background-color: white; "
+        "color: #374151; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #f9fafb; "
+        "border-color: #d1d5db; "
+        "}");
+
+    loadTableData();
+}
+
+void BookingTableTab::onTomorrowButtonClicked()
+{
+    lastModifiedBooking = nullptr;
+    datePickerEdit->setDate(QDate::currentDate().addDays(1));
+
+    // Auto-select status: today/future = "Đang phục vụ"
+    statusFilterCombo->setCurrentIndex(0); // Đang phục vụ
+
+    // Update button styles to show active state
+    tomorrowButton->setStyleSheet(
+        "QPushButton { "
+        "padding: 8px 20px; "
+        "border: 2px solid #16a34a; "
+        "border-radius: 6px; "
+        "font-size: 14px; "
+        "font-weight: 600; "
+        "background-color: #16a34a; "
+        "color: white; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #15803d; "
+        "border-color: #15803d; "
+        "}");
+
+    todayButton->setStyleSheet(
+        "QPushButton { "
+        "padding: 8px 20px; "
+        "border: 2px solid #e5e7eb; "
+        "border-radius: 6px; "
+        "font-size: 14px; "
+        "font-weight: 600; "
+        "background-color: white; "
+        "color: #374151; "
+        "} "
+        "QPushButton:hover { "
+        "background-color: #f9fafb; "
+        "border-color: #d1d5db; "
+        "}");
+
+    loadTableData();
+}
+
+void BookingTableTab::onDatePickerChanged()
+{
+    lastModifiedBooking = nullptr;
+    // Auto-select status based on date: past = "Tất cả", today/future = "Đang phục vụ"
+    QDate selectedDate = datePickerEdit->date();
+    QDate today = QDate::currentDate();
+
+    if (selectedDate < today)
+    {
+        // Past date: show all statuses (because all orders in the past are completed)
+        statusFilterCombo->setCurrentIndex(1); // Tất cả
+    }
+    else
+    {
+        // Today or future: show only "serving" status
+        statusFilterCombo->setCurrentIndex(0); // Đang phục vụ
+    }
+
+    // Update button visual states
+    QDate tomorrow = today.addDays(1);
+
+    if (selectedDate == today)
+    {
+        todayButton->setStyleSheet(
+            "QPushButton { "
+            "padding: 8px 20px; "
+            "border: 2px solid #16a34a; "
+            "border-radius: 6px; "
+            "font-size: 14px; "
+            "font-weight: 600; "
+            "background-color: #16a34a; "
+            "color: white; "
+            "} "
+            "QPushButton:hover { "
+            "background-color: #15803d; "
+            "border-color: #15803d; "
+            "}");
+        tomorrowButton->setStyleSheet(
+            "QPushButton { "
+            "padding: 8px 20px; "
+            "border: 2px solid #e5e7eb; "
+            "border-radius: 6px; "
+            "font-size: 14px; "
+            "font-weight: 600; "
+            "background-color: white; "
+            "color: #374151; "
+            "} "
+            "QPushButton:hover { "
+            "background-color: #f9fafb; "
+            "border-color: #d1d5db; "
+            "}");
+    }
+    else if (selectedDate == tomorrow)
+    {
+        tomorrowButton->setStyleSheet(
+            "QPushButton { "
+            "padding: 8px 20px; "
+            "border: 2px solid #16a34a; "
+            "border-radius: 6px; "
+            "font-size: 14px; "
+            "font-weight: 600; "
+            "background-color: #16a34a; "
+            "color: white; "
+            "} "
+            "QPushButton:hover { "
+            "background-color: #15803d; "
+            "border-color: #15803d; "
+            "}");
+        todayButton->setStyleSheet(
+            "QPushButton { "
+            "padding: 8px 20px; "
+            "border: 2px solid #e5e7eb; "
+            "border-radius: 6px; "
+            "font-size: 14px; "
+            "font-weight: 600; "
+            "background-color: white; "
+            "color: #374151; "
+            "} "
+            "QPushButton:hover { "
+            "background-color: #f9fafb; "
+            "border-color: #d1d5db; "
+            "}");
+    }
+    else
+    {
+        // Both inactive for other dates
+        todayButton->setStyleSheet(
+            "QPushButton { "
+            "padding: 8px 20px; "
+            "border: 2px solid #e5e7eb; "
+            "border-radius: 6px; "
+            "font-size: 14px; "
+            "font-weight: 600; "
+            "background-color: white; "
+            "color: #374151; "
+            "} "
+            "QPushButton:hover { "
+            "background-color: #f9fafb; "
+            "border-color: #d1d5db; "
+            "}");
+        tomorrowButton->setStyleSheet(
+            "QPushButton { "
+            "padding: 8px 20px; "
+            "border: 2px solid #e5e7eb; "
+            "border-radius: 6px; "
+            "font-size: 14px; "
+            "font-weight: 600; "
+            "background-color: white; "
+            "color: #374151; "
+            "} "
+            "QPushButton:hover { "
+            "background-color: #f9fafb; "
+            "border-color: #d1d5db; "
+            "}");
+    }
+
     loadTableData();
 }

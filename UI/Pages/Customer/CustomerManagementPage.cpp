@@ -691,7 +691,7 @@ void CustomerManagementPage::loadSpendingHistory(const std::string &maKH)
         KhungGio khungGio = ds->getKhungGio();
 
         // Format: Sân [TenSan] - [Date] [Start]-[End] - [Total]đ
-        QString itemText = QString("Đặt sân %1 - %2/%3/%4 %5:%6-%7:%8 - %9")
+        QString itemText = QString("Sân %1 - %2/%3/%4 %5:%6-%7:%8 - %9")
                                .arg(san ? QString::fromStdString(san->layTenSan()) : "N/A")
                                .arg(thoiGian.getNgay(), 2, 10, QChar('0'))
                                .arg(thoiGian.getThang(), 2, 10, QChar('0'))

@@ -72,6 +72,7 @@ public:
     void setCustomColors(const QColor &bg, const QColor &text);
     void setProgress(double percentage); // 0-100
     void showProgress(bool show);
+    void showTrend(bool show);
     void setBackgroundColor(const QColor &color);
 
     // ===== GETTERS =====

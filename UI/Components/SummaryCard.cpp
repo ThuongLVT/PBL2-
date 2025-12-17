@@ -249,6 +249,12 @@ void SummaryCard::showProgress(bool show)
     m_progressBar->setVisible(show);
 }
 
+void SummaryCard::showTrend(bool show)
+{
+    m_trendLabel->setVisible(show);
+    m_trendIconLabel->setVisible(show);
+}
+
 void SummaryCard::setBackgroundColor(const QColor &color)
 {
     m_backgroundColor = color;

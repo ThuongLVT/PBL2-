@@ -6,6 +6,7 @@
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QScrollArea>
+#include <QLabel>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QPieSeries>
@@ -13,8 +14,8 @@
 
 #include "../../Components/SummaryCard.h"
 #include "../../Components/RankingTable.h"
-#include "../../Components/DateRangePicker.h"
 #include "../../Components/ChartContainer.h"
+#include "../../Components/MonthYearFilter.h"
 #include "../../../Core/ThongKe/ThongKeDoanhThu.h"
 
 class HeThongQuanLy;
@@ -23,11 +24,7 @@ class HeThongQuanLy;
  * @class RevenueTab
  * @brief Tab thống kê doanh thu (Revenue Analytics)
  *
- * Hiển thị:
- * - Summary cards: Tổng doanh thu, Doanh thu sân, Doanh thu dịch vụ
- * - Line chart: Doanh thu theo thời gian
- * - Pie chart: Phân bổ nguồn thu
- * - So sánh với kỳ trước
+ * Bộ lọc: Tháng / Năm (dùng MonthYearFilter component)
  */
 class RevenueTab : public QWidget
 {
@@ -41,16 +38,17 @@ public:
     void refreshData();
 
 private slots:
-    void onDateRangeChanged(const QDate &from, const QDate &to);
+    void onFilterChanged(int month, int year, MonthYearFilter::FilterMode mode);
+    void onExportPdf();
 
 private:
     void setupUI();
     void createSummaryCards();
     void createCharts();
+
     void updateSummaryCards();
-    void updateLineChart();
+    void updateRevenueChart();
     void updatePieChart();
-    void updateBarChart();
 
     // UI Components
     QVBoxLayout *m_mainLayout;
@@ -58,28 +56,24 @@ private:
     QWidget *m_contentWidget;
     QVBoxLayout *m_contentLayout;
 
-    // Date picker
-    DateRangePicker *m_datePicker;
+    // Filter bar (reusable component)
+    MonthYearFilter *m_filter;
 
     // Summary cards
     QHBoxLayout *m_cardsLayout;
     SummaryCard *m_totalRevenueCard;
     SummaryCard *m_fieldRevenueCard;
     SummaryCard *m_serviceRevenueCard;
-    SummaryCard *m_avgRevenueCard;
 
     // Charts
     QHBoxLayout *m_chartsRow1;
     QHBoxLayout *m_chartsRow2;
-    ChartContainer *m_lineChartContainer;
+    ChartContainer *m_revenueChartContainer;
     ChartContainer *m_pieChartContainer;
-    ChartContainer *m_barChartContainer;
 
     // Data
     HeThongQuanLy *m_heThong;
     ThongKeDoanhThu *m_thongKe;
-    QDate m_fromDate;
-    QDate m_toDate;
 };
 
 #endif // REVENUETAB_H

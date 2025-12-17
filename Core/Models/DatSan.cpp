@@ -472,5 +472,7 @@ void DatSan::huyBooking(bool hoan, const std::string &lyDo)
     {
         // Mất cọc
         trangThaiCoc = MAT_COC;
+        // Cập nhật ngày thanh toán là thời điểm hủy (ghi nhận doanh thu phạt cọc)
+        ngayThanhToan = NgayGio::layThoiGianHienTai();
     }
 }

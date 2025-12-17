@@ -42,12 +42,12 @@ RankingTable::~RankingTable()
 void RankingTable::setupUI()
 {
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->setContentsMargins(0, 0, 0, 16);
     m_mainLayout->setSpacing(12);
 
     // Header section
     m_headerLayout = new QHBoxLayout();
-    m_headerLayout->setContentsMargins(16, 16, 16, 0);
+    m_headerLayout->setContentsMargins(20, 20, 20, 8);
 
     m_titleLabel = new QLabel(this);
     m_titleLabel->setStyleSheet(R"(
@@ -103,10 +103,14 @@ void RankingTable::setupUI()
 
 void RankingTable::applyStyles()
 {
+    // Ensure widget paints background
+    setAutoFillBackground(true);
+
     setStyleSheet(R"(
         RankingTable {
             background-color: white;
             border-radius: 12px;
+            border: 1px solid #e2e8f0;
         }
     )");
 

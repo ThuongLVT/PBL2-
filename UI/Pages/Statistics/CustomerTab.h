@@ -9,8 +9,8 @@
 
 #include "../../Components/SummaryCard.h"
 #include "../../Components/RankingTable.h"
-#include "../../Components/DateRangePicker.h"
 #include "../../Components/ChartContainer.h"
+#include "../../Components/MonthYearFilter.h"
 #include "../../../Core/ThongKe/ThongKeKhachHang.h"
 
 class HeThongQuanLy;
@@ -19,11 +19,11 @@ class HeThongQuanLy;
  * @class CustomerTab
  * @brief Tab thống kê Khách hàng (Customer Analytics)
  *
+ * Bộ lọc: Tháng / Năm (sử dụng MonthYearFilter component)
  * Hiển thị:
- * - Summary cards: Tổng KH, Khách mới, Khách quay lại
+ * - Summary cards: Tổng KH đặt sân, Khách mới, Khách quay lại, Chi tiêu TB
  * - Donut chart: Phân bổ theo hạng
  * - Top khách hàng chi tiêu cao nhất
- * - Customer insights
  */
 class CustomerTab : public QWidget
 {
@@ -37,16 +37,15 @@ public:
     void refreshData();
 
 private slots:
-    void onDateRangeChanged(const QDate &from, const QDate &to);
+    void onFilterChanged(int month, int year, MonthYearFilter::FilterMode mode);
+    void onExportPdf();
 
 private:
     void setupUI();
     void createSummaryCards();
-    void createCharts();
-    void createRankingTable();
-    void createMembershipTable();
+    void createTablesRow();
+
     void updateSummaryCards();
-    void updateDonutChart();
     void updateRankingTable();
     void updateMembershipTable();
 
@@ -56,29 +55,23 @@ private:
     QWidget *m_contentWidget;
     QVBoxLayout *m_contentLayout;
 
-    // Date picker
-    DateRangePicker *m_datePicker;
+    // Filter bar (reusable component)
+    MonthYearFilter *m_filter;
 
     // Summary cards
     QHBoxLayout *m_cardsLayout;
     SummaryCard *m_totalCustomerCard;
     SummaryCard *m_newCustomerCard;
     SummaryCard *m_returningCard;
-    SummaryCard *m_avgSpendCard;
 
-    // Charts
-    QHBoxLayout *m_chartsRow;
-    ChartContainer *m_donutChartContainer;
-
-    // Tables
+    // Tables (side by side)
+    QHBoxLayout *m_tablesRow;
     RankingTable *m_topCustomersTable;
     RankingTable *m_membershipTable;
 
     // Data
     HeThongQuanLy *m_heThong;
     ThongKeKhachHang *m_thongKe;
-    QDate m_fromDate;
-    QDate m_toDate;
 };
 
 #endif // CUSTOMERTAB_H

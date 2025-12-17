@@ -1223,8 +1223,8 @@ void FieldManagementPage::generateFieldName()
 
     QString typeChar = (loaiSan == LoaiSan::SAN_5) ? "5" : "7";
 
-    // Prefix: "Sân A5-"
-    QString prefix = QString("Sân %1%2-").arg(areaChar, typeChar);
+    // Prefix: "A5-" (without "Sân")
+    QString prefix = QString("%1%2-").arg(areaChar, typeChar);
 
     // Find max number for this prefix
     int maxNum = 0;

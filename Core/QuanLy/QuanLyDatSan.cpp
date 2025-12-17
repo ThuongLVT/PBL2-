@@ -9,6 +9,9 @@
 #include "QuanLyDatSan.h"
 #include "QuanLyKhachHang.h"
 #include "QuanLySan.h"
+#include "QuanLyDichVu.h"
+#include "../Models/DichVu.h"
+#include "../Models/DichVuDat.h"
 #include "../Utils/CSVHelper.h"
 #include <iostream>
 #include <sstream>
@@ -266,7 +269,7 @@ void QuanLyDatSan::xoaTatCa()
 
 // ========== CSV I/O ==========
 
-bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlKH, QuanLySan *qlSan)
+bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlKH, QuanLySan *qlSan, QuanLyDichVu *qlDV)
 {
     if (qlKH == nullptr || qlSan == nullptr)
     {
@@ -392,6 +395,59 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
     }
 
     cout << "Loaded " << danhSachDatSan.size() << " bookings from CSV: " << filename << endl;
+
+    // Load services for bookings
+    if (qlDV != nullptr)
+    {
+        string serviceFilename = filename;
+        size_t pos = serviceFilename.find("datsan.csv");
+        if (pos != string::npos)
+        {
+            serviceFilename.replace(pos, 10, "datsan_dichvu.csv");
+        }
+        else
+        {
+            // Try to append _dichvu if not standard name
+            if (serviceFilename.length() > 4 && serviceFilename.substr(serviceFilename.length() - 4) == ".csv")
+                serviceFilename.insert(serviceFilename.length() - 4, "_dichvu");
+            else
+                serviceFilename += "_dichvu.csv";
+        }
+
+        vector<vector<string>> serviceRows = CSVHelper::readCSV(serviceFilename);
+        if (!serviceRows.empty())
+        {
+            int count = 0;
+            for (const auto &row : serviceRows)
+            {
+                if (row.size() < 3)
+                    continue;
+                string maDatSan = row[0];
+                string maDichVu = row[1];
+                int soLuong = 0;
+                try
+                {
+                    soLuong = stoi(row[2]);
+                }
+                catch (...)
+                {
+                    continue;
+                }
+
+                DatSan *ds = timDatSan(maDatSan);
+                DichVu *dv = qlDV->timDichVu(maDichVu);
+
+                if (ds && dv)
+                {
+                    DichVuDat dvd(dv, soLuong);
+                    ds->themDichVu(dvd);
+                    count++;
+                }
+            }
+            cout << "Loaded " << count << " service items for bookings from " << serviceFilename << endl;
+        }
+    }
+
     return true;
 }
 
@@ -492,6 +548,45 @@ bool QuanLyDatSan::saveToCSV(const std::string &filename)
     if (success)
     {
         cout << "Saved " << danhSachDatSan.size() << " bookings to CSV: " << filename << endl;
+
+        // Save services
+        string serviceFilename = filename;
+        size_t pos = serviceFilename.find("datsan.csv");
+        if (pos != string::npos)
+        {
+            serviceFilename.replace(pos, 10, "datsan_dichvu.csv");
+        }
+        else
+        {
+            if (serviceFilename.length() > 4 && serviceFilename.substr(serviceFilename.length() - 4) == ".csv")
+                serviceFilename.insert(serviceFilename.length() - 4, "_dichvu");
+            else
+                serviceFilename += "_dichvu.csv";
+        }
+
+        vector<string> serviceHeaders = {"MaDatSan", "MaDichVu", "SoLuong", "DonGia", "ThanhTien"};
+        vector<vector<string>> serviceRows;
+
+        for (int i = 0; i < danhSachDatSan.size(); i++)
+        {
+            DatSan *ds = danhSachDatSan[i];
+            const MangDong<DichVuDat> &services = ds->getDanhSachDichVu();
+            for (int j = 0; j < services.size(); ++j)
+            {
+                DichVuDat dv = services[j];
+                if (dv.getDichVu())
+                {
+                    vector<string> row;
+                    row.push_back(ds->getMaDatSan());
+                    row.push_back(dv.getDichVu()->layMaDichVu());
+                    row.push_back(to_string(dv.getSoLuong()));
+                    row.push_back(to_string(static_cast<long long>(dv.getDichVu()->layDonGia())));
+                    row.push_back(to_string(static_cast<long long>(dv.getThanhTien())));
+                    serviceRows.push_back(row);
+                }
+            }
+        }
+        CSVHelper::writeCSV(serviceFilename, serviceHeaders, serviceRows);
     }
     return success;
 }

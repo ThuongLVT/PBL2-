@@ -75,9 +75,10 @@ public:
      * @param filename CSV filename
      * @param qlKH QuanLyKhachHang instance to resolve customer pointers
      * @param qlSan QuanLySan instance to resolve field pointers
+     * @param qlDV QuanLyDichVu instance to resolve service pointers
      * @return true if successful
      */
-    bool loadFromCSV(const std::string &filename, class QuanLyKhachHang *qlKH, class QuanLySan *qlSan);
+    bool loadFromCSV(const std::string &filename, class QuanLyKhachHang *qlKH, class QuanLySan *qlSan, class QuanLyDichVu *qlDV);
 
     /**
      * @brief Save bookings to CSV file

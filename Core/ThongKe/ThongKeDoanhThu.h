@@ -98,6 +98,14 @@ public:
 
     // ===== GETTERS - CƠ BẢN =====
     double getTongDoanhThu() const;
+
+    // ===== DỰ BÁO =====
+    /**
+     * @brief Dự báo doanh thu cho ngày tiếp theo dựa trên dữ liệu hiện tại
+     * Sử dụng phương pháp hồi quy tuyến tính đơn giản (Linear Regression)
+     * @return Doanh thu dự báo
+     */
+    double duBaoDoanhThuNgayMai() const;
     double getDoanhThuTienSan() const;
     double getDoanhThuDichVu() const;
     int getSoLuongDonDat() const;

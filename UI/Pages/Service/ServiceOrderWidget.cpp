@@ -1,5 +1,7 @@
 #include "ServiceOrderWidget.h"
 #include "../../UI/Dialogs/ServiceSelectionDialog.h"
+#include "../../Dialogs/InvoiceDialog.h"
+#include "../../Core/Utils/InvoiceGenerator.h"
 #include "../../Core/QuanLy/HeThongQuanLy.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -525,8 +527,38 @@ void ServiceOrderWidget::onPayClicked()
             return;
     }
 
-    // Create Order
+    // Create Temp Order for Invoice
     KhachHang *kh = isCustomerFound ? qlKhachHang->timKhachHang(currentCustomerId) : nullptr;
+
+    // We create a temp order on stack to generate invoice
+    DonHangDichVu tempOrder("MỚI", kh);
+
+    // Add items to temp order
+    for (auto it = currentCart.begin(); it != currentCart.end(); ++it)
+    {
+        std::string id = it.key();
+        int qty = it.value();
+        DichVu *dv = qlDichVu->timDichVu(id);
+        if (dv)
+        {
+            DichVuDat dvd(dv, qty);
+            tempOrder.themDichVu(dvd);
+        }
+    }
+    tempOrder.tinhTongTien();
+    tempOrder.tinhGiamGia();
+    tempOrder.tinhThanhTien();
+
+    // Show Invoice
+    std::string invoiceText = InvoiceGenerator::generateServiceInvoice(tempOrder);
+    InvoiceDialog dialog(invoiceText, this);
+
+    if (dialog.exec() != QDialog::Accepted)
+    {
+        return; // Cancelled
+    }
+
+    // Create Order
     DonHangDichVu *donHang = HeThongQuanLy::getInstance()->taoDonHangDichVu(kh);
 
     if (!donHang)

@@ -167,7 +167,8 @@ int NgayThang::diffDays(const NgayThang &other) const
 
 int NgayThang::tinhKhoangCach(const NgayThang &other) const
 {
-    return diffDays(other);
+    int diff = other.toDays() - toDays();
+    return diff >= 0 ? diff : -diff;
 }
 
 std::string NgayThang::toString() const

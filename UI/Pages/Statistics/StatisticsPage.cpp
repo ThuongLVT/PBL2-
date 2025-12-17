@@ -121,7 +121,7 @@ void StatisticsPage::setupUI()
 
     // Add tabs with icons
     m_tabWidget->addTab(m_revenueTab, "💰 Doanh Thu");
-    m_tabWidget->addTab(m_bookingFieldTab, "⚽ Booking & Sân");
+    m_tabWidget->addTab(m_bookingFieldTab, "⚽ Đặt Sân");
     m_tabWidget->addTab(m_customerTab, "👥 Khách Hàng");
     m_tabWidget->addTab(m_serviceTab, "🛒 Dịch Vụ");
 

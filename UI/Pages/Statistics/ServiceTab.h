@@ -9,8 +9,8 @@
 
 #include "../../Components/SummaryCard.h"
 #include "../../Components/RankingTable.h"
-#include "../../Components/DateRangePicker.h"
 #include "../../Components/ChartContainer.h"
+#include "../../Components/MonthYearFilter.h"
 #include "../../../Core/ThongKe/ThongKeDichVu.h"
 
 class HeThongQuanLy;
@@ -19,11 +19,11 @@ class HeThongQuanLy;
  * @class ServiceTab
  * @brief Tab thống kê Dịch vụ (Service Analytics)
  *
+ * Bộ lọc: Tháng / Năm (sử dụng MonthYearFilter component)
  * Hiển thị:
  * - Summary cards: Tổng đơn DV, Doanh thu theo loại
  * - Pie chart: Phân bổ theo loại dịch vụ
  * - Top dịch vụ bán chạy nhất
- * - Thống kê tồn kho
  */
 class ServiceTab : public QWidget
 {
@@ -37,15 +37,15 @@ public:
     void refreshData();
 
 private slots:
-    void onDateRangeChanged(const QDate &from, const QDate &to);
+    void onFilterChanged(int month, int year, MonthYearFilter::FilterMode mode);
+    void onExportPdf();
 
 private:
     void setupUI();
     void createSummaryCards();
-    void createCharts();
     void createRankingTable();
+
     void updateSummaryCards();
-    void updatePieChart();
     void updateRankingTable();
 
     // UI Components
@@ -54,8 +54,8 @@ private:
     QWidget *m_contentWidget;
     QVBoxLayout *m_contentLayout;
 
-    // Date picker
-    DateRangePicker *m_datePicker;
+    // Filter bar (reusable component)
+    MonthYearFilter *m_filter;
 
     // Summary cards
     QHBoxLayout *m_cardsLayout;
@@ -64,18 +64,12 @@ private:
     SummaryCard *m_foodCard;
     SummaryCard *m_equipmentCard;
 
-    // Charts
-    QHBoxLayout *m_chartsRow;
-    ChartContainer *m_pieChartContainer;
-
     // Tables
     RankingTable *m_topServicesTable;
 
     // Data
     HeThongQuanLy *m_heThong;
     ThongKeDichVu *m_thongKe;
-    QDate m_fromDate;
-    QDate m_toDate;
 };
 
 #endif // SERVICETAB_H

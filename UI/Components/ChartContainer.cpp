@@ -1,6 +1,7 @@
 #include "ChartContainer.h"
 #include <QPropertyAnimation>
 #include <QGraphicsOpacityEffect>
+#include <QPainterPath>
 
 // ========== CONSTRUCTORS ==========
 
@@ -170,10 +171,17 @@ void ChartContainer::setupUI()
 
 void ChartContainer::applyStyles()
 {
+    // White background with rounded corners - applied to this widget
+    setAutoFillBackground(true);
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window, Qt::white);
+    setPalette(pal);
+
     setStyleSheet(R"(
         ChartContainer {
             background-color: white;
             border-radius: 12px;
+            border: 1px solid #e2e8f0;
         }
     )");
 
@@ -421,4 +429,22 @@ void ChartContainer::updateLoadingState()
     {
         m_loadingOverlay->hide();
     }
+}
+
+void ChartContainer::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // Draw white rounded rectangle background
+    QPainterPath path;
+    path.addRoundedRect(rect(), 12, 12);
+
+    painter.fillPath(path, Qt::white);
+
+    // Draw border
+    painter.setPen(QPen(QColor("#e2e8f0"), 1));
+    painter.drawPath(path);
 }

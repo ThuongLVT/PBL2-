@@ -2,15 +2,15 @@
 #define INVOICEPAGE_H
 
 #include <QWidget>
-#include <QTabWidget>
 #include <QTableWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QComboBox>
+#include <QDateEdit>
 #include <QHeaderView>
-#include "../../Components/DateRangePicker.h"
 
 class InvoicePage : public QWidget
 {
@@ -21,37 +21,47 @@ public:
     ~InvoicePage();
 
     void setUserRole(bool isAdmin);
-    void refreshData(); // To reload data when switching to this page
+    void refreshData();
 
 private slots:
-    void onDateRangeChanged(const QDate &from, const QDate &to);
-    void onTableItemDoubleClicked(QTableWidgetItem *item);
+    void onSearchTextChanged(const QString &text);
+    void onTypeFilterChanged(int index);
+    void onDateChanged();
+    void onTodayClicked();
+    void onYesterdayClicked();
+    void onViewDetailsClicked(int row);
+    void onExportClicked();
+    void onSortFilterChanged(int index);
 
 private:
-    QTabWidget *m_tabWidget;
-    QWidget *m_bookingInvoiceTab;
-    QWidget *m_serviceInvoiceTab;
+    // UI Components
+    QLineEdit *m_searchInput;
+    QComboBox *m_typeFilter;
+    QComboBox *m_sortFilter;
 
-    QTableWidget *m_bookingTable;
-    QTableWidget *m_serviceTable;
+    // Date Selection
+    QPushButton *m_todayBtn;
+    QPushButton *m_yesterdayBtn;
+    QDateEdit *m_datePicker;
 
-    QLineEdit *m_searchBookingInput;
-    QLineEdit *m_searchServiceInput;
+    QLabel *m_totalRevenueLabel;
+    QTableWidget *m_invoiceTable;
 
-    DateRangePicker *m_datePicker;
-    QDate m_fromDate;
-    QDate m_toDate;
+    // Data State
+    QDate m_selectedDate;
     bool m_isAdmin;
 
+    // Setup Functions
     void setupUI();
-    void setupBookingTab();
-    void setupServiceTab();
+    void setupToolbar(QVBoxLayout *mainLayout);
+    void setupTable(QVBoxLayout *mainLayout);
 
-    void loadBookingData();
-    void loadServiceData();
-
-    void filterBookingData(const QString &text);
-    void filterServiceData(const QString &text);
+    // Logic Functions
+    void loadData();
+    void updateDateRangeFromFilter();
+    QString formatCurrency(double amount) const;
+    QWidget *createActionWidget(int row);
+    QWidget *createStatusBadge(const QString &text, const QString &color);
 };
 
 #endif // INVOICEPAGE_H

@@ -117,22 +117,21 @@ void ThongKeKhachHang::tinhToan()
     {
         KhachHang *kh = danhSachKH[i];
 
-        // Kiểm tra đăng ký trong kỳ
+        // Kiểm tra đăng ký trong kỳ (Khách Mới)
         if (laDangKyTrongKy(kh))
         {
             soKhachHangMoi++;
+        }
+        else
+        {
+            // Khách đăng ký trước kỳ (Khách Cũ)
+            soKhachHangQuayLai++;
         }
 
         // Kiểm tra hoạt động trong kỳ
         if (laHoatDongTrongKy(kh))
         {
             soKhachHangHoatDong++;
-        }
-
-        int soDonDat = demSoDonDatCuaKhachHang(kh);
-        if (soDonDat > 1)
-        {
-            soKhachHangQuayLai++;
         }
 
         double chiTieu = tinhTongChiTieuCuaKhachHang(kh);

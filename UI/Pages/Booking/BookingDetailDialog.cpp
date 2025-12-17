@@ -6,6 +6,8 @@
 #include "BookingDetailDialog.h"
 #include "CancelBookingDialog.h"
 #include "../../Dialogs/ServiceSelectionDialog.h"
+#include "../../Dialogs/InvoiceDialog.h"
+#include "../../Core/Utils/InvoiceGenerator.h"
 #include <QMessageBox>
 #include <QSpinBox>
 #include <QDialog>
@@ -15,6 +17,10 @@
 #include <sstream>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QPrinter>
+#include <QTextDocument>
+#include <QFileDialog>
+#include <QDir>
 
 BookingDetailDialog::BookingDetailDialog(DatSan *booking, QWidget *parent)
     : QDialog(parent),
@@ -390,7 +396,7 @@ QFrame *BookingDetailDialog::createPaymentSection()
     layout->addLayout(payRow);
 
     // Pay Button
-    payNowBtn = new QPushButton("💰 Thanh toán ngay");
+    payNowBtn = new QPushButton("💰 Thanh toán");
     payNowBtn->setCursor(Qt::PointingHandCursor);
     payNowBtn->setMinimumHeight(44);
     payNowBtn->setStyleSheet(
@@ -658,33 +664,72 @@ void BookingDetailDialog::onPaymentClicked()
     if (!currentBooking || !system)
         return;
 
-    QString message = QString("Xác nhận thanh toán:\n\nCần thanh toán: %1")
-                          .arg(toPayLabel->text());
+    // Generate Invoice
+    std::string invoiceText = InvoiceGenerator::generateBookingInvoice(*currentBooking);
 
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this, "Xác nhận thanh toán",
-        message,
-        QMessageBox::Yes | QMessageBox::No);
+    // Show Invoice Dialog
+    InvoiceDialog dialog(invoiceText, this);
+    int result = dialog.exec();
 
-    if (reply == QMessageBox::Yes)
+    // Result 1: Pay Only (Accepted)
+    // Result 2: Pay & Export
+    if (result == QDialog::Accepted || result == 2)
     {
-        // Set Payment Date
-        currentBooking->setNgayThanhToan(NgayGio::layThoiGianHienTai());
-
-        // Update stock for services - REMOVED as it is now done when adding services
-        /*
-        const MangDong<DichVuDat> &services = currentBooking->getDanhSachDichVu();
-        for (int i = 0; i < services.size(); i++)
+        // Handle PDF Export if requested (Result 2)
+        if (result == 2)
         {
-            DichVu *dv = services[i].getDichVu();
-            if (dv)
+            QString exportDir = "D:/REPORT/hoadon";
+            QDir().mkpath(exportDir);
+
+            QString defaultName = exportDir + "/HoaDon_" +
+                                  QString::fromStdString(currentBooking->getMaDatSan()) + "_" +
+                                  QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".pdf";
+            QString fileName = QFileDialog::getSaveFileName(this, "Xuất hóa đơn PDF",
+                                                            defaultName, "PDF Files (*.pdf)");
+            if (!fileName.isEmpty())
             {
-                int qty = services[i].getSoLuong();
-                dv->datSoLuongTon(dv->laySoLuongTon() - qty);
-                dv->datSoLuongBan(dv->laySoLuongBan() + qty);
+                if (QFileInfo(fileName).suffix().isEmpty())
+                    fileName.append(".pdf");
+
+                QPrinter printer(QPrinter::PrinterResolution);
+                printer.setOutputFormat(QPrinter::PdfFormat);
+                printer.setPageSize(QPageSize(QPageSize::A4));
+                printer.setOutputFileName(fileName);
+
+                QTextDocument doc;
+                // Use Consolas or Courier New to ensure fixed width characters in PDF
+                // Also set line-height to ensure proper vertical spacing
+                QString htmlContent =
+                    "<html>"
+                    "<head>"
+                    "<style>"
+                    "body { font-family: 'Consolas', 'Courier New', monospace; font-size: 11pt; white-space: pre; }"
+                    "</style>"
+                    "</head>"
+                    "<body>" +
+                    QString::fromStdString(invoiceText).toHtmlEscaped() +
+                    "</body>"
+                    "</html>";
+
+                doc.setHtml(htmlContent);
+
+                // Set document font explicitly as fallback
+                QFont font("Consolas", 11);
+                font.setStyleHint(QFont::Monospace);
+                doc.setDefaultFont(font);
+
+                doc.print(&printer);
+            }
+            else
+            {
+                // User cancelled file selection -> Cancel payment too?
+                // Usually better to just cancel the whole operation if they explicitly wanted PDF but cancelled saving.
+                return;
             }
         }
-        */
+
+        // Set Payment Date
+        currentBooking->setNgayThanhToan(NgayGio::layThoiGianHienTai());
 
         currentBooking->setTrangThai(TrangThaiDatSan::HOAN_THANH);
 

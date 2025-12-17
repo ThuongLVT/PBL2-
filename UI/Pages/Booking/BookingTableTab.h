@@ -49,7 +49,7 @@ signals:
      * @brief Emitted when booking data changes
      */
     void bookingDataChanged();
-    
+
     /**
      * @brief Emitted when user requests to reschedule a booking
      */
@@ -59,6 +59,9 @@ private slots:
     void onTableRowDoubleClicked(int row, int column);
     void onSearchTextChanged();
     void onFilterChanged();
+    void onTodayButtonClicked();
+    void onTomorrowButtonClicked();
+    void onDatePickerChanged();
 
 private:
     void setupUI();
@@ -74,6 +77,8 @@ private:
     DatSan *getBookingAtRow(int row);
     QString formatCurrency(double amount) const;
 
+    DatSan *lastModifiedBooking = nullptr;
+
 private:
     HeThongQuanLy *system;
     MangDong<San *> fields;
@@ -83,10 +88,11 @@ private:
 
     // Search & Filters
     QLineEdit *searchBox;
-    QComboBox *fieldFilterCombo;
+    QPushButton *todayButton;
+    QPushButton *tomorrowButton;
+    QDateEdit *datePickerEdit;
     QComboBox *statusFilterCombo;
-    QDateEdit *fromDateEdit;
-    QDateEdit *toDateEdit;
+    QComboBox *fieldFilterCombo;
 
     // Stats Cards
     QFrame *totalCard;

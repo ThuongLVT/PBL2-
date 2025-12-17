@@ -24,13 +24,13 @@ DateRangePicker::DateRangePicker(QWidget *parent)
       m_presetCombo(nullptr),
       m_dateRangeBtn(nullptr),
       m_dateMenu(nullptr),
-      m_currentPreset(ThisMonth),
+      m_currentPreset(Today),
       m_showPresetButtons(true),
       m_compactMode(false),
       m_shadowEffect(nullptr)
 {
-    // Default to this month
-    auto dates = getPresetDates(ThisMonth);
+    // Default to today
+    auto dates = getPresetDates(Today);
     m_fromDate = dates.first;
     m_toDate = dates.second;
 
@@ -78,22 +78,22 @@ void DateRangePicker::setupFullUI()
         return btn;
     };
 
-    m_todayBtn = createPresetBtn("Hôm nay", Today);
-    m_weekBtn = createPresetBtn("Tuần này", ThisWeek);
-    m_monthBtn = createPresetBtn("Tháng này", ThisMonth);
-    m_quarterBtn = createPresetBtn("Quý này", ThisQuarter);
-    m_yearBtn = createPresetBtn("Năm nay", ThisYear);
-    m_customBtn = createPresetBtn("Tùy chọn", Custom);
+    m_todayBtn = createPresetBtn("Ngày", Today);
+    // m_weekBtn = createPresetBtn("Tuần này", ThisWeek);
+    m_monthBtn = createPresetBtn("Tháng", ThisMonth);
+    // m_quarterBtn = createPresetBtn("Quý này", ThisQuarter);
+    m_yearBtn = createPresetBtn("Năm", ThisYear);
+    // m_customBtn = createPresetBtn("Tùy chọn", Custom);
 
     // Set default checked
-    m_monthBtn->setChecked(true);
+    m_todayBtn->setChecked(true);
 
     m_presetLayout->addWidget(m_todayBtn);
-    m_presetLayout->addWidget(m_weekBtn);
+    // m_presetLayout->addWidget(m_weekBtn);
     m_presetLayout->addWidget(m_monthBtn);
-    m_presetLayout->addWidget(m_quarterBtn);
+    // m_presetLayout->addWidget(m_quarterBtn);
     m_presetLayout->addWidget(m_yearBtn);
-    m_presetLayout->addWidget(m_customBtn);
+    // m_presetLayout->addWidget(m_customBtn);
 
     // Date selection widget
     m_dateWidget = new QWidget(this);
@@ -101,25 +101,25 @@ void DateRangePicker::setupFullUI()
     m_dateLayout->setContentsMargins(0, 0, 0, 0);
     m_dateLayout->setSpacing(8);
 
-    m_fromLabel = new QLabel("Từ:", this);
+    m_fromLabel = new QLabel("Thời gian:", this);
     m_fromDateEdit = new QDateEdit(m_fromDate, this);
     m_fromDateEdit->setCalendarPopup(true);
     m_fromDateEdit->setDisplayFormat("dd/MM/yyyy");
     m_fromDateEdit->setMaximumDate(QDate::currentDate());
 
+    // Hide To Date components
     m_toLabel = new QLabel("Đến:", this);
     m_toDateEdit = new QDateEdit(m_toDate, this);
-    m_toDateEdit->setCalendarPopup(true);
-    m_toDateEdit->setDisplayFormat("dd/MM/yyyy");
-    m_toDateEdit->setMaximumDate(QDate::currentDate());
+    m_toLabel->setVisible(false);
+    m_toDateEdit->setVisible(false);
 
     connect(m_fromDateEdit, &QDateEdit::dateChanged, this, &DateRangePicker::onFromDateChanged);
-    connect(m_toDateEdit, &QDateEdit::dateChanged, this, &DateRangePicker::onToDateChanged);
+    // connect(m_toDateEdit, &QDateEdit::dateChanged, this, &DateRangePicker::onToDateChanged);
 
     m_dateLayout->addWidget(m_fromLabel);
     m_dateLayout->addWidget(m_fromDateEdit);
-    m_dateLayout->addWidget(m_toLabel);
-    m_dateLayout->addWidget(m_toDateEdit);
+    // m_dateLayout->addWidget(m_toLabel);
+    // m_dateLayout->addWidget(m_toDateEdit);
 
     // Add to main layout
     m_mainLayout->addWidget(m_presetWidget);
@@ -559,29 +559,45 @@ void DateRangePicker::updatePresetFromDates()
 void DateRangePicker::applyPreset(PresetRange preset)
 {
     m_currentPreset = preset;
-    auto dates = getPresetDates(preset);
-    m_fromDate = dates.first;
-    m_toDate = dates.second;
 
+    // Update display format based on preset
     if (m_fromDateEdit)
     {
         m_fromDateEdit->blockSignals(true);
-        m_fromDateEdit->setDate(m_fromDate);
+        if (preset == Today)
+        {
+            m_fromDateEdit->setDisplayFormat("dd/MM/yyyy");
+            m_fromDateEdit->setDate(QDate::currentDate());
+        }
+        else if (preset == ThisMonth)
+        {
+            m_fromDateEdit->setDisplayFormat("MM/yyyy");
+            m_fromDateEdit->setDate(QDate::currentDate());
+        }
+        else if (preset == ThisYear)
+        {
+            m_fromDateEdit->setDisplayFormat("yyyy");
+            m_fromDateEdit->setDate(QDate::currentDate());
+        }
         m_fromDateEdit->blockSignals(false);
     }
 
-    if (m_toDateEdit)
+    // Calculate range
+    QDate date = m_fromDateEdit ? m_fromDateEdit->date() : QDate::currentDate();
+    if (preset == Today)
     {
-        m_toDateEdit->blockSignals(true);
-        m_toDateEdit->setDate(m_toDate);
-        m_toDateEdit->blockSignals(false);
+        m_fromDate = date;
+        m_toDate = date;
     }
-
-    if (m_dateRangeBtn)
+    else if (preset == ThisMonth)
     {
-        m_dateRangeBtn->setText(QString("%1 - %2")
-                                    .arg(m_fromDate.toString("dd/MM/yyyy"))
-                                    .arg(m_toDate.toString("dd/MM/yyyy")));
+        m_fromDate = QDate(date.year(), date.month(), 1);
+        m_toDate = QDate(date.year(), date.month(), date.daysInMonth());
+    }
+    else if (preset == ThisYear)
+    {
+        m_fromDate = QDate(date.year(), 1, 1);
+        m_toDate = QDate(date.year(), 12, 31);
     }
 
     emit presetChanged(preset);

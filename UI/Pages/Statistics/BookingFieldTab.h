@@ -9,21 +9,23 @@
 
 #include "../../Components/SummaryCard.h"
 #include "../../Components/RankingTable.h"
-#include "../../Components/DateRangePicker.h"
 #include "../../Components/ChartContainer.h"
+#include "../../Components/MonthYearFilter.h"
 #include "../../../Core/ThongKe/ThongKeBooking.h"
 
 class HeThongQuanLy;
 
 /**
  * @class BookingFieldTab
- * @brief Tab thống kê Booking & Sân
+ * @brief Tab thống kê Đặt Sân
  *
+ * Bộ lọc: Tháng / Năm (dùng MonthYearFilter component)
  * Hiển thị:
  * - Summary cards: Tổng booking, Hoàn thành, Đã hủy
  * - Donut chart: Tỷ lệ loại sân (5 người vs 7 người)
- * - Bar chart: Top sân được đặt nhiều nhất
- * - Thống kê khung giờ vàng
+ * - Bar chart: Booking theo ngày trong tuần (T2-CN)
+ * - Peak hours chart: Phân bổ theo khung giờ
+ * - Top sân table
  */
 class BookingFieldTab : public QWidget
 {
@@ -37,16 +39,18 @@ public:
     void refreshData();
 
 private slots:
-    void onDateRangeChanged(const QDate &from, const QDate &to);
+    void onFilterChanged(int month, int year, MonthYearFilter::FilterMode mode);
+    void onExportPdf();
 
 private:
     void setupUI();
     void createSummaryCards();
     void createCharts();
     void createRankingTable();
+
     void updateSummaryCards();
     void updateDonutChart();
-    void updateBarChart();
+    void updateWeekdayChart();
     void updatePeakHoursChart();
     void updateRankingTable();
 
@@ -56,21 +60,20 @@ private:
     QWidget *m_contentWidget;
     QVBoxLayout *m_contentLayout;
 
-    // Date picker
-    DateRangePicker *m_datePicker;
+    // Filter bar (reusable component)
+    MonthYearFilter *m_filter;
 
     // Summary cards
     QHBoxLayout *m_cardsLayout;
     SummaryCard *m_totalBookingCard;
     SummaryCard *m_completedCard;
     SummaryCard *m_cancelledCard;
-    SummaryCard *m_goldenHourCard;
 
     // Charts
     QHBoxLayout *m_chartsRow;
     QHBoxLayout *m_chartsRow2;
     ChartContainer *m_donutChartContainer;
-    ChartContainer *m_barChartContainer;
+    ChartContainer *m_weekdayChartContainer;
     ChartContainer *m_peakHoursChartContainer;
 
     // Ranking table
@@ -79,8 +82,6 @@ private:
     // Data
     HeThongQuanLy *m_heThong;
     ThongKeBooking *m_thongKe;
-    QDate m_fromDate;
-    QDate m_toDate;
 };
 
 #endif // BOOKINGFIELDTAB_H

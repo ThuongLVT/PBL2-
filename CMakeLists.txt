@@ -11,8 +11,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Find Qt6 packages - Core, Widgets, Charts for Statistics Dashboard
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Charts)
+# Find Qt6 packages - Core, Widgets, Charts, PrintSupport for PDF export
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Charts PrintSupport)
 
 # Include directories
 include_directories(
@@ -83,6 +83,7 @@ set(CORE_QUANLY_SOURCES
     Core/QuanLy/QuanLyDonHangDichVu.cpp
     Core/QuanLy/QuanLyDatSan.cpp
     Core/Utils/CSVHelper.cpp
+    Core/Utils/InvoiceGenerator.cpp
 )
 
 set(CORE_QUANLY_HEADERS
@@ -95,6 +96,7 @@ set(CORE_QUANLY_HEADERS
     Core/QuanLy/QuanLyDonHangDichVu.h
     Core/QuanLy/QuanLyDatSan.h
     Core/Utils/CSVHelper.h
+    Core/Utils/InvoiceGenerator.h
 )
 
 # Source files - Core/ThongKe
@@ -152,13 +154,14 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Components/RankingTable.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/DateRangePicker.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/ChartContainer.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Components/MonthYearFilter.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/TimelineTab.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingTableTab.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingDetailDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/CancelBookingDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoicePage.cpp
-    ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoiceDetailDialog.cpp
+    ${CMAKE_SOURCE_DIR}/UI/Dialogs/InvoiceDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementPage.cpp
@@ -189,13 +192,14 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Components/RankingTable.h
     ${CMAKE_SOURCE_DIR}/UI/Components/DateRangePicker.h
     ${CMAKE_SOURCE_DIR}/UI/Components/ChartContainer.h
+    ${CMAKE_SOURCE_DIR}/UI/Components/MonthYearFilter.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/TimelineTab.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingTableTab.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingDetailDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/CancelBookingDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoicePage.h
-    ${CMAKE_SOURCE_DIR}/UI/Pages/Payment/InvoiceDetailDialog.h
+    ${CMAKE_SOURCE_DIR}/UI/Dialogs/InvoiceDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Field/FieldManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Customer/CustomerManagementPage.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Service/ServiceManagementPage.h
@@ -274,6 +278,7 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Core
     Qt6::Widgets
     Qt6::Charts
+    Qt6::PrintSupport
 )
 
 # Compiler warnings

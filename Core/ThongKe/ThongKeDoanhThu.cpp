@@ -615,3 +615,38 @@ void ThongKeDoanhThu::tinhDoanhThuChiTietDichVu()
 {
     // Đã tính trong tinhToan()
 }
+
+// ===== DỰ BÁO =====
+double ThongKeDoanhThu::duBaoDoanhThuNgayMai() const
+{
+    if (doanhThuTheoNgay.size() < 2)
+        return 0.0;
+
+    int n = doanhThuTheoNgay.size();
+    double sumX = 0.0;
+    double sumY = 0.0;
+    double sumXY = 0.0;
+    double sumX2 = 0.0;
+
+    for (int i = 0; i < n; i++)
+    {
+        double x = i; // Ngày thứ i
+        double y = doanhThuTheoNgay[i].doanhThu;
+
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumX2 += x * x;
+    }
+
+    double denominator = n * sumX2 - sumX * sumX;
+    if (denominator == 0)
+        return 0.0;
+
+    double a = (n * sumXY - sumX * sumY) / denominator;
+    double b = (sumY - a * sumX) / n;
+
+    // Dự báo cho ngày tiếp theo (x = n)
+    double duBao = a * n + b;
+    return (duBao > 0) ? duBao : 0.0;
+}

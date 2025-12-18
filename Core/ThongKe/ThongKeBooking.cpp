@@ -2,6 +2,7 @@
 #include "../QuanLy/HeThongQuanLy.h"
 #include "../Models/DatSan.h"
 #include "../Models/San.h"
+#include "../ThuatToan/QuickSort.h"
 #include <iostream>
 #include <cstdio>
 
@@ -260,19 +261,10 @@ void ThongKeBooking::tinhTopSan(int soLuong)
         topSan.push_back(info);
     }
 
-    // Sắp xếp theo số lượt đặt (giảm dần)
-    for (int i = 0; i < topSan.size() - 1; i++)
-    {
-        for (int j = 0; j < topSan.size() - i - 1; j++)
-        {
-            if (topSan[j].soLuotDat < topSan[j + 1].soLuotDat)
-            {
-                ThongTinSanTop temp = topSan[j];
-                topSan[j] = topSan[j + 1];
-                topSan[j + 1] = temp;
-            }
-        }
-    }
+    // Sắp xếp theo số lượt đặt (QuickSort O(n log n))
+    QuickSort<ThongTinSanTop>::sort(topSan, [](const ThongTinSanTop &a, const ThongTinSanTop &b) {
+        return a.soLuotDat > b.soLuotDat; // Giảm dần
+    });
 
     // Giữ lại top N
     if (topSan.size() > soLuong)

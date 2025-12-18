@@ -54,6 +54,12 @@ QPushButton {
   font-weight: 600;
   font-size: 14px;
   min-height: 36px;
+  outline: none;
+}
+
+QPushButton:focus {
+  outline: none;
+  border: none;
 }
 
 QPushButton:hover {
@@ -271,6 +277,12 @@ QMainWindow {
   min-height: 54px;
   max-width: 54px;
   max-height: 54px;
+  outline: none;
+}
+
+#ToggleButton:focus {
+  outline: none;
+  border: none;
 }
 
 #ToggleButton:hover {
@@ -300,6 +312,12 @@ QMainWindow {
   margin: 4px 8px;
   min-height: 48px;
   font-size: 16px; /* Tăng 2px: 14px -> 16px */
+  outline: none;
+}
+
+#MenuButton:focus {
+  outline: none;
+  border: none;
 }
 
 /* Sidebar collapsed - center the icon in 70px width (10px margins = 50px button width) */
@@ -349,6 +367,12 @@ QMainWindow {
   margin: 4px 8px;
   min-height: 48px;
   font-size: 16px; /* Tăng 2px: 14px -> 16px */
+  outline: none;
+}
+
+#AdminButton:focus {
+  outline: none;
+  border: none;
 }
 
 /* Sidebar collapsed - center in 70px width */
@@ -393,6 +417,12 @@ QMainWindow {
   margin: 4px 8px;
   min-height: 48px;
   font-size: 16px; /* Tăng 2px: 14px -> 16px */
+  outline: none;
+}
+
+#LogoutButton:focus {
+  outline: none;
+  border: none;
 }
 
 /* Sidebar collapsed - center in 70px width */

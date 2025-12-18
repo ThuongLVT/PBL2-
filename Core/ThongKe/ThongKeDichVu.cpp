@@ -4,6 +4,7 @@
 #include "../Models/DichVu.h"
 #include "../Models/DichVuDat.h"
 #include "../Models/DonHangDichVu.h"
+#include "../ThuatToan/QuickSort.h"
 #include <iostream>
 #include <cstdio>
 
@@ -252,19 +253,10 @@ void ThongKeDichVu::tinhTopDichVu(int soLuong)
         topDichVu.push_back(info);
     }
 
-    // Sắp xếp theo số lượng bán (giảm dần)
-    for (int i = 0; i < topDichVu.size() - 1; i++)
-    {
-        for (int j = 0; j < topDichVu.size() - i - 1; j++)
-        {
-            if (topDichVu[j].soLuongBan < topDichVu[j + 1].soLuongBan)
-            {
-                ThongTinDichVuTop temp = topDichVu[j];
-                topDichVu[j] = topDichVu[j + 1];
-                topDichVu[j + 1] = temp;
-            }
-        }
-    }
+    // Sắp xếp theo số lượng bán (QuickSort O(n log n))
+    QuickSort<ThongTinDichVuTop>::sort(topDichVu, [](const ThongTinDichVuTop &a, const ThongTinDichVuTop &b) {
+        return a.soLuongBan > b.soLuongBan; // Giảm dần
+    });
 
     // Giữ lại top N
     if (topDichVu.size() > soLuong)

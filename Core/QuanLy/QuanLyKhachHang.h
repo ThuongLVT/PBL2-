@@ -12,6 +12,7 @@
 
 #include "../Models/KhachHang.h"
 #include "../CauTrucDuLieu/MangDong.h"
+#include "../ThuatToan/HashTable.h"
 #include <string>
 
 /**
@@ -27,6 +28,7 @@ class QuanLyKhachHang
 {
 private:
     MangDong<KhachHang *> danhSachKhachHang; ///< Danh sách khách hàng
+    HashTable<std::string, KhachHang *> *hashTableKhachHang; ///< Hash Table để tìm kiếm nhanh theo mã
     int maxCustomerId;                       ///< Mã KH cao nhất đã sử dụng (không tái sử dụng)
     bool isLoadingFromCSV;                   ///< Flag to prevent auto-save during CSV load
 

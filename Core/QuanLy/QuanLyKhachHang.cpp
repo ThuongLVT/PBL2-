@@ -9,17 +9,23 @@
 #include "QuanLyKhachHang.h"
 #include "../Utils/CSVHelper.h"
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
 
 using namespace std;
 
-QuanLyKhachHang::QuanLyKhachHang() : maxCustomerId(0), isLoadingFromCSV(false) {}
+QuanLyKhachHang::QuanLyKhachHang() : maxCustomerId(0), isLoadingFromCSV(false)
+{
+    // Khởi tạo Hash Table với kích thước 1009 (số nguyên tố)
+    hashTableKhachHang = new HashTable<std::string, KhachHang *>(1009);
+}
 
 QuanLyKhachHang::~QuanLyKhachHang()
 {
     xoaTatCa();
+    delete hashTableKhachHang;
 }
 
 bool QuanLyKhachHang::themKhachHang(KhachHang *kh)
@@ -46,6 +52,9 @@ bool QuanLyKhachHang::themKhachHang(KhachHang *kh)
     }
 
     danhSachKhachHang.push_back(kh);
+    
+    // Thêm vào Hash Table để tìm kiếm nhanh
+    hashTableKhachHang->insert(kh->getMaNguoiDung(), kh);
 
     // Auto-save to CSV after add (skip if loading)
     if (!isLoadingFromCSV)
@@ -58,6 +67,9 @@ bool QuanLyKhachHang::themKhachHang(KhachHang *kh)
 
 bool QuanLyKhachHang::xoaKhachHang(const string &maKH)
 {
+    // Xóa khỏi Hash Table
+    hashTableKhachHang->remove(maKH);
+
     for (int i = 0; i < danhSachKhachHang.size(); i++)
     {
         if (danhSachKhachHang[i]->getMaNguoiDung() == maKH)
@@ -86,15 +98,13 @@ bool QuanLyKhachHang::capNhatKhachHang(const string &maKH, const KhachHang &khMo
 
     return true;
 }
-
 KhachHang *QuanLyKhachHang::timKhachHang(const string &maKH)
 {
-    for (int i = 0; i < danhSachKhachHang.size(); i++)
+    // Sử dụng Hash Table để tìm kiếm O(1)
+    KhachHang *kh = nullptr;
+    if (hashTableKhachHang->search(maKH, kh))
     {
-        if (danhSachKhachHang[i]->getMaNguoiDung() == maKH)
-        {
-            return danhSachKhachHang[i];
-        }
+        return kh;
     }
     return nullptr;
 }
@@ -162,6 +172,9 @@ int QuanLyKhachHang::tongSoKhachHang() const
 string QuanLyKhachHang::taoMaKhachHangMoi()
 {
     maxCustomerId++;
+    // Auto-save is handled by the caller (usually UI or System) calling luuHeThong()
+    // But to be safe, we could save just the ID config, but we are moving to single file storage.
+    
     stringstream ss;
     ss << "KH" << setfill('0') << setw(2) << maxCustomerId;
     return ss.str();
@@ -224,6 +237,7 @@ bool QuanLyKhachHang::docFile(ifstream &file)
             return false;
         }
         danhSachKhachHang.push_back(kh);
+        hashTableKhachHang->insert(kh->getMaNguoiDung(), kh);
     }
     return file.good();
 }
@@ -235,6 +249,13 @@ void QuanLyKhachHang::xoaTatCa()
         delete danhSachKhachHang[i];
     }
     danhSachKhachHang = MangDong<KhachHang *>();
+
+    // Reset Hash Table
+    if (hashTableKhachHang != nullptr)
+    {
+        delete hashTableKhachHang;
+        hashTableKhachHang = new HashTable<std::string, KhachHang *>(1009);
+    }
 }
 
 // ========== CSV I/O ==========
@@ -244,44 +265,52 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
         "MaKH", "HoTen", "SoDienThoai", "BacHoiVien",
         "TongChiTieu", "NgayDangKy"};
 
-    vector<vector<string>> rows;
+    // We will write manually to include the MAX_ID metadata
+    string fullPath = CSVHelper::getDataPath() + filename;
+    ofstream file(fullPath);
+    
+    if (!file.is_open()) {
+        cerr << "Cannot create CSV file: " << fullPath << endl;
+        return false;
+    }
 
-    // Customer data rows
+    // Write Metadata
+    file << "#MAX_ID:" << maxCustomerId << "\n";
+
+    // Write Headers
+    for (size_t i = 0; i < headers.size(); i++)
+    {
+        file << CSVHelper::escapeField(headers[i]);
+        if (i < headers.size() - 1)
+            file << ",";
+    }
+    file << "\n";
+
+    // Write Rows
     for (int i = 0; i < danhSachKhachHang.size(); i++)
     {
         KhachHang *kh = danhSachKhachHang[i];
-        vector<string> row;
-
-        row.push_back(kh->layMaKhachHang());
-        row.push_back(kh->getHoTen());
-        row.push_back(kh->getSoDienThoai());
+        
+        file << CSVHelper::escapeField(kh->layMaKhachHang()) << ",";
+        file << CSVHelper::escapeField(kh->getHoTen()) << ",";
+        file << CSVHelper::escapeField(kh->getSoDienThoai()) << ",";
 
         // BacHoiVien
         HangKhachHang hang = kh->layHang();
         string bacHoiVien = "THUONG";
         switch (hang)
         {
-        case HangKhachHang::THUONG:
-            bacHoiVien = "THUONG";
-            break;
-        case HangKhachHang::DONG:
-            bacHoiVien = "DONG";
-            break;
-        case HangKhachHang::BAC:
-            bacHoiVien = "BAC";
-            break;
-        case HangKhachHang::VANG:
-            bacHoiVien = "VANG";
-            break;
-        case HangKhachHang::KIM_CUONG:
-            bacHoiVien = "KIM_CUONG";
-            break;
+        case HangKhachHang::THUONG: bacHoiVien = "THUONG"; break;
+        case HangKhachHang::DONG: bacHoiVien = "DONG"; break;
+        case HangKhachHang::BAC: bacHoiVien = "BAC"; break;
+        case HangKhachHang::VANG: bacHoiVien = "VANG"; break;
+        case HangKhachHang::KIM_CUONG: bacHoiVien = "KIM_CUONG"; break;
         }
-        row.push_back(bacHoiVien);
+        file << CSVHelper::escapeField(bacHoiVien) << ",";
 
         // TongChiTieu - pure number, no VNĐ suffix
         long long chiTieu = static_cast<long long>(kh->layTongChiTieu());
-        row.push_back(to_string(chiTieu));
+        file << CSVHelper::escapeField(to_string(chiTieu)) << ",";
 
         // NgayDangKy: DD/MM/YYYY
         NgayThang ngayDK = kh->layNgayDangKy();
@@ -289,17 +318,14 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
         ss << setfill('0') << setw(2) << ngayDK.getNgay() << "/"
            << setfill('0') << setw(2) << ngayDK.getThang() << "/"
            << ngayDK.getNam();
-        row.push_back(ss.str());
-
-        rows.push_back(row);
+        file << CSVHelper::escapeField(ss.str());
+        
+        file << "\n";
     }
 
-    bool success = CSVHelper::writeCSV(filename, headers, rows);
-    if (success)
-    {
-        cout << "Saved " << danhSachKhachHang.size() << " customers to CSV: " << filename << endl;
-    }
-    return success;
+    file.close();
+    cout << "Saved " << danhSachKhachHang.size() << " customers to CSV: " << filename << " (MaxID: " << maxCustomerId << ")" << endl;
+    return true;
 }
 
 bool QuanLyKhachHang::docCSV(const string &filename)
@@ -316,17 +342,34 @@ bool QuanLyKhachHang::docCSV(const string &filename)
     xoaTatCa();
     isLoadingFromCSV = true; // Prevent auto-save during load
 
-    // Skip header row, read customer data starting from row 1
     maxCustomerId = 0;
+    size_t startRow = 1; // Default: skip header at row 0
 
-    for (size_t i = 1; i < rows.size(); i++)
+    // Check for Metadata at row 0
+    if (!rows.empty() && !rows[0].empty() && rows[0][0].find("#MAX_ID:") == 0) {
+        try {
+            string val = rows[0][0].substr(8); // Length of "#MAX_ID:"
+            maxCustomerId = stoi(val);
+            cout << "Loaded persistent MaxID: " << maxCustomerId << endl;
+        } catch (...) {
+            cout << "Failed to parse MaxID from header" << endl;
+        }
+        startRow = 2; // Skip metadata (0) and header (1)
+    }
+
+    int calculatedMax = 0;
+
+    for (size_t i = startRow; i < rows.size(); i++)
     {
         const auto &row = rows[i];
 
         // Format: MaKH, HoTen, SoDienThoai, BacHoiVien, TongChiTieu, NgayDangKy
         if (row.size() < 6)
         {
-            cerr << "Invalid CSV row at line " << (i + 2) << ": insufficient columns" << endl;
+            // If it's the header row (in case metadata was missing but we started at 1), skip it
+            if (i == 0 && row.size() > 0 && row[0] == "MaKH") continue;
+            
+            cerr << "Invalid CSV row at line " << (i + 1) << ": insufficient columns" << endl;
             continue;
         }
 
@@ -349,6 +392,7 @@ bool QuanLyKhachHang::docCSV(const string &filename)
             kh->datNgayDangKy(NgayThang(day, month, year));
             kh->datTongChiTieu(tongChiTieu);
 
+            hashTableKhachHang->insert(kh->getMaNguoiDung(), kh);
             danhSachKhachHang.push_back(kh);
 
             // Update maxCustomerId from KH### format
@@ -357,8 +401,8 @@ bool QuanLyKhachHang::docCSV(const string &filename)
                 try
                 {
                     int id = stoi(maKH.substr(2));
-                    if (id > maxCustomerId)
-                        maxCustomerId = id;
+                    if (id > calculatedMax)
+                        calculatedMax = id;
                 }
                 catch (...)
                 {
@@ -368,12 +412,21 @@ bool QuanLyKhachHang::docCSV(const string &filename)
         }
         catch (const exception &e)
         {
-            cerr << "Error parsing CSV row " << (i + 2) << ": " << e.what() << endl;
+            cerr << "Error parsing CSV row " << (i + 1) << ": " << e.what() << endl;
             continue;
         }
     }
 
     isLoadingFromCSV = false; // Re-enable auto-save
+
+    // Fallback: if calculated max is greater than stored max (e.g. manual edit), update it
+    if (calculatedMax > maxCustomerId) {
+        maxCustomerId = calculatedMax;
+    }
+
     cout << "Loaded " << danhSachKhachHang.size() << " customers from CSV" << endl;
     return true;
 }
+
+
+

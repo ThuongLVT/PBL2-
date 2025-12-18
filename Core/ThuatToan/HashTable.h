@@ -37,7 +37,7 @@ private:
     int hashString(const std::string &key) const
     {
         unsigned long hash = 5381;
-        for (int i = 0; i < key.length(); i++)
+        for (size_t i = 0; i < key.length(); i++)
         {
             hash = ((hash << 5) + hash) + key[i]; // hash * 33 + c
         }
@@ -70,6 +70,8 @@ private:
         capacity *= 2;
 
         MangDong<DanhSachLienKet<KeyValuePair<K, V>> *> oldTable = table;
+        
+        // Tạo bảng mới rỗng
         table = MangDong<DanhSachLienKet<KeyValuePair<K, V>> *>();
 
         // Khởi tạo bảng mới
@@ -87,7 +89,10 @@ private:
                 for (int j = 0; j < oldTable[i]->size(); j++)
                 {
                     KeyValuePair<K, V> pair = oldTable[i]->at(j);
-                    insert(pair.key, pair.value);
+                    // Gọi insert nội bộ (không check rehash nữa để tránh đệ quy vô hạn)
+                    int index = hash(pair.key);
+                    table[index]->push_back(pair);
+                    count++;
                 }
                 delete oldTable[i];
             }
@@ -98,6 +103,7 @@ public:
     // Constructor
     HashTable(int cap = 101) : capacity(cap), count(0), loadFactor(0.75)
     {
+        // Khởi tạo bảng với các bucket rỗng
         for (int i = 0; i < capacity; i++)
         {
             table.push_back(new DanhSachLienKet<KeyValuePair<K, V>>());
@@ -176,11 +182,11 @@ public:
         int index = hash(key);
         DanhSachLienKet<KeyValuePair<K, V>> *chain = table[index];
 
-        for (int i = 0; i < chain->kichThuoc(); i++)
+        for (int i = 0; i < chain->size(); i++)
         {
-            if (chain->lay(i).key == key)
+            if (chain->at(i).key == key)
             {
-                chain->xoa(i);
+                chain->erase(i);
                 count--;
                 return true;
             }

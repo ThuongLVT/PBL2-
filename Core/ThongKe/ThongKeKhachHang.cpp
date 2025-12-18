@@ -2,6 +2,7 @@
 #include "../QuanLy/HeThongQuanLy.h"
 #include "../Models/KhachHang.h"
 #include "../Models/DatSan.h"
+#include "../ThuatToan/QuickSort.h"
 #include <iostream>
 #include <cstdio>
 
@@ -246,19 +247,10 @@ void ThongKeKhachHang::tinhTopKhachHang(int soLuong)
         topKhachHang.push_back(info);
     }
 
-    // Sắp xếp theo tổng chi tiêu (Bubble sort đơn giản)
-    for (int i = 0; i < topKhachHang.size() - 1; i++)
-    {
-        for (int j = 0; j < topKhachHang.size() - i - 1; j++)
-        {
-            if (topKhachHang[j].tongChiTieu < topKhachHang[j + 1].tongChiTieu)
-            {
-                ThongTinKhachHangTop temp = topKhachHang[j];
-                topKhachHang[j] = topKhachHang[j + 1];
-                topKhachHang[j + 1] = temp;
-            }
-        }
-    }
+    // Sắp xếp theo tổng chi tiêu (QuickSort O(n log n))
+    QuickSort<ThongTinKhachHangTop>::sort(topKhachHang, [](const ThongTinKhachHangTop &a, const ThongTinKhachHangTop &b) {
+        return a.tongChiTieu > b.tongChiTieu; // Giảm dần
+    });
 
     // Giữ lại top N
     if (topKhachHang.size() > soLuong)

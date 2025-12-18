@@ -1,4 +1,6 @@
 #include "ServiceManagementWidget.h"
+#include "Core/ThuatToan/MergeSort.h"
+#include "Core/CauTrucDuLieu/MangDong.h"
 #include <QHeaderView>
 #include <QFont>
 #include <QScrollArea>
@@ -456,6 +458,28 @@ void ServiceManagementWidget::filterServices()
     sortServices();
 }
 
+// Comparison functions for MergeSort
+static bool comparePriceAsc(DichVu* const &a, DichVu* const &b) {
+    return a->layDonGia() < b->layDonGia();
+}
+static bool comparePriceDesc(DichVu* const &a, DichVu* const &b) {
+    return a->layDonGia() > b->layDonGia();
+}
+
+static bool compareStockAsc(DichVu* const &a, DichVu* const &b) {
+    return a->laySoLuongTon() < b->laySoLuongTon();
+}
+static bool compareStockDesc(DichVu* const &a, DichVu* const &b) {
+    return a->laySoLuongTon() > b->laySoLuongTon();
+}
+
+static bool compareSoldAsc(DichVu* const &a, DichVu* const &b) {
+    return a->laySoLuongBan() < b->laySoLuongBan();
+}
+static bool compareSoldDesc(DichVu* const &a, DichVu* const &b) {
+    return a->laySoLuongBan() > b->laySoLuongBan();
+}
+
 void ServiceManagementWidget::sortServices()
 {
     int sortBy = sortByCombo->currentData().toInt(); // -1: Default, 0: Price, 1: Stock, 2: Sold
@@ -463,18 +487,33 @@ void ServiceManagementWidget::sortServices()
 
     if (sortBy != -1)
     {
-        std::sort(displayedServices.begin(), displayedServices.end(), [sortBy, sortOrder](DichVu *a, DichVu *b)
-                  {
-            bool result = false;
-            if (sortBy == 0) { // Price
-                result = a->layDonGia() < b->layDonGia();
-            } else if (sortBy == 1) { // Stock
-                result = a->laySoLuongTon() < b->laySoLuongTon();
-            } else if (sortBy == 2) { // Sold
-                result = a->laySoLuongBan() < b->laySoLuongBan();
-            }
-            
-            return sortOrder == 0 ? result : !result; });
+        // Convert QList to MangDong for MergeSort
+        MangDong<DichVu*> tempArray;
+        for(DichVu* dv : displayedServices) {
+            tempArray.push_back(dv);
+        }
+
+        // Select Comparator
+        bool (*comparator)(DichVu* const &, DichVu* const &) = nullptr;
+
+        if (sortBy == 0) { // Price
+            comparator = (sortOrder == 0) ? comparePriceAsc : comparePriceDesc;
+        } else if (sortBy == 1) { // Stock
+            comparator = (sortOrder == 0) ? compareStockAsc : compareStockDesc;
+        } else if (sortBy == 2) { // Sold
+            comparator = (sortOrder == 0) ? compareSoldAsc : compareSoldDesc;
+        }
+
+        // Apply MergeSort
+        if (comparator) {
+            MergeSort<DichVu*>::sort(tempArray, comparator);
+        }
+
+        // Convert back to QList
+        displayedServices.clear();
+        for(int i = 0; i < tempArray.size(); i++) {
+            displayedServices.append(tempArray[i]);
+        }
     }
 
     // Update Table

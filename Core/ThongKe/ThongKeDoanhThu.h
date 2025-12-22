@@ -8,10 +8,7 @@
 // Forward declaration
 class HeThongQuanLy;
 
-/**
- * @struct DoanhThuTheoNgay
- * @brief Doanh thu của một ngày cụ thể (dùng cho chart)
- */
+// Doanh thu cua mot ngay cu the (dung cho chart)
 struct DoanhThuTheoNgay
 {
     NgayThang ngay;
@@ -23,10 +20,7 @@ struct DoanhThuTheoNgay
     DoanhThuTheoNgay() : doanhThu(0.0), doanhThuSan(0.0), doanhThuDichVu(0.0), soBooking(0) {}
 };
 
-/**
- * @struct DoanhThuTheoThang
- * @brief Doanh thu của một tháng (dùng cho chart)
- */
+// Doanh thu cua mot thang (dung cho chart)
 struct DoanhThuTheoThang
 {
     int thang;
@@ -39,49 +33,40 @@ struct DoanhThuTheoThang
     DoanhThuTheoThang() : thang(0), nam(0), doanhThu(0.0), doanhThuSan(0.0), doanhThuDichVu(0.0), soBooking(0) {}
 };
 
-/**
- * @class ThongKeDoanhThu
- * @brief Lớp thống kê doanh thu - Enhanced version
- *
- * Cung cấp:
- * - Tổng doanh thu, doanh thu sân, doanh thu dịch vụ
- * - So sánh với kỳ trước (% tăng/giảm)
- * - Doanh thu theo ngày/tháng (cho line chart)
- * - Doanh thu theo nguồn (cho pie chart)
- * - Doanh thu theo khung giờ
- */
+// Lop thong ke doanh thu - Enhanced version
+// Cung cap: Tong DT, DT san, DT dich vu, So sanh ky truoc, DT theo ngay/thang, DT theo nguon, DT theo khung gio
 class ThongKeDoanhThu : public ThongKe
 {
 private:
-    // ===== METRICS CƠ BẢN =====
-    double tongDoanhThu;      // Tổng doanh thu
-    double doanhThuTienSan;   // Doanh thu từ tiền sân
-    double doanhThuDichVu;    // Doanh thu từ dịch vụ
-    int soLuongDonDat;        // Số lượng đơn đặt
-    int soLuongDonHoanThanh;  // Số đơn hoàn thành
-    int soLuongDonHuy;        // Số đơn hủy
-    double doanhThuTrungBinh; // Doanh thu trung bình/ngày
+    // ===== METRICS CO BAN =====
+    double tongDoanhThu;      // Tong doanh thu
+    double doanhThuTienSan;   // Doanh thu tu tien san
+    double doanhThuDichVu;    // Doanh thu tu dich vu
+    int soLuongDonDat;        // So luong don dat
+    int soLuongDonHoanThanh;  // So don hoan thanh
+    int soLuongDonHuy;        // So don huy
+    double doanhThuTrungBinh; // Doanh thu trung binh/ngay
 
-    // ===== SO SÁNH KỲ TRƯỚC =====
-    double doanhThuKyTruoc;  // Doanh thu kỳ trước (cùng số ngày)
-    double phanTramTangGiam; // % tăng/giảm so với kỳ trước
+    // ===== SO SANH KY TRUOC =====
+    double doanhThuKyTruoc;  // Doanh thu ky truoc (cung so ngay)
+    double phanTramTangGiam; // % tang/giam so voi ky truoc
     double doanhThuSanKyTruoc;
     double doanhThuDVKyTruoc;
     double phanTramTangSan;
     double phanTramTangDV;
 
-    // ===== DOANH THU CHI TIẾT THEO LOẠI DV =====
-    double doanhThuDoUong;  // Doanh thu đồ uống
-    double doanhThuDoAn;    // Doanh thu đồ ăn
-    double doanhThuThietBi; // Doanh thu thiết bị
+    // ===== DOANH THU CHI TIET THEO LOAI DV =====
+    double doanhThuDoUong;  // Doanh thu do uong
+    double doanhThuDoAn;    // Doanh thu do an
+    double doanhThuThietBi; // Doanh thu thiet bi
 
-    // ===== DOANH THU THEO THỜI GIAN (CHO CHARTS) =====
-    MangDong<DoanhThuTheoNgay> doanhThuTheoNgay;   // Doanh thu từng ngày
-    MangDong<DoanhThuTheoThang> doanhThuTheoThang; // Doanh thu từng tháng
+    // ===== DOANH THU THEO THOI GIAN (CHO CHARTS) =====
+    MangDong<DoanhThuTheoNgay> doanhThuTheoNgay;   // Doanh thu tung ngay
+    MangDong<DoanhThuTheoThang> doanhThuTheoThang; // Doanh thu tung thang
 
-    // ===== DOANH THU THEO KHUNG GIỜ =====
+    // ===== DOANH THU THEO KHUNG GIO =====
     double doanhThuGioVang;   // 18:00 - 21:00
-    double doanhThuGioThuong; // Còn lại
+    double doanhThuGioThuong; // Con lai
 
     // ===== REFERENCE =====
     HeThongQuanLy *heThong;
@@ -96,15 +81,10 @@ public:
     // Operators
     ThongKeDoanhThu &operator=(const ThongKeDoanhThu &other);
 
-    // ===== GETTERS - CƠ BẢN =====
+    // ===== GETTERS - CO BAN =====
     double getTongDoanhThu() const;
 
-    // ===== DỰ BÁO =====
-    /**
-     * @brief Dự báo doanh thu cho ngày tiếp theo dựa trên dữ liệu hiện tại
-     * Sử dụng phương pháp hồi quy tuyến tính đơn giản (Linear Regression)
-     * @return Doanh thu dự báo
-     */
+    // Du bao doanh thu ngay mai (su dung Linear Regression)
     double duBaoDoanhThuNgayMai() const;
     double getDoanhThuTienSan() const;
     double getDoanhThuDichVu() const;
@@ -113,7 +93,7 @@ public:
     int getSoLuongDonHuy() const;
     double getDoanhThuTrungBinh() const;
 
-    // ===== GETTERS - SO SÁNH =====
+    // ===== GETTERS - SO SANH =====
     double getDoanhThuKyTruoc() const;
     double getPhanTramTangGiam() const;
     double getDoanhThuSanKyTruoc() const;
@@ -121,16 +101,16 @@ public:
     double getPhanTramTangSan() const;
     double getPhanTramTangDV() const;
 
-    // ===== GETTERS - CHI TIẾT LOẠI DV =====
+    // ===== GETTERS - CHI TIET LOAI DV =====
     double getDoanhThuDoUong() const;
     double getDoanhThuDoAn() const;
     double getDoanhThuThietBi() const;
 
-    // ===== GETTERS - THEO THỜI GIAN =====
+    // ===== GETTERS - THEO THOI GIAN =====
     const MangDong<DoanhThuTheoNgay> &getDoanhThuTheoNgayList() const;
     const MangDong<DoanhThuTheoThang> &getDoanhThuTheoThangList() const;
 
-    // ===== GETTERS - KHUNG GIỜ =====
+    // ===== GETTERS - KHUNG GIO =====
     double getDoanhThuGioVang() const;
     double getDoanhThuGioThuong() const;
 
@@ -145,30 +125,11 @@ public:
     void hienThiBieuDoDoanhThu() const;
 
     // ===== NEW METHODS =====
-    /**
-     * @brief Tính so sánh với kỳ trước
-     */
-    void tinhSoSanhKyTruoc();
-
-    /**
-     * @brief Tính doanh thu theo từng ngày trong khoảng
-     */
-    void tinhDoanhThuTheoTungNgay();
-
-    /**
-     * @brief Tính doanh thu theo từng tháng trong khoảng
-     */
-    void tinhDoanhThuTheoTungThang();
-
-    /**
-     * @brief Tính doanh thu theo khung giờ
-     */
-    void tinhDoanhThuTheoKhungGio();
-
-    /**
-     * @brief Tính doanh thu chi tiết theo loại dịch vụ
-     */
-    void tinhDoanhThuChiTietDichVu();
+    void tinhSoSanhKyTruoc();        // Tinh so sanh voi ky truoc
+    void tinhDoanhThuTheoTungNgay(); // Tinh DT theo tung ngay trong khoang
+    void tinhDoanhThuTheoTungThang(); // Tinh DT theo tung thang trong khoang
+    void tinhDoanhThuTheoKhungGio(); // Tinh DT theo khung gio
+    void tinhDoanhThuChiTietDichVu(); // Tinh DT chi tiet theo loai dich vu
 };
 
 #endif // THONGKEDOANHTHU_H

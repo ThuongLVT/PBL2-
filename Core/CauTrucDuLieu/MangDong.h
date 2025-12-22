@@ -1,19 +1,17 @@
-#ifndef MANGDONG_H
+﻿#ifndef MANGDONG_H
 #define MANGDONG_H
 
 #include <iostream>
 
-/**
- * @brief Template class MangDong - Thay thế std::vector
- * Dynamic array với auto-resize
- */
+// Template class MangDong - Thay the std::vector
+// Dynamic array voi auto-resize
 template <typename T>
 class MangDong
 {
 private:
-    T *data;       // Con trỏ đến mảng
-    int kichThuoc; // Số phần tử hiện tại
-    int dungLuong; // Dung lượng đã cấp phát
+    T *data;       // Con tro den mang
+    int kichThuoc; // So phan tu hien tai
+    int dungLuong; // Dung luong da cap phat
 
     void capPhat(int dungLuongMoi);
     void giaiPhong();
@@ -38,11 +36,11 @@ public:
     void reserve(int dungLuongMoi);
 
     // Modifiers
-    void push_back(const T &value);         // Thêm vào cuối
-    void pop_back();                        // Xóa cuối
-    void insert(int index, const T &value); // Chèn tại vị trí
-    void erase(int index);                  // Xóa tại vị trí
-    void clear();                           // Xóa tất cả
+    void push_back(const T &value);         // Them vao cuoi
+    void pop_back();                        // Xoa cuoi
+    void insert(int index, const T &value); // Chen tai vi tri
+    void erase(int index);                  // Xoa tai vi tri
+    void clear();                           // Xoa tat ca
 
     // Access
     T &at(int index);
@@ -55,8 +53,8 @@ public:
     const T *getData() const { return data; }
 
     // Search
-    int indexOf(const T &value) const;   // Tìm vị trí phần tử
-    bool contains(const T &value) const; // Kiểm tra có chứa
+    int indexOf(const T &value) const;   // Tim vi tri phan tu
+    bool contains(const T &value) const; // Kiem tra co chua
 
     // File I/O
     void ghiFile(std::ostream &out) const;
@@ -64,12 +62,12 @@ public:
 };
 
 // ==================== IMPLEMENTATION ====================
-// (Template phải implement trong header file)
+// (Template phai implement trong header file)
 
 template <typename T>
 MangDong<T>::MangDong() : data(nullptr), kichThuoc(0), dungLuong(0)
 {
-    capPhat(16); // Dung lượng mặc định
+    capPhat(16); // Dung luong mac dinh
 }
 
 template <typename T>
@@ -207,7 +205,7 @@ void MangDong<T>::insert(int index, const T &value)
         capPhat(dungLuong * 2);
     }
 
-    // Dịch các phần tử sang phải
+    // Dich cac phan tu sang phai
     for (int i = kichThuoc; i > index; i--)
     {
         data[i] = data[i - 1];
@@ -223,7 +221,7 @@ void MangDong<T>::erase(int index)
     if (index < 0 || index >= kichThuoc)
         return;
 
-    // Dịch các phần tử sang trái
+    // Dich cac phan tu sang trai
     for (int i = index; i < kichThuoc - 1; i++)
     {
         data[i] = data[i + 1];
@@ -281,8 +279,6 @@ void MangDong<T>::ghiFile(std::ostream &out) const
     out.write(reinterpret_cast<const char *>(&kichThuoc), sizeof(kichThuoc));
     for (int i = 0; i < kichThuoc; i++)
     {
-        // Giả sử T có method ghiFile
-        // Hoặc dùng write trực tiếp nếu T là primitive type
         out.write(reinterpret_cast<const char *>(&data[i]), sizeof(T));
     }
 }

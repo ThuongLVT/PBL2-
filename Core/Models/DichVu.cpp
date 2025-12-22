@@ -4,7 +4,6 @@
  */
 
 #include "DichVu.h"
-#include "../Utils/FileHelper.h"
 
 using namespace std;
 
@@ -173,61 +172,6 @@ void DichVu::hienThiThongTin() const
     {
         std::cout << "Mo ta: " << moTa << std::endl;
     }
-}
-
-bool DichVu::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    if (!FileHelper::ghiString(file, maDichVu))
-        return false;
-    if (!FileHelper::ghiString(file, tenDichVu))
-        return false;
-    file.write(reinterpret_cast<const char *>(&donGia), sizeof(donGia));
-
-    int loaiInt = static_cast<int>(loaiDichVu);
-    file.write(reinterpret_cast<const char *>(&loaiInt), sizeof(loaiInt));
-
-    if (!FileHelper::ghiString(file, moTa))
-        return false;
-    file.write(reinterpret_cast<const char *>(&conHang), sizeof(conHang));
-    file.write(reinterpret_cast<const char *>(&soLuongTon), sizeof(soLuongTon));
-
-    return file.good();
-}
-
-bool DichVu::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    if (!FileHelper::docString(file, maDichVu))
-        return false;
-    if (!FileHelper::docString(file, tenDichVu))
-        return false;
-    file.read(reinterpret_cast<char *>(&donGia), sizeof(donGia));
-
-    int loaiInt;
-    file.read(reinterpret_cast<char *>(&loaiInt), sizeof(loaiInt));
-    loaiDichVu = static_cast<LoaiDichVu>(loaiInt);
-
-    if (!FileHelper::docString(file, moTa))
-        return false;
-    file.read(reinterpret_cast<char *>(&conHang), sizeof(conHang));
-
-    // Try to read soLuongTon, if fail (old file format), set default
-    if (file.peek() != EOF)
-    {
-        file.read(reinterpret_cast<char *>(&soLuongTon), sizeof(soLuongTon));
-    }
-    else
-    {
-        soLuongTon = 50; // Default for old files
-        file.clear();    // Clear EOF flag
-    }
-
-    return file.good();
 }
 
 // ========== OPERATORS ==========

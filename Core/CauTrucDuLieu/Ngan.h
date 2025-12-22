@@ -1,67 +1,73 @@
-#ifndef NGAN_H
+﻿#ifndef NGAN_H
 #define NGAN_H
 
-#include "DanhSachLienKet.h"
-
-/**
- * @brief Template class Ngan - Stack (LIFO)
- * Sử dụng DanhSachLienKet làm cấu trúc nền
- */
+// Template class Ngan - Ngan xep (LIFO)
 template <typename T>
 class Ngan
 {
 private:
-    DanhSachLienKet<T> data;
+    struct Node
+    {
+        T data;
+        Node *next;
+        Node(const T &d) : data(d), next(nullptr) {}
+    };
+
+    Node *top_node;  // Con tro dinh
+    int kichThuoc;   // So phan tu
 
 public:
-    // Constructors
-    Ngan() {}
+    // Constructor & Destructor
+    Ngan() : top_node(nullptr), kichThuoc(0) {}
+    ~Ngan() { clear(); }
 
     // Capacity
-    int size() const { return data.size(); }
-    bool isEmpty() const { return data.isEmpty(); }
+    int size() const { return kichThuoc; }
+    bool isEmpty() const { return kichThuoc == 0; }
 
     // Modifiers
-    void push(const T &value)
-    {
-        data.push_front(value); // Push vào đầu (LIFO)
-    }
-
-    void pop()
-    {
-        if (!isEmpty())
-        {
-            data.pop_front();
-        }
-    }
+    void push(const T &value); // Them vao dinh
+    void pop();                // Xoa dinh
+    void clear();              // Xoa tat ca
 
     // Access
-    T &top()
-    {
-        return data.front();
-    }
-
-    const T &top() const
-    {
-        return data.front();
-    }
-
-    // Clear
-    void clear()
-    {
-        data.clear();
-    }
-
-    // File I/O
-    void ghiFile(std::ostream &out) const
-    {
-        data.ghiFile(out);
-    }
-
-    void docFile(std::istream &in)
-    {
-        data.docFile(in);
-    }
+    T &top() { return top_node->data; }
+    const T &top() const { return top_node->data; }
 };
+
+// ==================== IMPLEMENTATION ====================
+
+template <typename T>
+void Ngan<T>::push(const T &value)
+{
+    Node *newNode = new Node(value);
+    newNode->next = top_node;
+    top_node = newNode;
+    kichThuoc++;
+}
+
+template <typename T>
+void Ngan<T>::pop()
+{
+    if (!top_node)
+        return;
+
+    Node *temp = top_node;
+    top_node = top_node->next;
+    delete temp;
+    kichThuoc--;
+}
+
+template <typename T>
+void Ngan<T>::clear()
+{
+    while (top_node)
+    {
+        Node *temp = top_node;
+        top_node = top_node->next;
+        delete temp;
+    }
+    kichThuoc = 0;
+}
 
 #endif // NGAN_H

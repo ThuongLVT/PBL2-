@@ -10,10 +10,7 @@
 class HeThongQuanLy;
 class KhachHang;
 
-/**
- * @struct ThongTinKhachHangTop
- * @brief Thông tin khách hàng top
- */
+// Thong tin khach hang top
 struct ThongTinKhachHangTop
 {
     KhachHang *khachHang;
@@ -23,25 +20,19 @@ struct ThongTinKhachHangTop
     ThongTinKhachHangTop() : khachHang(nullptr), soDonDat(0), tongChiTieu(0.0) {}
 };
 
-/**
- * @struct ThongKeHangKhachHang
- * @brief Thống kê theo hạng khách hàng
- */
+// Thong ke theo hang khach hang
 struct ThongKeHangKhachHang
 {
     HangKhachHang hang;
     int soLuong;
-    double tyLe;             // % so với tổng
-    double chiTieuTrungBinh; // Chi tiêu TB của hạng này
+    double tyLe;             // % so voi tong
+    double chiTieuTrungBinh; // Chi tieu TB cua hang nay
 
     ThongKeHangKhachHang() : hang(HangKhachHang::THUONG), soLuong(0), tyLe(0.0), chiTieuTrungBinh(0.0) {}
     ThongKeHangKhachHang(HangKhachHang h) : hang(h), soLuong(0), tyLe(0.0), chiTieuTrungBinh(0.0) {}
 };
 
-/**
- * @struct ThongKeKhachHangTheoThang
- * @brief Thống kê khách hàng theo tháng (cho chart)
- */
+// Thong ke khach hang theo thang (cho chart)
 struct ThongKeKhachHangTheoThang
 {
     int thang;
@@ -53,44 +44,35 @@ struct ThongKeKhachHangTheoThang
     ThongKeKhachHangTheoThang() : thang(0), nam(0), khachMoi(0), khachQuayLai(0), doanhThu(0.0) {}
 };
 
-/**
- * @class ThongKeKhachHang
- * @brief Lớp thống kê khách hàng - Enhanced version
- *
- * Cung cấp:
- * - Tổng số KH, khách mới, khách quay lại
- * - Top khách hàng chi tiêu cao nhất
- * - Phân bổ theo hạng thành viên
- * - Thống kê theo tháng (cho chart)
- * - Customer insights (CLV, tần suất, rời bỏ)
- */
+// Lop thong ke khach hang - Enhanced version
+// Cung cap: Tong so KH, khach moi, khach quay lai, Top KH, Phan bo theo hang, TK theo thang, Customer insights
 class ThongKeKhachHang : public ThongKe
 {
 private:
-    // ===== METRICS CƠ BẢN =====
-    int tongSoKhachHang;     // Tổng số khách hàng
-    int soKhachHangMoi;      // Số khách hàng mới (đăng ký trong kỳ)
-    int soKhachHangQuayLai;  // Số khách hàng quay lại (đã đặt > 1 lần)
-    int soKhachHangHoatDong; // Số KH có đặt sân trong kỳ
-    double chiTieuTrungBinh; // Chi tiêu trung bình
+    // ===== METRICS CO BAN =====
+    int tongSoKhachHang;     // Tong so khach hang
+    int soKhachHangMoi;      // So khach hang moi (dang ky trong ky)
+    int soKhachHangQuayLai;  // So khach hang quay lai (da dat > 1 lan)
+    int soKhachHangHoatDong; // So KH co dat san trong ky
+    double chiTieuTrungBinh; // Chi tieu trung binh
 
-    // ===== SO SÁNH KỲ TRƯỚC =====
+    // ===== SO SANH KY TRUOC =====
     int soKhachHangMoiKyTruoc;
     double phanTramTangKhachMoi;
 
-    // ===== TOP KHÁCH HÀNG =====
+    // ===== TOP KHACH HANG =====
     MangDong<ThongTinKhachHangTop> topKhachHang;
 
-    // ===== THỐNG KÊ THEO HẠNG =====
+    // ===== THONG KE THEO HANG =====
     MangDong<ThongKeHangKhachHang> thongKeTheoHang;
 
-    // ===== THỐNG KÊ THEO THÁNG =====
+    // ===== THONG KE THEO THANG =====
     MangDong<ThongKeKhachHangTheoThang> thongKeTheoThang;
 
     // ===== CUSTOMER INSIGHTS =====
-    double customerLifetimeValue; // CLV trung bình
-    double tanSuatDatSanTB;       // Tần suất đặt sân TB (lần/tháng)
-    int soKhachHangRoiBo;         // Số KH không đặt > 3 tháng
+    double customerLifetimeValue; // CLV trung binh
+    double tanSuatDatSanTB;       // Tan suat dat san TB (lan/thang)
+    int soKhachHangRoiBo;         // So KH khong dat > 3 thang
 
     // ===== REFERENCE =====
     HeThongQuanLy *heThong;
@@ -105,18 +87,18 @@ public:
     // Operators
     ThongKeKhachHang &operator=(const ThongKeKhachHang &other);
 
-    // ===== GETTERS - CƠ BẢN =====
+    // ===== GETTERS - CO BAN =====
     int getTongSoKhachHang() const;
     int getSoKhachHangMoi() const;
     int getSoKhachHangQuayLai() const;
     int getSoKhachHangHoatDong() const;
     double getChiTieuTrungBinh() const;
 
-    // ===== GETTERS - SO SÁNH =====
+    // ===== GETTERS - SO SANH =====
     int getSoKhachHangMoiKyTruoc() const;
     double getPhanTramTangKhachMoi() const;
 
-    // ===== GETTERS - TOP & PHÂN LOẠI =====
+    // ===== GETTERS - TOP & PHAN LOAI =====
     const MangDong<ThongTinKhachHangTop> &getTopKhachHang() const;
     const MangDong<ThongKeHangKhachHang> &getThongKeTheoHang() const;
     const MangDong<ThongKeKhachHangTheoThang> &getThongKeTheoThang() const;
@@ -137,40 +119,13 @@ public:
     double tinhTongChiTieuCuaKhachHang(KhachHang *kh);
 
     // ===== NEW METHODS =====
-    /**
-     * @brief Tính thống kê theo hạng khách hàng
-     */
-    void tinhThongKeTheoHang();
-
-    /**
-     * @brief Tính thống kê theo tháng
-     */
-    void tinhThongKeTheoThang();
-
-    /**
-     * @brief Tính customer insights
-     */
-    void tinhCustomerInsights();
-
-    /**
-     * @brief Tính so sánh với kỳ trước
-     */
-    void tinhSoSanhKyTruoc();
-
-    /**
-     * @brief Lấy tên hạng khách hàng
-     */
-    std::string layTenHang(HangKhachHang hang) const;
-
-    /**
-     * @brief Kiểm tra khách hàng có đăng ký trong kỳ không
-     */
-    bool laDangKyTrongKy(KhachHang *kh);
-
-    /**
-     * @brief Kiểm tra khách hàng có hoạt động trong kỳ không
-     */
-    bool laHoatDongTrongKy(KhachHang *kh);
+    void tinhThongKeTheoHang();    // Tinh thong ke theo hang khach hang
+    void tinhThongKeTheoThang();   // Tinh thong ke theo thang
+    void tinhCustomerInsights();   // Tinh customer insights
+    void tinhSoSanhKyTruoc();      // Tinh so sanh voi ky truoc
+    std::string layTenHang(HangKhachHang hang) const; // Lay ten hang khach hang
+    bool laDangKyTrongKy(KhachHang *kh);  // Kiem tra KH co dang ky trong ky
+    bool laHoatDongTrongKy(KhachHang *kh); // Kiem tra KH co hoat dong trong ky
 };
 
 #endif // THONGKEKHACHHANG_H

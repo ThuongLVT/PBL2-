@@ -5,7 +5,6 @@
 
 #include "ConNguoi.h"
 #include <string>
-#include "../Utils/FileHelper.h"
 
 using namespace std;
 
@@ -72,38 +71,6 @@ void ConNguoi::hienThiThongTin() const
     std::cout << "Ho ten: " << hoTen << std::endl;
     std::cout << "So dien thoai: " << soDienThoai << std::endl;
     std::cout << "Dia chi: " << diaChi << std::endl;
-}
-
-bool ConNguoi::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    // Ghi từng thuộc tính
-    if (!FileHelper::ghiString(file, hoTen))
-        return false;
-    if (!FileHelper::ghiString(file, soDienThoai))
-        return false;
-    if (!FileHelper::ghiString(file, diaChi))
-        return false;
-
-    return file.good();
-}
-
-bool ConNguoi::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    // Đọc từng thuộc tính
-    if (!FileHelper::docString(file, hoTen))
-        return false;
-    if (!FileHelper::docString(file, soDienThoai))
-        return false;
-    if (!FileHelper::docString(file, diaChi))
-        return false;
-
-    return file.good();
 }
 
 // ========== OPERATORS ==========

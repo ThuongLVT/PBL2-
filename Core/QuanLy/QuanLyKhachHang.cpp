@@ -193,54 +193,7 @@ bool QuanLyKhachHang::kiemTraSDTTonTai(const string &sdt, const string &excludeM
     return false;
 }
 
-// ========== FILE I/O ==========
-bool QuanLyKhachHang::ghiFile(ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    // Ghi maxCustomerId
-    file.write(reinterpret_cast<const char *>(&maxCustomerId), sizeof(maxCustomerId));
-
-    int soLuong = danhSachKhachHang.size();
-    file.write(reinterpret_cast<const char *>(&soLuong), sizeof(soLuong));
-
-    for (int i = 0; i < soLuong; i++)
-    {
-        if (!danhSachKhachHang[i]->ghiFile(file))
-            return false;
-    }
-    return file.good();
-}
-
-bool QuanLyKhachHang::docFile(ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    xoaTatCa();
-
-    // Đọc maxCustomerId
-    file.read(reinterpret_cast<char *>(&maxCustomerId), sizeof(maxCustomerId));
-    cout << "Loaded maxCustomerId: " << maxCustomerId << endl;
-
-    int soLuong;
-    file.read(reinterpret_cast<char *>(&soLuong), sizeof(soLuong));
-    cout << "Loading " << soLuong << " customers..." << endl;
-
-    for (int i = 0; i < soLuong; i++)
-    {
-        KhachHang *kh = new KhachHang();
-        if (!kh->docFile(file))
-        {
-            delete kh;
-            return false;
-        }
-        danhSachKhachHang.push_back(kh);
-        hashTableKhachHang->insert(kh->getMaNguoiDung(), kh);
-    }
-    return file.good();
-}
+// ========== DATA MANAGEMENT ==========
 
 void QuanLyKhachHang::xoaTatCa()
 {
@@ -261,9 +214,13 @@ void QuanLyKhachHang::xoaTatCa()
 // ========== CSV I/O ==========
 bool QuanLyKhachHang::luuCSV(const string &filename) const
 {
-    vector<string> headers = {
-        "MaKH", "HoTen", "SoDienThoai", "BacHoiVien",
-        "TongChiTieu", "NgayDangKy"};
+    MangDong<string> headers;
+    headers.push_back("MaKH");
+    headers.push_back("HoTen");
+    headers.push_back("SoDienThoai");
+    headers.push_back("BacHoiVien");
+    headers.push_back("TongChiTieu");
+    headers.push_back("NgayDangKy");
 
     // We will write manually to include the MAX_ID metadata
     string fullPath = CSVHelper::getDataPath() + filename;
@@ -278,7 +235,7 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
     file << "#MAX_ID:" << maxCustomerId << "\n";
 
     // Write Headers
-    for (size_t i = 0; i < headers.size(); i++)
+    for (int i = 0; i < headers.size(); i++)
     {
         file << CSVHelper::escapeField(headers[i]);
         if (i < headers.size() - 1)
@@ -330,9 +287,9 @@ bool QuanLyKhachHang::luuCSV(const string &filename) const
 
 bool QuanLyKhachHang::docCSV(const string &filename)
 {
-    vector<vector<string>> rows = CSVHelper::readCSV(filename, false);
+    MangDong<MangDong<string>> rows = CSVHelper::readCSV(filename, false);
 
-    if (rows.empty())
+    if (rows.isEmpty())
     {
         cout << "No customer data found in CSV: " << filename << endl;
         maxCustomerId = 0;
@@ -343,10 +300,10 @@ bool QuanLyKhachHang::docCSV(const string &filename)
     isLoadingFromCSV = true; // Prevent auto-save during load
 
     maxCustomerId = 0;
-    size_t startRow = 1; // Default: skip header at row 0
+    int startRow = 1; // Default: skip header at row 0
 
     // Check for Metadata at row 0
-    if (!rows.empty() && !rows[0].empty() && rows[0][0].find("#MAX_ID:") == 0) {
+    if (!rows.isEmpty() && !rows[0].isEmpty() && rows[0][0].find("#MAX_ID:") == 0) {
         try {
             string val = rows[0][0].substr(8); // Length of "#MAX_ID:"
             maxCustomerId = stoi(val);
@@ -359,9 +316,9 @@ bool QuanLyKhachHang::docCSV(const string &filename)
 
     int calculatedMax = 0;
 
-    for (size_t i = startRow; i < rows.size(); i++)
+    for (int i = startRow; i < rows.size(); i++)
     {
-        const auto &row = rows[i];
+        const MangDong<string> &row = rows[i];
 
         // Format: MaKH, HoTen, SoDienThoai, BacHoiVien, TongChiTieu, NgayDangKy
         if (row.size() < 6)

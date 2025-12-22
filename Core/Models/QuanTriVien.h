@@ -1,11 +1,5 @@
-/**
- * @file QuanTriVien.h
- * @brief Lớp đại diện cho Quản trị viên hệ thống
- * @details Kế thừa từ NguoiDung, có quyền cao nhất trong hệ thống
- *
- * @author Football Field Management System
- * @date 2025-11-03
- */
+﻿// QuanTriVien.h - Lop dai dien cho Quan tri vien he thong
+// Ke thua tu NguoiDung, co quyen cao nhat trong he thong
 
 #ifndef QUANTRIVIEN_H
 #define QUANTRIVIEN_H
@@ -14,114 +8,57 @@
 #include "NguoiDung.h"
 #include "../CauTrucDuLieu/NgayGio.h"
 
-/**
- * @class QuanTriVien
- * @brief Lớp đại diện cho Quản trị viên
- *
- * Quản trị viên có quyền:
- * - Quản lý tất cả người dùng
- * - Xem tất cả báo cáo thống kê
- * - Cấu hình hệ thống
- * - Sao lưu/khôi phục dữ liệu
- */
+// Lop dai dien cho Quan tri vien
+// Quan tri vien co quyen: Quan ly tat ca nguoi dung, Xem tat ca bao cao thong ke,
+// Cau hinh he thong, Sao luu/khoi phuc du lieu
 class QuanTriVien : public NguoiDung
 {
 private:
-    NgayGio ngayTao;         ///< Ngày tạo tài khoản admin
-    int soLanDangNhap;       ///< Số lần đăng nhập
-    NgayGio lanDangNhapCuoi; ///< Lần đăng nhập cuối cùng
+    NgayGio ngayTao;         // Ngay tao tai khoan admin
+    int soLanDangNhap;       // So lan dang nhap
+    NgayGio lanDangNhapCuoi; // Lan dang nhap cuoi cung
 
 public:
     // ========== CONSTRUCTORS ==========
 
-    /**
-     * @brief Constructor mặc định
-     */
+    // Constructor mac dinh
     QuanTriVien();
 
-    /**
-     * @brief Constructor có tham số
-     * @param ht Họ tên
-     * @param sdt Số điện thoại
-     * @param dc Địa chỉ
-     * @param tdn Tên đăng nhập
-     * @param mk Mật khẩu
-     */
+    // Constructor co tham so (ht: Ho ten, sdt: So dien thoai, dc: Dia chi, tdn: Ten dang nhap, mk: Mat khau)
     QuanTriVien(const std::string &ht, const std::string &sdt, const std::string &dc,
                 const std::string &tdn, const std::string &mk);
 
-    /**
-     * @brief Copy constructor
-     * @param other Đối tượng QuanTriVien khác
-     */
+    // Copy constructor (other: Doi tuong QuanTriVien khac)
     QuanTriVien(const QuanTriVien &other);
 
-    /**
-     * @brief Destructor
-     */
+    // Destructor
     virtual ~QuanTriVien();
 
     // ========== GETTERS ==========
 
-    /**
-     * @brief Lấy ngày tạo tài khoản
-     * @return Ngày giờ tạo
-     */
+    // Lay ngay tao tai khoan
     NgayGio layNgayTao() const;
 
-    /**
-     * @brief Lấy số lần đăng nhập
-     * @return Số lần đăng nhập
-     */
+    // Lay so lan dang nhap
     int laySoLanDangNhap() const;
 
-    /**
-     * @brief Lấy lần đăng nhập cuối
-     * @return Ngày giờ đăng nhập cuối
-     */
+    // Lay lan dang nhap cuoi
     NgayGio layLanDangNhapCuoi() const;
 
     // ========== METHODS ==========
 
-    /**
-     * @brief Cập nhật lần đăng nhập (gọi khi đăng nhập thành công)
-     */
+    // Cap nhat lan dang nhap (goi khi dang nhap thanh cong)
     void capNhatDangNhap();
 
-    /**
-     * @brief Hiển thị thông tin quản trị viên (override)
-     */
+    // Hien thi thong tin quan tri vien (override)
     virtual void hienThiThongTin() const override;
-
-    /**
-     * @brief Ghi thông tin ra file nhị phân (override)
-     * @param file File stream để ghi
-     * @return true nếu ghi thành công
-     */
-    virtual bool ghiFile(std::ofstream &file) const override;
-
-    /**
-     * @brief Đọc thông tin từ file nhị phân (override)
-     * @param file File stream để đọc
-     * @return true nếu đọc thành công
-     */
-    virtual bool docFile(std::ifstream &file) override;
 
     // ========== OPERATORS ==========
 
-    /**
-     * @brief Toán tử gán
-     * @param other Đối tượng QuanTriVien khác
-     * @return Tham chiếu đến đối tượng hiện tại
-     */
+    // Toan tu gan (other: Doi tuong QuanTriVien khac)
     QuanTriVien &operator=(const QuanTriVien &other);
 
-    /**
-     * @brief Toán tử xuất ra stream
-     * @param os Output stream
-     * @param qtv Đối tượng QuanTriVien
-     * @return Tham chiếu đến output stream
-     */
+    // Toan tu xuat ra stream (os: Output stream, qtv: Doi tuong QuanTriVien)
     friend std::ostream &operator<<(std::ostream &os, const QuanTriVien &qtv);
 };
 

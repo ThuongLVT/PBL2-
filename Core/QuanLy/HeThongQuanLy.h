@@ -10,7 +10,7 @@
 #include "../Models/DatSan.h"
 #include "../CauTrucDuLieu/MangDong.h"
 
-// Import các lớp quản lý
+// Import cac lop quan ly
 #include "QuanLySan.h"
 #include "QuanLyKhachHang.h"
 #include "QuanLyNhanVien.h"
@@ -18,19 +18,15 @@
 #include "QuanLyDonHangDichVu.h"
 #include "QuanLyDatSan.h"
 
-/**
- * @class HeThongQuanLy
- * @brief Lớp hệ thống quản lý chính - Singleton pattern
- * @details Đóng vai trò Coordinator - điều phối các lớp quản lý riêng biệt
- *          Không còn CRUD trực tiếp, mà delegate cho các Manager classes
- */
+// Lop he thong quan ly chinh - Singleton pattern
+// Dong vai tro Coordinator - dieu phoi cac lop quan ly rieng biet
 class HeThongQuanLy
 {
 private:
     // Singleton instance
     static HeThongQuanLy *instance;
 
-    // ===== CÁC LỚP QUẢN LÝ (MANAGERS) =====
+    // ===== CAC LOP QUAN LY (MANAGERS) =====
     QuanLySan *quanLySan;
     QuanLyKhachHang *quanLyKhachHang;
     QuanLyNhanVien *quanLyNhanVien;
@@ -38,7 +34,7 @@ private:
     QuanLyDonHangDichVu *quanLyDonHangDichVu;
     QuanLyDatSan *quanLyDatSan;
 
-    // ===== NHÂN VIÊN & QUẢN TRỊ VIÊN (Quản lý trực tiếp) =====
+    // ===== NHAN VIEN & QUAN TRI VIEN =====
     MangDong<NhanVien *> danhSachNhanVien;
     MangDong<QuanTriVien *> danhSachQuanTriVien;
 
@@ -46,16 +42,11 @@ private:
     HeThongQuanLy();
 
 public:
-    // Destructor
     ~HeThongQuanLy();
-
-    // Get singleton instance
     static HeThongQuanLy *getInstance();
-
-    // Get singleton instance as pointer (for Qt compatibility)
     static HeThongQuanLy *getInstancePtr() { return getInstance(); }
 
-    // ===== GETTERS CHO CÁC MANAGER =====
+    // ===== GETTERS CHO CAC MANAGER =====
     QuanLySan *layQuanLySan() const { return quanLySan; }
     QuanLyKhachHang *layQuanLyKhachHang() const { return quanLyKhachHang; }
     QuanLyNhanVien *layQuanLyNhanVien() const { return quanLyNhanVien; }
@@ -63,7 +54,7 @@ public:
     QuanLyDonHangDichVu *layQuanLyDonHangDichVu() const { return quanLyDonHangDichVu; }
     QuanLyDatSan *layQuanLyDatSan() const { return quanLyDatSan; }
 
-    // ===== KHÁCH HÀNG (Delegate to QuanLyKhachHang) =====
+    // ===== KHACH HANG (Delegate to QuanLyKhachHang) =====
     bool themKhachHang(KhachHang *kh);
     bool xoaKhachHang(const std::string &ma);
     bool capNhatKhachHang(const std::string &ma, const KhachHang &khMoi);
@@ -72,7 +63,7 @@ public:
     const MangDong<KhachHang *> &layDanhSachKhachHang() const;
     void hienThiDanhSachKhachHang() const;
 
-    // ===== NHÂN VIÊN =====
+    // ===== NHAN VIEN =====
     bool themNhanVien(NhanVien *nv);
     bool xoaNhanVien(const std::string &ma);
     bool capNhatNhanVien(const std::string &ma, const NhanVien &nvMoi);
@@ -80,12 +71,12 @@ public:
     const MangDong<NhanVien *> &layDanhSachNhanVien() const;
     void hienThiDanhSachNhanVien() const;
 
-    // ===== QUẢN TRỊ VIÊN =====
+    // ===== QUAN TRI VIEN =====
     bool themQuanTriVien(QuanTriVien *qtv);
     QuanTriVien *timQuanTriVien(const std::string &ma);
     const MangDong<QuanTriVien *> &layDanhSachQuanTriVien() const;
 
-    // ===== SÂN (Delegate to QuanLySan) =====
+    // ===== SAN (Delegate to QuanLySan) =====
     bool themSan(San *san);
     bool xoaSan(const std::string &ma);
     bool capNhatSan(const std::string &ma, const San &sanMoi);
@@ -95,7 +86,7 @@ public:
     MangDong<San *> timSanTheoLoai(const std::string &loai);
     MangDong<San *> timSanTrong(const NgayGio &thoiGian, const KhungGio &khung);
 
-    // ===== DỊCH VỤ (Delegate to QuanLyDichVu) =====
+    // ===== DICH VU (Delegate to QuanLyDichVu) =====
     bool themDichVu(DichVu *dv);
     bool xoaDichVu(const std::string &ma);
     bool capNhatDichVu(const std::string &ma, const DichVu &dvMoi);
@@ -103,7 +94,7 @@ public:
     const MangDong<DichVu *> &layDanhSachDichVu() const;
     void hienThiDanhSachDichVu() const;
 
-    // ===== ĐƠN HÀNG DỊCH VỤ (Delegate to QuanLyDonHangDichVu) =====
+    // ===== DON HANG DICH VU (Delegate to QuanLyDonHangDichVu) =====
     DonHangDichVu *taoDonHangDichVu(KhachHang *kh);
     bool huyDonHangDichVu(const std::string &maDH);
     bool capNhatTrangThaiDonHang(const std::string &maDH, TrangThaiDonHang trangThai);
@@ -112,7 +103,7 @@ public:
     void hienThiDanhSachDonHangDichVu() const;
     double tongDoanhThuDichVu() const;
 
-    // ===== ĐẶT SÂN (Delegate to QuanLyDatSan) =====
+    // ===== DAT SAN (Delegate to QuanLyDatSan) =====
     DatSan *taoDatSan(KhachHang *kh, San *san, const NgayGio &thoiGian, const KhungGio &khung);
     bool huyDatSan(const std::string &maDatSan);
     bool capNhatTrangThaiDatSan(const std::string &maDatSan, TrangThaiDatSan trangThai);
@@ -124,18 +115,13 @@ public:
     MangDong<DatSan *> timDatSanTheoNgay(const NgayThang &ngay);
     bool kiemTraSanTrong(San *san, const NgayGio &thoiGian, const KhungGio &khung);
 
-    // ===== FILE I/O (BINARY ONLY) =====
+    // ===== FILE I/O =====
     bool luuHeThong(const std::string &tenFile);
     bool docHeThong(const std::string &tenFile);
     void xoaTatCaDuLieu();
+    void khoiTaoDuLieuMau(); // Khoi tao du lieu mau (10 items moi loai)
 
-    /**
-     * @brief Khởi tạo dữ liệu mẫu (10 items mỗi loại)
-     * @details Dùng khi chạy lần đầu hoặc không có data.bin
-     */
-    void khoiTaoDuLieuMau();
-
-    // ===== CSV I/O (NEW) =====
+    // ===== CSV I/O =====
     bool luuKhachHangCSV(const std::string &filename);
     bool docKhachHangCSV(const std::string &filename);
     bool luuNhanVienCSV(const std::string &filename);
@@ -156,12 +142,7 @@ public:
     int tongSoDichVu() const;
     int tongSoDonHangDichVu() const;
     int tongSoDatSan() const;
-
-    /**
-     * @brief Tính lại tổng chi tiêu cho tất cả khách hàng dựa trên lịch sử đặt sân và đơn hàng
-     * @details Dùng để đồng bộ dữ liệu khi có sự sai lệch
-     */
-    void tinhLaiTongChiTieuKhachHang();
+    void tinhLaiTongChiTieuKhachHang(); // Dong bo lai tong chi tieu
 };
 
 #endif // HETHONGQUANLY_H

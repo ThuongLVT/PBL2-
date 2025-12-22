@@ -1,11 +1,5 @@
-/**
- * @file KhungGio.h
- * @brief Lớp đại diện cho Khung giờ đặt sân
- * @details Quản lý thời gian bắt đầu và kết thúc của một booking
- *
- * @author Football Field Management System
- * @date 2025-11-03
- */
+﻿// KhungGio.h - Lop dai dien cho Khung gio dat san
+// Quan ly thoi gian bat dau va ket thuc cua mot booking
 
 #ifndef KHUNGGIO_H
 #define KHUNGGIO_H
@@ -13,162 +7,79 @@
 
 #include "../CauTrucDuLieu/NgayGio.h"
 #include <iostream>
-#include <fstream>
 
-/**
- * @class KhungGio
- * @brief Lớp đại diện cho một khung giờ đặt sân
- *
- * Khung giờ bao gồm:
- * - Giờ bắt đầu
- * - Giờ kết thúc
- * - Số giờ thuê
- */
+// Lop dai dien cho mot khung gio dat san
+// Khung gio bao gom: Gio bat dau, Gio ket thuc, So gio thue
 class KhungGio
 {
 private:
-    ThoiGian gioBatDau;  ///< Giờ bắt đầu
-    ThoiGian gioKetThuc; ///< Giờ kết thúc
+    ThoiGian gioBatDau;  // Gio bat dau
+    ThoiGian gioKetThuc; // Gio ket thuc
 
 public:
     // ========== CONSTRUCTORS ==========
 
-    /**
-     * @brief Constructor mặc định
-     */
+    // Constructor mac dinh
     KhungGio();
 
-    /**
-     * @brief Constructor có tham số
-     * @param bd Giờ bắt đầu
-     * @param kt Giờ kết thúc
-     */
+    // Constructor co tham so (bd: Gio bat dau, kt: Gio ket thuc)
     KhungGio(const ThoiGian &bd, const ThoiGian &kt);
 
-    /**
-     * @brief Constructor với số giờ, phút, giây
-     * @param gioBD Giờ bắt đầu (giờ)
-     * @param phutBD Giờ bắt đầu (phút)
-     * @param gioKT Giờ kết thúc (giờ)
-     * @param phutKT Giờ kết thúc (phút)
-     */
+    // Constructor voi so gio, phut (gioBD: Gio bat dau, phutBD: Phut bat dau, gioKT: Gio ket thuc, phutKT: Phut ket thuc)
     KhungGio(int gioBD, int phutBD, int gioKT, int phutKT);
 
-    /**
-     * @brief Copy constructor
-     * @param other Đối tượng KhungGio khác
-     */
+    // Copy constructor (other: Doi tuong KhungGio khac)
     KhungGio(const KhungGio &other);
 
-    /**
-     * @brief Destructor
-     */
+    // Destructor
     ~KhungGio();
 
     // ========== GETTERS ==========
 
-    /**
-     * @brief Lấy giờ bắt đầu
-     * @return Giờ bắt đầu
-     */
+    // Lay gio bat dau
     ThoiGian layGioBatDau() const;
     ThoiGian getGioBatDau() const { return gioBatDau; } // Alias
 
-    /**
-     * @brief Lấy giờ kết thúc
-     * @return Giờ kết thúc
-     */
+    // Lay gio ket thuc
     ThoiGian layGioKetThuc() const;
     ThoiGian getGioKetThuc() const { return gioKetThuc; } // Alias
 
     // ========== SETTERS ==========
 
-    /**
-     * @brief Đặt giờ bắt đầu
-     * @param bd Giờ bắt đầu mới
-     */
+    // Dat gio bat dau (bd: Gio bat dau moi)
     void datGioBatDau(const ThoiGian &bd);
 
-    /**
-     * @brief Đặt giờ kết thúc
-     * @param kt Giờ kết thúc mới
-     */
+    // Dat gio ket thuc (kt: Gio ket thuc moi)
     void datGioKetThuc(const ThoiGian &kt);
 
     // ========== METHODS ==========
 
-    /**
-     * @brief Tính số giờ thuê (dạng thập phân)
-     * @return Số giờ (VD: 1.5 giờ = 1 giờ 30 phút)
-     */
+    // Tinh so gio thue dang thap phan (VD: 1.5 gio = 1 gio 30 phut)
     double tinhSoGio() const;
 
-    /**
-     * @brief Kiểm tra khung giờ có hợp lệ không
-     * @return true nếu giờ bắt đầu < giờ kết thúc
-     */
+    // Kiem tra khung gio co hop le khong (gio bat dau < gio ket thuc)
     bool hopLe() const;
 
-    /**
-     * @brief Kiểm tra trùng lặp với khung giờ khác
-     * @param other Khung giờ khác
-     * @return true nếu hai khung giờ trùng nhau
-     */
+    // Kiem tra trung lap voi khung gio khac (other: Khung gio khac)
     bool kiemTraTrung(const KhungGio &other) const;
 
-    /**
-     * @brief Hiển thị thông tin khung giờ
-     */
+    // Hien thi thong tin khung gio
     void hienThiThongTin() const;
-
-    /**
-     * @brief Ghi thông tin ra file nhị phân
-     * @param file File stream để ghi
-     * @return true nếu ghi thành công
-     */
-    bool ghiFile(std::ofstream &file) const;
-
-    /**
-     * @brief Đọc thông tin từ file nhị phân
-     * @param file File stream để đọc
-     * @return true nếu đọc thành công
-     */
-    bool docFile(std::ifstream &file);
 
     // ========== OPERATORS ==========
 
-    /**
-     * @brief Toán tử gán
-     * @param other Đối tượng KhungGio khác
-     * @return Tham chiếu đến đối tượng hiện tại
-     */
+    // Toan tu gan (other: Doi tuong KhungGio khac)
     KhungGio &operator=(const KhungGio &other);
 
-    /**
-     * @brief Toán tử so sánh bằng
-     * @param other Đối tượng KhungGio khác
-     * @return true nếu giống nhau
-     */
+    // Toan tu so sanh bang (other: Doi tuong KhungGio khac)
     bool operator==(const KhungGio &other) const;
 
-    /**
-     * @brief Toán tử so sánh < (theo giờ bắt đầu)
-     * @param other Đối tượng KhungGio khác
-     * @return true nếu bắt đầu sớm hơn
-     */
+    // Toan tu so sanh < theo gio bat dau (other: Doi tuong KhungGio khac)
     bool operator<(const KhungGio &other) const;
 
-    /**
-     * @brief Toán tử xuất ra stream
-     * @param os Output stream
-     * @param kg Đối tượng KhungGio
-     * @return Tham chiếu đến output stream
-     */
+    // Toan tu xuat ra stream (os: Output stream, kg: Doi tuong KhungGio)
     friend std::ostream &operator<<(std::ostream &os, const KhungGio &kg);
 
-    // File I/O overloads for FILE*
-    bool ghiFile(FILE *f) const;
-    bool docFile(FILE *f);
-};
+    };
 
 #endif // KHUNGGIO_H

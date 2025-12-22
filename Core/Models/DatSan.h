@@ -105,10 +105,6 @@ public:
     void tinhTienCoc();                                     // Tính tiền cọc (30% tổng tiền)
     void huyBooking(bool hoanCoc, const std::string &lyDo); // Hủy booking với lý do
 
-    // File I/O
-    void ghiFile(FILE *f) const;
-    void docFile(FILE *f);
-
     // Helper methods for pointer resolution
     std::string getMaKhachHang() const; // Get customer ID
     std::string getMaSan() const;       // Get field ID

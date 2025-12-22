@@ -10,7 +10,6 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
-#include <vector>
 
 using namespace std;
 
@@ -213,67 +212,7 @@ double QuanLyDonHangDichVu::doanhThuTheoNgay(const NgayThang &ngay) const
     return doanhThu;
 }
 
-// ========== FILE I/O ==========
-
-bool QuanLyDonHangDichVu::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-    {
-        cout << "Loi: Khong the mo file de ghi!" << endl;
-        return false;
-    }
-
-    // Ghi maxOrderId
-    file.write(reinterpret_cast<const char *>(&maxOrderId), sizeof(int));
-
-    // Ghi số lượng đơn hàng
-    int soLuong = danhSachDonHang.size();
-    file.write(reinterpret_cast<const char *>(&soLuong), sizeof(int));
-
-    // Ghi từng đơn hàng
-    for (int i = 0; i < soLuong; i++)
-    {
-        danhSachDonHang[i]->ghiFile(file);
-    }
-
-    cout << "Da ghi " << soLuong << " don hang vao file." << endl;
-    return true;
-}
-
-bool QuanLyDonHangDichVu::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-    {
-        cout << "Loi: Khong the mo file de doc!" << endl;
-        return false;
-    }
-
-    // Xóa dữ liệu cũ
-    xoaTatCa();
-
-    // Đọc maxOrderId
-    file.read(reinterpret_cast<char *>(&maxOrderId), sizeof(int));
-
-    // Đọc số lượng đơn hàng
-    int soLuong;
-    file.read(reinterpret_cast<char *>(&soLuong), sizeof(int));
-
-    // Lấy các manager cần thiết để resolve pointer
-    HeThongQuanLy *ht = HeThongQuanLy::getInstance();
-    QuanLyKhachHang *qlkh = ht->layQuanLyKhachHang();
-    QuanLyDichVu *qldv = ht->layQuanLyDichVu();
-
-    // Đọc từng đơn hàng
-    for (int i = 0; i < soLuong; i++)
-    {
-        DonHangDichVu *donHang = new DonHangDichVu();
-        donHang->docFile(file, qlkh, qldv);
-        danhSachDonHang.push_back(donHang);
-    }
-
-    cout << "Da doc " << soLuong << " don hang tu file." << endl;
-    return true;
-}
+// ========== DATA MANAGEMENT ==========
 
 void QuanLyDonHangDichVu::xoaTatCa()
 {
@@ -289,8 +228,18 @@ void QuanLyDonHangDichVu::xoaTatCa()
 
 bool QuanLyDonHangDichVu::luuCSV(const string &filePath) const
 {
-    vector<string> headers = {"MaDonHang", "MaDichVu", "TenDichVu", "SoLuong", "DonGia", "ThanhTien", "NgayTao", "MaKhachHang", "TrangThai"};
-    vector<vector<string>> rows;
+    MangDong<string> headers;
+    headers.push_back("MaDonHang");
+    headers.push_back("MaDichVu");
+    headers.push_back("TenDichVu");
+    headers.push_back("SoLuong");
+    headers.push_back("DonGia");
+    headers.push_back("ThanhTien");
+    headers.push_back("NgayTao");
+    headers.push_back("MaKhachHang");
+    headers.push_back("TrangThai");
+
+    MangDong<MangDong<string>> rows;
 
     // Data - mỗi dịch vụ trong đơn hàng là 1 dòng
     for (int i = 0; i < danhSachDonHang.size(); i++)
@@ -308,7 +257,7 @@ bool QuanLyDonHangDichVu::luuCSV(const string &filePath) const
             if (!dv)
                 continue;
 
-            vector<string> row;
+            MangDong<string> row;
             row.push_back(dh->getMaDonHang());
             row.push_back(dv->layMaDichVu());
             row.push_back(dv->layTenDichVu());
@@ -329,8 +278,8 @@ bool QuanLyDonHangDichVu::luuCSV(const string &filePath) const
 bool QuanLyDonHangDichVu::docCSV(const string &filePath)
 {
     cout << "[DEBUG] QuanLyDonHangDichVu::docCSV - Loading from: " << filePath << endl;
-    vector<vector<string>> rows = CSVHelper::readCSV(filePath);
-    if (rows.empty())
+    MangDong<MangDong<string>> rows = CSVHelper::readCSV(filePath);
+    if (rows.isEmpty())
     {
         cout << "[DEBUG] QuanLyDonHangDichVu::docCSV - File empty or read failed." << endl;
         return false;
@@ -342,8 +291,9 @@ bool QuanLyDonHangDichVu::docCSV(const string &filePath)
     QuanLyKhachHang *qlkh = ht->layQuanLyKhachHang();
     QuanLyDichVu *qldv = ht->layQuanLyDichVu();
 
-    for (const auto &row : rows)
+    for (int idx = 0; idx < rows.size(); idx++)
     {
+        const MangDong<string> &row = rows[idx];
         if (row.size() < 9)
             continue;
 

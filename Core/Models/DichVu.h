@@ -1,11 +1,5 @@
-/**
- * @file DichVu.h
- * @brief Lớp cơ sở đại diện cho Dịch vụ
- * @details Lớp trừu tượng cho các dịch vụ kèm theo (đồ uống, thiết bị...)
- *
- * @author Football Field Management System
- * @date 2025-11-03
- */
+﻿// DichVu.h - Lop co so dai dien cho Dich vu
+// Lop truu tuong cho cac dich vu kem theo (do uong, thiet bi...)
 
 #ifndef DICHVU_H
 #define DICHVU_H
@@ -14,246 +8,127 @@
 #include <iostream>
 #include <fstream>
 
-/**
- * @enum LoaiDichVu
- * @brief Các loại dịch vụ
- */
+// Cac loai dich vu
 enum class LoaiDichVu
 {
-    DO_UONG, ///< Đồ uống (nước, trà, cà phê...)
-    DO_AN,   ///< Đồ ăn (mì, snack...)
-    THIET_BI ///< Thiết bị (áo, giày, bóng...)
+    DO_UONG, // Do uong (nuoc, tra, ca phe...)
+    DO_AN,   // Do an (mi, snack...)
+    THIET_BI // Thiet bi (ao, giay, bong...)
 };
 
-/**
- * @class DichVu
- * @brief Lớp cơ sở đại diện cho dịch vụ
- *
- * Dịch vụ bao gồm:
- * - Mã dịch vụ
- * - Tên dịch vụ
- * - Đơn giá
- * - Loại dịch vụ
- * - Mô tả
- */
+// Lop co so dai dien cho dich vu
+// Dich vu bao gom: Ma dich vu, Ten dich vu, Don gia, Loai dich vu, Mo ta
 class DichVu
 {
 protected:
-    std::string maDichVu;  ///< Mã dịch vụ (VD: DV001)
-    std::string tenDichVu; ///< Tên dịch vụ
-    double donGia;         ///< Đơn giá
-    LoaiDichVu loaiDichVu; ///< Loại dịch vụ
-    std::string moTa;      ///< Mô tả chi tiết
-    bool conHang;          ///< Trạng thái còn hàng
-    std::string donVi;     ///< Đơn vị (Lon, Chai, Cái, Đôi, Bộ...)
-    int soLuongBan;        ///< Số lượng đã bán
-    int soLuongTon;        ///< Số lượng tồn kho
-    std::string hinhAnh;   ///< Đường dẫn file hình ảnh
+    std::string maDichVu;  // Ma dich vu (VD: DV001)
+    std::string tenDichVu; // Ten dich vu
+    double donGia;         // Don gia
+    LoaiDichVu loaiDichVu; // Loai dich vu
+    std::string moTa;      // Mo ta chi tiet
+    bool conHang;          // Trang thai con hang
+    std::string donVi;     // Don vi (Lon, Chai, Cai, Doi, Bo...)
+    int soLuongBan;        // So luong da ban
+    int soLuongTon;        // So luong ton kho
+    std::string hinhAnh;   // Duong dan file hinh anh
 
 public:
     // ========== CONSTRUCTORS ==========
 
-    /**
-     * @brief Constructor mặc định
-     */
+    // Constructor mac dinh
     DichVu();
 
-    /**
-     * @brief Constructor có tham số
-     * @param maDV Mã dịch vụ
-     * @param tenDV Tên dịch vụ
-     * @param gia Đơn giá
-     * @param loai Loại dịch vụ
-     */
+    // Constructor co tham so (maDV: Ma dich vu, tenDV: Ten dich vu, gia: Don gia, loai: Loai dich vu)
     DichVu(const std::string &maDV, const std::string &tenDV,
            double gia, LoaiDichVu loai);
 
-    /**
-     * @brief Copy constructor
-     * @param other Đối tượng DichVu khác
-     */
+    // Copy constructor (other: Doi tuong DichVu khac)
     DichVu(const DichVu &other);
 
-    /**
-     * @brief Destructor ảo
-     */
+    // Destructor ao
     virtual ~DichVu();
 
     // ========== GETTERS ==========
 
-    /**
-     * @brief Lấy mã dịch vụ
-     * @return Mã dịch vụ
-     */
+    // Lay ma dich vu
     std::string layMaDichVu() const;
 
-    /**
-     * @brief Lấy tên dịch vụ
-     * @return Tên dịch vụ
-     */
+    // Lay ten dich vu
     std::string layTenDichVu() const;
 
-    /**
-     * @brief Lấy đơn giá
-     * @return Đơn giá
-     */
+    // Lay don gia
     double layDonGia() const;
 
-    /**
-     * @brief Lấy loại dịch vụ
-     * @return Loại dịch vụ
-     */
+    // Lay loai dich vu
     LoaiDichVu layLoaiDichVu() const;
 
-    /**
-     * @brief Lấy mô tả
-     * @return Mô tả
-     */
+    // Lay mo ta
     std::string layMoTa() const;
 
-    /**
-     * @brief Kiểm tra còn hàng
-     * @return true nếu còn hàng
-     */
+    // Kiem tra con hang
     bool coConHang() const;
 
-    /**
-     * @brief Lấy tên loại dịch vụ
-     * @return Tên loại dịch vụ dạng chuỗi
-     */
+    // Lay ten loai dich vu (dang chuoi)
     std::string layTenLoaiDichVu() const;
 
-    /**
-     * @brief Lấy đơn vị
-     * @return Đơn vị
-     */
+    // Lay don vi
     std::string layDonVi() const;
 
-    /**
-     * @brief Lấy số lượng đã bán
-     * @return Số lượng đã bán
-     */
+    // Lay so luong da ban
     int laySoLuongBan() const;
 
-    /**
-     * @brief Lấy số lượng tồn kho
-     * @return Số lượng tồn kho
-     */
+    // Lay so luong ton kho
     int laySoLuongTon() const;
 
-    /**
-     * @brief Lấy đường dẫn hình ảnh
-     * @return Đường dẫn hình ảnh
-     */
+    // Lay duong dan hinh anh
     std::string layHinhAnh() const;
 
     // ========== SETTERS ==========
 
-    /**
-     * @brief Đặt tên dịch vụ
-     * @param ten Tên dịch vụ mới
-     */
+    // Dat ten dich vu (ten: Ten dich vu moi)
     void datTenDichVu(const std::string &ten);
 
-    /**
-     * @brief Đặt đơn giá
-     * @param gia Đơn giá mới
-     */
+    // Dat don gia (gia: Don gia moi)
     void datDonGia(double gia);
 
-    /**
-     * @brief Đặt mô tả
-     * @param mt Mô tả mới
-     */
+    // Dat mo ta (mt: Mo ta moi)
     void datMoTa(const std::string &mt);
 
-    /**
-     * @brief Đặt trạng thái còn hàng
-     * @param ch Trạng thái còn hàng
-     */
+    // Dat trang thai con hang (ch: Trang thai con hang)
     void datConHang(bool ch);
 
-    /**
-     * @brief Đặt đơn vị
-     * @param dv Đơn vị mới
-     */
+    // Dat don vi (dv: Don vi moi)
     void datDonVi(const std::string &dv);
 
-    /**
-     * @brief Đặt số lượng đã bán
-     * @param sl Số lượng đã bán
-     */
+    // Dat so luong da ban (sl: So luong da ban)
     void datSoLuongBan(int sl);
 
-    /**
-     * @brief Đặt số lượng tồn kho
-     * @param sl Số lượng tồn kho
-     */
+    // Dat so luong ton kho (sl: So luong ton kho)
     void datSoLuongTon(int sl);
 
-    /**
-     * @brief Đặt đường dẫn hình ảnh
-     * @param ha Đường dẫn hình ảnh
-     */
+    // Dat duong dan hinh anh (ha: Duong dan hinh anh)
     void datHinhAnh(const std::string &ha);
 
     // ========== METHODS ==========
 
-    /**
-     * @brief Tính tiền dịch vụ theo số lượng
-     * @param soLuong Số lượng
-     * @return Tổng tiền
-     */
+    // Tinh tien dich vu theo so luong (soLuong: So luong)
     virtual double tinhTien(int soLuong) const;
 
-    /**
-     * @brief Hiển thị thông tin dịch vụ (virtual)
-     */
+    // Hien thi thong tin dich vu (virtual)
     virtual void hienThiThongTin() const;
-
-    /**
-     * @brief Ghi thông tin ra file nhị phân (virtual)
-     * @param file File stream để ghi
-     * @return true nếu ghi thành công
-     */
-    virtual bool ghiFile(std::ofstream &file) const;
-
-    /**
-     * @brief Đọc thông tin từ file nhị phân (virtual)
-     * @param file File stream để đọc
-     * @return true nếu đọc thành công
-     */
-    virtual bool docFile(std::ifstream &file);
 
     // ========== OPERATORS ==========
 
-    /**
-     * @brief Toán tử gán
-     * @param other Đối tượng DichVu khác
-     * @return Tham chiếu đến đối tượng hiện tại
-     */
+    // Toan tu gan (other: Doi tuong DichVu khac)
     DichVu &operator=(const DichVu &other);
 
-    /**
-     * @brief Toán tử so sánh (theo mã dịch vụ)
-     * @param other Đối tượng DichVu khác
-     * @return true nếu mã dịch vụ giống nhau
-     */
+    // Toan tu so sanh theo ma dich vu (other: Doi tuong DichVu khac)
     bool operator==(const DichVu &other) const;
 
-    /**
-     * @brief Toán tử so sánh < (theo đơn giá)
-     * @param other Đối tượng DichVu khác
-     * @return true nếu đơn giá nhỏ hơn
-     */
+    // Toan tu so sanh < theo don gia (other: Doi tuong DichVu khac)
     bool operator<(const DichVu &other) const;
 
-    /**
-     * @brief Toán tử xuất ra stream
-     * @param os Output stream
-     * @param dv Đối tượng DichVu
-     * @return Tham chiếu đến output stream
-     */
+    // Toan tu xuat ra stream (os: Output stream, dv: Doi tuong DichVu)
     friend std::ostream &operator<<(std::ostream &os, const DichVu &dv);
 };
 

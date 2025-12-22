@@ -4,7 +4,6 @@
  */
 
 #include "NguoiDung.h"
-#include "../Utils/FileHelper.h"
 
 // ========== CONSTRUCTORS ==========
 
@@ -159,57 +158,6 @@ void NguoiDung::hienThiThongTin() const
     std::cout << "Ten dang nhap: " << tenDangNhap << std::endl;
     std::cout << "Vai tro: " << layTenVaiTro() << std::endl;
     std::cout << "Trang thai: " << (hoatDong ? "Hoat dong" : "Khoa") << std::endl;
-}
-
-bool NguoiDung::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    // Ghi thông tin lớp cha
-    if (!ConNguoi::ghiFile(file))
-        return false;
-
-    // Ghi thông tin lớp con
-    if (!FileHelper::ghiString(file, tenDangNhap))
-        return false;
-    if (!FileHelper::ghiString(file, matKhau))
-        return false;
-
-    // Ghi vai trò
-    int vaiTroInt = static_cast<int>(vaiTro);
-    file.write(reinterpret_cast<const char *>(&vaiTroInt), sizeof(vaiTroInt));
-
-    // Ghi trạng thái
-    file.write(reinterpret_cast<const char *>(&hoatDong), sizeof(hoatDong));
-
-    return file.good();
-}
-
-bool NguoiDung::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    // Đọc thông tin lớp cha
-    if (!ConNguoi::docFile(file))
-        return false;
-
-    // Đọc thông tin lớp con
-    if (!FileHelper::docString(file, tenDangNhap))
-        return false;
-    if (!FileHelper::docString(file, matKhau))
-        return false;
-
-    // Đọc vai trò
-    int vaiTroInt;
-    file.read(reinterpret_cast<char *>(&vaiTroInt), sizeof(vaiTroInt));
-    vaiTro = static_cast<VaiTro>(vaiTroInt);
-
-    // Đọc trạng thái
-    file.read(reinterpret_cast<char *>(&hoatDong), sizeof(hoatDong));
-
-    return file.good();
 }
 
 // ========== OPERATORS ==========

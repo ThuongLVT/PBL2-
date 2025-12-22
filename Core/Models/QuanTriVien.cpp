@@ -66,40 +66,6 @@ void QuanTriVien::hienThiThongTin() const
     std::cout << "So lan dang nhap: " << soLanDangNhap << std::endl;
 }
 
-bool QuanTriVien::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    // Ghi thông tin lớp cha
-    if (!NguoiDung::ghiFile(file))
-        return false;
-
-    // Ghi thông tin lớp con
-    ngayTao.ghiFile(file);
-    file.write(reinterpret_cast<const char *>(&soLanDangNhap), sizeof(soLanDangNhap));
-    lanDangNhapCuoi.ghiFile(file);
-
-    return file.good();
-}
-
-bool QuanTriVien::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    // Đọc thông tin lớp cha
-    if (!NguoiDung::docFile(file))
-        return false;
-
-    // Đọc thông tin lớp con
-    ngayTao.docFile(file);
-    file.read(reinterpret_cast<char *>(&soLanDangNhap), sizeof(soLanDangNhap));
-    lanDangNhapCuoi.docFile(file);
-
-    return file.good();
-}
-
 // ========== OPERATORS ==========
 
 QuanTriVien &QuanTriVien::operator=(const QuanTriVien &other)

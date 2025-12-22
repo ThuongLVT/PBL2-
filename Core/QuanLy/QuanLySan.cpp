@@ -351,59 +351,7 @@ int QuanLySan::demSanBaoTri() const
     return dem;
 }
 
-// ========== FILE I/O ==========
-
-bool QuanLySan::ghiFile(ofstream &file) const
-{
-    if (!file.is_open())
-    {
-        return false;
-    }
-
-    // Ghi số lượng sân
-    int soLuong = danhSachSan.size();
-    file.write(reinterpret_cast<const char *>(&soLuong), sizeof(soLuong));
-
-    // Ghi từng sân
-    for (int i = 0; i < soLuong; i++)
-    {
-        if (!danhSachSan[i]->ghiFile(file))
-        {
-            return false;
-        }
-    }
-
-    return file.good();
-}
-
-bool QuanLySan::docFile(ifstream &file)
-{
-    if (!file.is_open())
-    {
-        return false;
-    }
-
-    // Xóa dữ liệu cũ
-    xoaTatCa();
-
-    // Đọc số lượng sân
-    int soLuong;
-    file.read(reinterpret_cast<char *>(&soLuong), sizeof(soLuong));
-
-    // Đọc từng sân
-    for (int i = 0; i < soLuong; i++)
-    {
-        San *san = new San();
-        if (!san->docFile(file))
-        {
-            delete san;
-            return false;
-        }
-        danhSachSan.push_back(san);
-    }
-
-    return file.good();
-}
+// ========== DATA MANAGEMENT ==========
 
 void QuanLySan::xoaTatCa()
 {
@@ -423,9 +371,9 @@ bool QuanLySan::loadFromCSV(const string &filePath)
         csvFilePath = filePath;
     }
 
-    vector<vector<string>> rows = CSVHelper::readCSV(csvFilePath, true);
+    MangDong<MangDong<string>> rows = CSVHelper::readCSV(csvFilePath, true);
 
-    if (rows.empty())
+    if (rows.isEmpty())
     {
         cout << "No field data found in CSV: " << csvFilePath << endl;
         return true; // Not an error, just empty file
@@ -434,9 +382,9 @@ bool QuanLySan::loadFromCSV(const string &filePath)
     // Xóa dữ liệu cũ
     xoaTatCa();
 
-    for (size_t i = 0; i < rows.size(); i++)
+    for (int i = 0; i < rows.size(); i++)
     {
-        const auto &row = rows[i];
+        const MangDong<string> &row = rows[i];
 
         // Parse CSV: MaSan,TenSan,LoaiSan,KhuVuc,GiaThue,TrangThai,GhiChu
         if (row.size() < 7)
@@ -476,13 +424,21 @@ bool QuanLySan::loadFromCSV(const string &filePath)
 
 bool QuanLySan::saveToCSV()
 {
-    vector<string> headers = {"MaSan", "TenSan", "LoaiSan", "KhuVuc", "GiaThue", "TrangThai", "GhiChu"};
-    vector<vector<string>> rows;
+    MangDong<string> headers;
+    headers.push_back("MaSan");
+    headers.push_back("TenSan");
+    headers.push_back("LoaiSan");
+    headers.push_back("KhuVuc");
+    headers.push_back("GiaThue");
+    headers.push_back("TrangThai");
+    headers.push_back("GhiChu");
+
+    MangDong<MangDong<string>> rows;
 
     for (int i = 0; i < danhSachSan.size(); i++)
     {
         San *san = danhSachSan[i];
-        vector<string> row;
+        MangDong<string> row;
 
         row.push_back(san->layMaSan());
         row.push_back(san->layTenSan());

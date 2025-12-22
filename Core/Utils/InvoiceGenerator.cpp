@@ -3,7 +3,6 @@
 #include <iomanip>
 #include <ctime>
 #include <iostream>
-#include <vector>
 
 // Helper to count UTF-8 characters for alignment
 int utf8Length(const std::string &str)

@@ -1,12 +1,10 @@
-#ifndef NGAYGIO_H
+﻿#ifndef NGAYGIO_H
 #define NGAYGIO_H
 
 #include <iostream>
 #include <string>
 
-/**
- * @brief Class NgayThang - Quản lý ngày/tháng/năm
- */
+// Class NgayThang - Quan ly ngay/thang/nam
 class NgayThang
 {
 private:
@@ -42,10 +40,10 @@ public:
     bool operator>=(const NgayThang &other) const;
 
     // Methods
-    int toDays() const;                               // Chuyển sang số ngày từ 1/1/1900
-    void fromDays(int totalDays);                     // Từ số ngày sang d/m/y
-    NgayThang addDays(int days) const;                // Cộng thêm ngày
-    int diffDays(const NgayThang &other) const;       // Khoảng cách ngày
+    int toDays() const;                               // Chuyen sang so ngay tu 1/1/1900
+    void fromDays(int totalDays);                     // Tu so ngay sang d/m/y
+    NgayThang addDays(int days) const;                // Cong them ngay
+    int diffDays(const NgayThang &other) const;       // Khoang cach ngay
     int tinhKhoangCach(const NgayThang &other) const; // Alias cho diffDays
     std::string toString() const;                     // Convert to string (dd/mm/yyyy)
 
@@ -67,9 +65,7 @@ public:
     friend std::istream &operator>>(std::istream &in, NgayThang &nt);
 };
 
-/**
- * @brief Class ThoiGian - Quản lý giờ:phút:giây
- */
+// Class ThoiGian - Quan ly gio:phut:giay
 class ThoiGian
 {
 private:
@@ -102,10 +98,10 @@ public:
     bool operator>=(const ThoiGian &other) const;
 
     // Methods
-    int toSeconds() const;                          // Chuyển sang giây
-    void fromSeconds(int totalSeconds);             // Từ giây sang h:m:s
-    ThoiGian add(int hours, int minutes = 0) const; // Cộng thêm giờ/phút
-    int diffMinutes(const ThoiGian &other) const;   // Khoảng cách phút
+    int toSeconds() const;                          // Chuyen sang giay
+    void fromSeconds(int totalSeconds);             // Tu giay sang h:m:s
+    ThoiGian add(int hours, int minutes = 0) const; // Cong them gio/phut
+    int diffMinutes(const ThoiGian &other) const;   // Khoang cach phut
 
     // Validation
     bool isValid() const;
@@ -123,10 +119,8 @@ public:
     friend std::istream &operator>>(std::istream &in, ThoiGian &t);
 };
 
-/**
- * @brief Class NgayGio - Kết hợp NgayThang và ThoiGian
- * Đại diện cho một thời điểm cụ thể
- */
+// Class NgayGio - Ket hop NgayThang va ThoiGian
+// Dai dien cho mot thoi diem cu the
 class NgayGio
 {
 private:
@@ -164,11 +158,11 @@ public:
     bool operator>=(const NgayGio &other) const;
 
     // Methods
-    NgayGio addHours(int hours) const;           // Cộng thêm giờ
-    NgayGio addMinutes(int minutes) const;       // Cộng thêm phút
-    NgayGio addDays(int days) const;             // Cộng thêm ngày
-    int diffMinutes(const NgayGio &other) const; // Khoảng cách phút
-    int diffHours(const NgayGio &other) const;   // Khoảng cách giờ
+    NgayGio addHours(int hours) const;           // Cong them gio
+    NgayGio addMinutes(int minutes) const;       // Cong them phut
+    NgayGio addDays(int days) const;             // Cong them ngay
+    int diffMinutes(const NgayGio &other) const; // Khoang cach phut
+    int diffHours(const NgayGio &other) const;   // Khoang cach gio
 
     // Check same day
     bool isSameDay(const NgayGio &other) const;
@@ -181,7 +175,7 @@ public:
     std::string toString() const; // Format: "DD/MM/YYYY HH:MM:SS"
 
     // Static method
-    static NgayGio layThoiGianHienTai(); // Lấy thời gian hiện tại
+    static NgayGio layThoiGianHienTai(); // Lay thoi gian hien tai
 
     // File I/O
     void ghiFile(std::ostream &out) const;

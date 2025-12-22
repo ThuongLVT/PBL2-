@@ -1,6 +1,7 @@
 /**
  * @file CSVHelper.cpp
  * @brief Implementation of CSVHelper
+ * @details Uses MangDong instead of std::vector
  *
  * @author Football Field Management System
  * @date 2025-11-26
@@ -50,9 +51,9 @@ bool CSVHelper::fileExists(const std::string &filename)
     return file.good();
 }
 
-std::vector<std::vector<std::string>> CSVHelper::readCSV(const std::string &filename, bool skipHeader)
+MangDong<MangDong<std::string>> CSVHelper::readCSV(const std::string &filename, bool skipHeader)
 {
-    std::vector<std::vector<std::string>> data;
+    MangDong<MangDong<std::string>> data;
     std::string fullPath = getDataPath() + filename;
 
     std::ifstream file(fullPath);
@@ -76,7 +77,7 @@ std::vector<std::vector<std::string>> CSVHelper::readCSV(const std::string &file
         if (line.empty())
             continue;
 
-        std::vector<std::string> row = parseLine(line);
+        MangDong<std::string> row = parseLine(line);
         data.push_back(row);
         firstLine = false;
     }
@@ -86,8 +87,8 @@ std::vector<std::vector<std::string>> CSVHelper::readCSV(const std::string &file
 }
 
 bool CSVHelper::writeCSV(const std::string &filename,
-                         const std::vector<std::string> &headers,
-                         const std::vector<std::vector<std::string>> &rows)
+                         const MangDong<std::string> &headers,
+                         const MangDong<MangDong<std::string>> &rows)
 {
     if (!ensureDataDirectory())
     {
@@ -104,7 +105,7 @@ bool CSVHelper::writeCSV(const std::string &filename,
     }
 
     // Write headers
-    for (size_t i = 0; i < headers.size(); i++)
+    for (int i = 0; i < headers.size(); i++)
     {
         file << escapeField(headers[i]);
         if (i < headers.size() - 1)
@@ -113,12 +114,13 @@ bool CSVHelper::writeCSV(const std::string &filename,
     file << "\n";
 
     // Write rows
-    for (const auto &row : rows)
+    for (int i = 0; i < rows.size(); i++)
     {
-        for (size_t i = 0; i < row.size(); i++)
+        const MangDong<std::string> &row = rows[i];
+        for (int j = 0; j < row.size(); j++)
         {
-            file << escapeField(row[i]);
-            if (i < row.size() - 1)
+            file << escapeField(row[j]);
+            if (j < row.size() - 1)
                 file << ",";
         }
         file << "\n";
@@ -137,8 +139,9 @@ std::string CSVHelper::escapeField(const std::string &field)
         field.find('"') != std::string::npos)
     {
         std::string escaped = "\"";
-        for (char c : field)
+        for (size_t i = 0; i < field.size(); i++)
         {
+            char c = field[i];
             if (c == '"')
                 escaped += "\"\""; // Escape quote with double quote
             else
@@ -150,9 +153,9 @@ std::string CSVHelper::escapeField(const std::string &field)
     return field;
 }
 
-std::vector<std::string> CSVHelper::parseLine(const std::string &line)
+MangDong<std::string> CSVHelper::parseLine(const std::string &line)
 {
-    std::vector<std::string> fields;
+    MangDong<std::string> fields;
     std::string field;
     bool inQuotes = false;
 
@@ -193,8 +196,8 @@ std::vector<std::string> CSVHelper::parseLine(const std::string &line)
 }
 
 bool CSVHelper::createEmptyCSV(const std::string &filename,
-                               const std::vector<std::string> &headers)
+                               const MangDong<std::string> &headers)
 {
-    std::vector<std::vector<std::string>> emptyRows;
+    MangDong<MangDong<std::string>> emptyRows;
     return writeCSV(filename, headers, emptyRows);
 }

@@ -75,7 +75,6 @@ set(CORE_MODELS_HEADERS
 # Source files - Core/QuanLy
 set(CORE_QUANLY_SOURCES
     Core/QuanLy/HeThongQuanLy.cpp
-    Core/QuanLy/FileManager.cpp
     Core/QuanLy/QuanLySan.cpp
     Core/QuanLy/QuanLyKhachHang.cpp
     Core/QuanLy/QuanLyNhanVien.cpp
@@ -88,7 +87,6 @@ set(CORE_QUANLY_SOURCES
 
 set(CORE_QUANLY_HEADERS
     Core/QuanLy/HeThongQuanLy.h
-    Core/QuanLy/FileManager.h
     Core/QuanLy/QuanLySan.h
     Core/QuanLy/QuanLyKhachHang.h
     Core/QuanLy/QuanLyNhanVien.h
@@ -129,7 +127,6 @@ set(CORE_UTILS_SOURCES
 )
 
 set(CORE_UTILS_HEADERS
-    Core/Utils/FileHelper.h
 )
 
 # ============================================

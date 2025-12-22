@@ -4,7 +4,6 @@
  */
 
 #include "KhachHang.h"
-#include "../Utils/FileHelper.h"
 
 // ========== CONSTRUCTORS ==========
 
@@ -170,53 +169,6 @@ void KhachHang::hienThiThongTin() const
     std::cout << "Hang thanh vien: " << layTenHang()
               << " (Giam " << layPhanTramGiamGia() << "%)" << std::endl;
     std::cout << "So lan dat san: " << soLanDatSan << std::endl;
-}
-
-bool KhachHang::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    // Ghi thông tin lớp cha
-    if (!ConNguoi::ghiFile(file))
-        return false;
-
-    // Ghi thông tin lớp con
-    if (!FileHelper::ghiString(file, maKhachHang))
-        return false;
-    file.write(reinterpret_cast<const char *>(&tongChiTieu), sizeof(tongChiTieu));
-
-    int hangInt = static_cast<int>(hang);
-    file.write(reinterpret_cast<const char *>(&hangInt), sizeof(hangInt));
-
-    ngayDangKy.ghiFile(file);
-    file.write(reinterpret_cast<const char *>(&soLanDatSan), sizeof(soLanDatSan));
-
-    return file.good();
-}
-
-bool KhachHang::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    // Đọc thông tin lớp cha
-    if (!ConNguoi::docFile(file))
-        return false;
-
-    // Đọc thông tin lớp con
-    if (!FileHelper::docString(file, maKhachHang))
-        return false;
-    file.read(reinterpret_cast<char *>(&tongChiTieu), sizeof(tongChiTieu));
-
-    int hangInt;
-    file.read(reinterpret_cast<char *>(&hangInt), sizeof(hangInt));
-    hang = static_cast<HangKhachHang>(hangInt);
-
-    ngayDangKy.docFile(file);
-    file.read(reinterpret_cast<char *>(&soLanDatSan), sizeof(soLanDatSan));
-
-    return file.good();
 }
 
 // ========== OPERATORS ==========

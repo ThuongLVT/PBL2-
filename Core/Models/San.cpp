@@ -4,7 +4,6 @@
  */
 
 #include "San.h"
-#include "../Utils/FileHelper.h"
 
 using namespace std;
 
@@ -189,63 +188,6 @@ void San::hienThiThongTin() const
     {
         std::cout << "Ghi chu: " << ghiChu << std::endl;
     }
-}
-
-bool San::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    if (!FileHelper::ghiString(file, maSan))
-        return false;
-    if (!FileHelper::ghiString(file, tenSan))
-        return false;
-
-    int loaiSanInt = static_cast<int>(loaiSan);
-    file.write(reinterpret_cast<const char *>(&loaiSanInt), sizeof(loaiSanInt));
-
-    int khuVucInt = static_cast<int>(khuVuc);
-    file.write(reinterpret_cast<const char *>(&khuVucInt), sizeof(khuVucInt));
-
-    file.write(reinterpret_cast<const char *>(&giaThueGio), sizeof(giaThueGio));
-
-    int trangThaiInt = static_cast<int>(trangThai);
-    file.write(reinterpret_cast<const char *>(&trangThaiInt), sizeof(trangThaiInt));
-
-    if (!FileHelper::ghiString(file, ghiChu))
-        return false;
-
-    return file.good();
-}
-
-bool San::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    if (!FileHelper::docString(file, maSan))
-        return false;
-    if (!FileHelper::docString(file, tenSan))
-        return false;
-
-    int loaiSanInt;
-    file.read(reinterpret_cast<char *>(&loaiSanInt), sizeof(loaiSanInt));
-    loaiSan = static_cast<LoaiSan>(loaiSanInt);
-
-    int khuVucInt;
-    file.read(reinterpret_cast<char *>(&khuVucInt), sizeof(khuVucInt));
-    khuVuc = static_cast<KhuVuc>(khuVucInt);
-
-    file.read(reinterpret_cast<char *>(&giaThueGio), sizeof(giaThueGio));
-
-    int trangThaiInt;
-    file.read(reinterpret_cast<char *>(&trangThaiInt), sizeof(trangThaiInt));
-    trangThai = static_cast<TrangThaiSan>(trangThaiInt);
-
-    if (!FileHelper::docString(file, ghiChu))
-        return false;
-
-    return file.good();
 }
 
 // ========== OPERATORS ==========

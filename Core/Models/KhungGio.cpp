@@ -5,7 +5,6 @@
 
 #include "KhungGio.h"
 
-#include "../Utils/FileHelper.h"
 // ========== CONSTRUCTORS ==========
 
 KhungGio::KhungGio()
@@ -105,28 +104,6 @@ void KhungGio::hienThiThongTin() const
     std::cout << std::endl;
 }
 
-bool KhungGio::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    gioBatDau.ghiFile(file);
-    gioKetThuc.ghiFile(file);
-
-    return file.good();
-}
-
-bool KhungGio::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    gioBatDau.docFile(file);
-    gioKetThuc.docFile(file);
-
-    return file.good();
-}
-
 // ========== OPERATORS ==========
 
 KhungGio &KhungGio::operator=(const KhungGio &other)
@@ -155,44 +132,3 @@ std::ostream &operator<<(std::ostream &os, const KhungGio &kg)
     return os;
 }
 
-bool KhungGio::ghiFile(FILE *f) const
-{
-    if (!f)
-        return false;
-
-    int gioBD = gioBatDau.getGio();
-    int phutBD = gioBatDau.getPhut();
-    int giayBD = gioBatDau.getGiay();
-    int gioKT = gioKetThuc.getGio();
-    int phutKT = gioKetThuc.getPhut();
-    int giayKT = gioKetThuc.getGiay();
-
-    fwrite(&gioBD, sizeof(int), 1, f);
-    fwrite(&phutBD, sizeof(int), 1, f);
-    fwrite(&giayBD, sizeof(int), 1, f);
-    fwrite(&gioKT, sizeof(int), 1, f);
-    fwrite(&phutKT, sizeof(int), 1, f);
-    fwrite(&giayKT, sizeof(int), 1, f);
-
-    return true;
-}
-
-bool KhungGio::docFile(FILE *f)
-{
-    if (!f)
-        return false;
-
-    int gioBD, phutBD, giayBD, gioKT, phutKT, giayKT;
-
-    fread(&gioBD, sizeof(int), 1, f);
-    fread(&phutBD, sizeof(int), 1, f);
-    fread(&giayBD, sizeof(int), 1, f);
-    fread(&gioKT, sizeof(int), 1, f);
-    fread(&phutKT, sizeof(int), 1, f);
-    fread(&giayKT, sizeof(int), 1, f);
-
-    gioBatDau = ThoiGian(gioBD, phutBD, giayBD);
-    gioKetThuc = ThoiGian(gioKT, phutKT, giayKT);
-
-    return true;
-}

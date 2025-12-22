@@ -1,282 +1,150 @@
-/**
- * @file San.h
- * @brief Lớp đại diện cho Sân bóng đá
- * @details Chứa thông tin về sân, giá thuê, trạng thái
- *
- * @author Football Field Management System
- * @date 2025-11-03
- */
+﻿// San.h - Lop dai dien cho San bong da
+// Chua thong tin ve san, gia thue, trang thai
 
 #ifndef SAN_H
 #define SAN_H
 #include <string>
 
 #include <iostream>
-#include <fstream>
 
-/**
- * @enum LoaiSan
- * @brief Loại sân bóng đá
- */
+// Loai san bong da
 enum class LoaiSan
 {
-    SAN_5, ///< Sân 5 người
-    SAN_7  ///< Sân 7 người
+    SAN_5, // San 5 nguoi
+    SAN_7  // San 7 nguoi
 };
 
-/**
- * @enum TrangThaiSan
- * @brief Trạng thái hiện tại của sân
- */
+// Trang thai hien tai cua san
 enum class TrangThaiSan
 {
-    HOAT_DONG,       ///< Sân đang hoạt động (có thể đặt)
-    NGUNG_HOAT_DONG, ///< Sân ngừng hoạt động
-    BAO_TRI          ///< Đang bảo trì
+    HOAT_DONG,       // San dang hoat dong (co the dat)
+    NGUNG_HOAT_DONG, // San ngung hoat dong
+    BAO_TRI          // Dang bao tri
 };
 
-/**
- * @enum KhuVuc
- * @brief Khu vực của sân
- */
+// Khu vuc cua san
 enum class KhuVuc
 {
-    A, ///< Khu vực A
-    B, ///< Khu vực B
-    C, ///< Khu vực C
-    D  ///< Khu vực D
+    A, // Khu vuc A
+    B, // Khu vuc B
+    C, // Khu vuc C
+    D  // Khu vuc D
 };
 
-/**
- * @class San
- * @brief Lớp đại diện cho một sân bóng đá
- *
- * Thông tin sân bao gồm:
- * - Mã sân, tên sân
- * - Loại sân (5, 7 người)
- * - Giá thuê theo giờ
- * - Trạng thái hiện tại
- * - Ghi chú
- */
+// Lop dai dien cho mot san bong da
+// Thong tin san bao gom: Ma san, ten san, Loai san (5, 7 nguoi),
+// Gia thue theo gio, Trang thai hien tai, Ghi chu
 class San
 {
 private:
-    std::string maSan;      ///< Mã sân (VD: A501, B702)
-    std::string tenSan;     ///< Tên sân
-    LoaiSan loaiSan;        ///< Loại sân
-    KhuVuc khuVuc;          ///< Khu vực sân
-    double giaThueGio;      ///< Giá thuê mỗi giờ (VND)
-    TrangThaiSan trangThai; ///< Trạng thái hiện tại
-    std::string ghiChu;     ///< Ghi chú về sân
+    std::string maSan;      // Ma san (VD: A501, B702)
+    std::string tenSan;     // Ten san
+    LoaiSan loaiSan;        // Loai san
+    KhuVuc khuVuc;          // Khu vuc san
+    double giaThueGio;      // Gia thue moi gio (VND)
+    TrangThaiSan trangThai; // Trang thai hien tai
+    std::string ghiChu;     // Ghi chu ve san
 
 public:
     // ========== CONSTRUCTORS ==========
 
-    /**
-     * @brief Constructor mặc định
-     */
+    // Constructor mac dinh
     San();
 
-    /**
-     * @brief Constructor có tham số
-     * @param maSan Mã sân
-     * @param tenSan Tên sân
-     * @param loaiSan Loại sân
-     * @param khuVuc Khu vực sân
-     * @param giaThue Giá thuê mỗi giờ
-     */
+    // Constructor co tham so (maSan: Ma san, tenSan: Ten san, loaiSan: Loai san, khuVuc: Khu vuc san, giaThue: Gia thue moi gio)
     San(const std::string &maSan, const std::string &tenSan,
         LoaiSan loaiSan, KhuVuc khuVuc, double giaThue);
 
-    /**
-     * @brief Copy constructor
-     * @param other Đối tượng San khác
-     */
+    // Copy constructor (other: Doi tuong San khac)
     San(const San &other);
 
-    /**
-     * @brief Destructor
-     */
+    // Destructor
     ~San();
 
     // ========== GETTERS ==========
 
-    /**
-     * @brief Lấy mã sân
-     * @return Mã sân
-     */
+    // Lay ma san
     std::string layMaSan() const;
     std::string getMaSan() const { return maSan; } // Alias
 
-    /**
-     * @brief Lấy tên sân
-     * @return Tên sân
-     */
+    // Lay ten san
     std::string layTenSan() const;
     std::string getTenSan() const { return tenSan; } // Alias
 
-    /**
-     * @brief Lấy loại sân
-     * @return Loại sân
-     */
+    // Lay loai san
     LoaiSan layLoaiSan() const;
 
-    /**
-     * @brief Lấy khu vực sân
-     * @return Khu vực sân
-     */
+    // Lay khu vuc san
     KhuVuc layKhuVuc() const;
 
-    /**
-     * @brief Lấy giá thuê
-     * @return Giá thuê/giờ
-     */
+    // Lay gia thue/gio
     double layGiaThueGio() const;
     double getGiaThue() const { return giaThueGio; } // Alias
 
-    /**
-     * @brief Lấy trạng thái sân
-     * @return Trạng thái hiện tại
-     */
+    // Lay trang thai san
     TrangThaiSan layTrangThai() const;
 
-    /**
-     * @brief Lấy ghi chú
-     * @return Ghi chú
-     */
+    // Lay ghi chu
     std::string layGhiChu() const;
 
-    /**
-     * @brief Lấy tên loại sân
-     * @return Tên loại sân dạng chuỗi
-     */
+    // Lay ten loai san (dang chuoi)
     std::string layTenLoaiSan() const;
 
-    /**
-     * @brief Lấy tên trạng thái sân
-     * @return Tên trạng thái dạng chuỗi
-     */
+    // Lay ten trang thai san (dang chuoi)
     std::string layTenTrangThai() const;
 
-    /**
-     * @brief Lấy tên khu vực sân
-     * @return Tên khu vực dạng chuỗi (A, B, C, D)
-     */
+    // Lay ten khu vuc san (A, B, C, D)
     std::string layTenKhuVuc() const;
 
     // ========== SETTERS ==========
 
-    /**
-     * @brief Đặt tên sân
-     * @param ten Tên sân mới
-     */
+    // Dat ten san (ten: Ten san moi)
     void datTenSan(const std::string &ten);
 
-    /**
-     * @brief Đặt giá thuê
-     * @param gia Giá thuê mới
-     */
+    // Dat gia thue (gia: Gia thue moi)
     void datGiaThueGio(double gia);
 
-    /**
-     * @brief Đặt trạng thái sân
-     * @param tt Trạng thái mới
-     */
+    // Dat trang thai san (tt: Trang thai moi)
     void datTrangThai(TrangThaiSan tt);
 
-    /**
-     * @brief Đặt ghi chú
-     * @param gc Ghi chú mới
-     */
+    // Dat ghi chu (gc: Ghi chu moi)
     void datGhiChu(const std::string &gc);
 
-    /**
-     * @brief Đặt loại sân
-     * @param loai Loại sân mới
-     */
+    // Dat loai san (loai: Loai san moi)
     void datLoaiSan(LoaiSan loai);
 
-    /**
-     * @brief Đặt khu vực
-     * @param kv Khu vực mới
-     */
+    // Dat khu vuc (kv: Khu vuc moi)
     void datKhuVuc(KhuVuc kv);
 
     // ========== METHODS ==========
 
-    /**
-     * @brief Kiểm tra sân có đang hoạt động không
-     * @return true nếu sân đang hoạt động
-     */
+    // Kiem tra san co dang hoat dong khong
     bool dangHoatDong() const;
 
-    /**
-     * @brief Kiểm tra sân có ngừng hoạt động không
-     * @return true nếu sân ngừng hoạt động
-     */
+    // Kiem tra san co ngung hoat dong khong
     bool ngungHoatDong() const;
 
-    /**
-     * @brief Kiểm tra sân có đang bảo trì không
-     * @return true nếu sân đang bảo trì
-     */
+    // Kiem tra san co dang bao tri khong
     bool dangBaoTri() const;
 
-    /**
-     * @brief Tính tiền thuê sân theo số giờ
-     * @param soGio Số giờ thuê
-     * @return Tổng tiền
-     */
+    // Tinh tien thue san theo so gio (soGio: So gio thue)
     double tinhTien(double soGio) const;
 
-    /**
-     * @brief Hiển thị thông tin sân
-     */
+    // Hien thi thong tin san
     void hienThiThongTin() const;
-
-    /**
-     * @brief Ghi thông tin ra file nhị phân
-     * @param file File stream để ghi
-     * @return true nếu ghi thành công
-     */
-    bool ghiFile(std::ofstream &file) const;
-
-    /**
-     * @brief Đọc thông tin từ file nhị phân
-     * @param file File stream để đọc
-     * @return true nếu đọc thành công
-     */
-    bool docFile(std::ifstream &file);
 
     // ========== OPERATORS ==========
 
-    /**
-     * @brief Toán tử gán
-     * @param other Đối tượng San khác
-     * @return Tham chiếu đến đối tượng hiện tại
-     */
+    // Toan tu gan (other: Doi tuong San khac)
     San &operator=(const San &other);
 
-    /**
-     * @brief Toán tử so sánh (theo mã sân)
-     * @param other Đối tượng San khác
-     * @return true nếu mã sân giống nhau
-     */
+    // Toan tu so sanh theo ma san (other: Doi tuong San khac)
     bool operator==(const San &other) const;
 
-    /**
-     * @brief Toán tử so sánh < (theo giá thuê)
-     * @param other Đối tượng San khác
-     * @return true nếu giá thuê nhỏ hơn
-     */
+    // Toan tu so sanh < theo gia thue (other: Doi tuong San khac)
     bool operator<(const San &other) const;
 
-    /**
-     * @brief Toán tử xuất ra stream
-     * @param os Output stream
-     * @param s Đối tượng San
-     * @return Tham chiếu đến output stream
-     */
+    // Toan tu xuat ra stream (os: Output stream, s: Doi tuong San)
     friend std::ostream &operator<<(std::ostream &os, const San &s);
 };
 

@@ -26,7 +26,6 @@
 
 // System Management - Week 3
 #include "Core/QuanLy/HeThongQuanLy.h"
-#include "Core/QuanLy/FileManager.h"
 
 // Statistics - Week 3
 #include "Core/ThongKe/ThongKe.h"

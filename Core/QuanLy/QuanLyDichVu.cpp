@@ -151,50 +151,7 @@ int QuanLyDichVu::tongSoDichVu() const
     return danhSachDichVu.size();
 }
 
-bool QuanLyDichVu::ghiFile(ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    // Save maxServiceId first
-    file.write(reinterpret_cast<const char *>(&maxServiceId), sizeof(maxServiceId));
-
-    int soLuong = danhSachDichVu.size();
-    file.write(reinterpret_cast<const char *>(&soLuong), sizeof(soLuong));
-
-    for (int i = 0; i < soLuong; i++)
-    {
-        if (!danhSachDichVu[i]->ghiFile(file))
-            return false;
-    }
-    return file.good();
-}
-
-bool QuanLyDichVu::docFile(ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    xoaTatCa();
-
-    // Load maxServiceId first
-    file.read(reinterpret_cast<char *>(&maxServiceId), sizeof(maxServiceId));
-
-    int soLuong;
-    file.read(reinterpret_cast<char *>(&soLuong), sizeof(soLuong));
-
-    for (int i = 0; i < soLuong; i++)
-    {
-        DichVu *dv = new DichVu();
-        if (!dv->docFile(file))
-        {
-            delete dv;
-            return false;
-        }
-        danhSachDichVu.push_back(dv);
-    }
-    return file.good();
-}
+// ========== DATA MANAGEMENT ==========
 
 void QuanLyDichVu::xoaTatCa()
 {
@@ -208,18 +165,18 @@ void QuanLyDichVu::xoaTatCa()
 
 bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
 {
-    vector<vector<string>> rows = CSVHelper::readCSV(filePath, true);
+    MangDong<MangDong<string>> rows = CSVHelper::readCSV(filePath, true);
 
-    if (rows.empty())
+    if (rows.isEmpty())
     {
         cout << "No service data found in CSV: " << filePath << endl;
         return true; // Not an error, just empty file
     }
 
     int count = 0;
-    for (size_t i = 0; i < rows.size(); i++)
+    for (int i = 0; i < rows.size(); i++)
     {
-        const auto &row = rows[i];
+        const MangDong<string> &row = rows[i];
 
         // New Order: MaDichVu,TenDichVu,DonGia,DonVi,SoLuongTon,SoLuongBan,TrangThai,LoaiDichVu,HinhAnh,MoTa
         if (row.size() < 10)
@@ -282,13 +239,24 @@ bool QuanLyDichVu::taiDuLieuTuCSV(const std::string &filePath)
 bool QuanLyDichVu::luuDuLieuRaCSV(const std::string &filePath) const
 {
     // New Order: MaDichVu,TenDichVu,DonGia,DonVi,SoLuongTon,SoLuongBan,TrangThai,LoaiDichVu,HinhAnh,MoTa
-    vector<string> headers = {"MaDichVu", "TenDichVu", "DonGia", "DonVi", "SoLuongTon", "SoLuongBan", "TrangThai", "LoaiDichVu", "HinhAnh", "MoTa"};
-    vector<vector<string>> rows;
+    MangDong<string> headers;
+    headers.push_back("MaDichVu");
+    headers.push_back("TenDichVu");
+    headers.push_back("DonGia");
+    headers.push_back("DonVi");
+    headers.push_back("SoLuongTon");
+    headers.push_back("SoLuongBan");
+    headers.push_back("TrangThai");
+    headers.push_back("LoaiDichVu");
+    headers.push_back("HinhAnh");
+    headers.push_back("MoTa");
+
+    MangDong<MangDong<string>> rows;
 
     for (int i = 0; i < danhSachDichVu.size(); i++)
     {
         DichVu *dv = danhSachDichVu[i];
-        vector<string> row;
+        MangDong<string> row;
 
         // Convert LoaiDichVu to string
         string loaiStr;

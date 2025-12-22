@@ -1,11 +1,4 @@
-/**
- * @file QuanLyKhachHang.h
- * @brief Lớp quản lý khách hàng
- * @details Tách logic quản lý khách hàng từ HeThongQuanLy
- *
- * @author Football Field Management System
- * @date 2025-11-03
- */
+// Lop quan ly khach hang - CRUD, tim kiem theo ma/SDT/ten, quan ly diem tich luy
 
 #ifndef QUANLYKHACHHANG_H
 #define QUANLYKHACHHANG_H
@@ -15,22 +8,13 @@
 #include "../ThuatToan/HashTable.h"
 #include <string>
 
-/**
- * @class QuanLyKhachHang
- * @brief Lớp quản lý khách hàng
- *
- * Chức năng:
- * - CRUD khách hàng
- * - Tìm kiếm theo mã, SĐT, tên
- * - Quản lý điểm tích lũy
- */
 class QuanLyKhachHang
 {
 private:
-    MangDong<KhachHang *> danhSachKhachHang; ///< Danh sách khách hàng
-    HashTable<std::string, KhachHang *> *hashTableKhachHang; ///< Hash Table để tìm kiếm nhanh theo mã
-    int maxCustomerId;                       ///< Mã KH cao nhất đã sử dụng (không tái sử dụng)
-    bool isLoadingFromCSV;                   ///< Flag to prevent auto-save during CSV load
+    MangDong<KhachHang *> danhSachKhachHang;
+    HashTable<std::string, KhachHang *> *hashTableKhachHang; // Hash Table tim kiem nhanh theo ma
+    int maxCustomerId;     // Ma KH cao nhat (khong tai su dung)
+    bool isLoadingFromCSV; // Flag tranh auto-save khi load CSV
 
 public:
     // ========== CONSTRUCTORS ==========
@@ -56,39 +40,12 @@ public:
     int tongSoKhachHang() const;
 
     // ========== ID GENERATION ==========
-    /**
-     * @brief Tạo mã khách hàng mới duy nhất (KH001, KH002, ...)
-     * @return Mã khách hàng mới
-     */
-    std::string taoMaKhachHangMoi();
-
-    /**
-     * @brief Kiểm tra số điện thoại đã tồn tại chưa
-     * @param sdt Số điện thoại cần kiểm tra
-     * @param excludeMaKH Loại trừ mã KH này (dùng cho cập nhật)
-     * @return true nếu SĐT đã tồn tại
-     */
-    bool kiemTraSDTTonTai(const std::string &sdt, const std::string &excludeMaKH = "") const;
-
-    // ========== FILE I/O ==========
-    bool ghiFile(std::ofstream &file) const;
-    bool docFile(std::ifstream &file);
+    std::string taoMaKhachHangMoi();                                                    // Tao ma KH moi (KH001, KH002...)
+    bool kiemTraSDTTonTai(const std::string &sdt, const std::string &excludeMaKH = "") const; // Kiem tra SDT trung
 
     // ========== CSV I/O ==========
-    /**
-     * @brief Lưu danh sách khách hàng ra file CSV
-     * @param filename Đường dẫn file CSV
-     * @return true nếu thành công
-     */
     bool luuCSV(const std::string &filename) const;
-
-    /**
-     * @brief Đọc danh sách khách hàng từ file CSV
-     * @param filename Đường dẫn file CSV
-     * @return true nếu thành công
-     */
     bool docCSV(const std::string &filename);
-
     void xoaTatCa();
 };
 

@@ -349,11 +349,20 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
     // Permission is already checked in themNhanVien(), xoaNhanVien(), capNhatNhanVien()
     // CSVHelper will prepend "D:/PBL2-/Data/" automatically
 
-    vector<vector<string>> rows;
+    MangDong<MangDong<string>> rows;
 
     // Header row
-    rows.push_back({"MaNV", "HoTen", "SoDienThoai", "GioiTinh", "NgaySinh",
-                    "TenDangNhap", "MatKhau", "Luong", "CaLam"});
+    MangDong<string> headerRow;
+    headerRow.push_back("MaNV");
+    headerRow.push_back("HoTen");
+    headerRow.push_back("SoDienThoai");
+    headerRow.push_back("GioiTinh");
+    headerRow.push_back("NgaySinh");
+    headerRow.push_back("TenDangNhap");
+    headerRow.push_back("MatKhau");
+    headerRow.push_back("Luong");
+    headerRow.push_back("CaLam");
+    rows.push_back(headerRow);
 
     // Data rows - only save NhanVien (skip QuanTriVien)
     for (int i = 0; i < danhSachNhanVien.size(); i++)
@@ -370,7 +379,7 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
         if (!nv)
             continue; // Safety check
 
-        vector<string> row;
+        MangDong<string> row;
         row.push_back(nv->layMaNhanVien());
         row.push_back(nv->layHoTen());
         row.push_back(nv->laySoDienThoai());
@@ -395,8 +404,8 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
     }
 
     // Extract header
-    vector<string> header = rows[0];
-    rows.erase(rows.begin());
+    MangDong<string> header = rows[0];
+    rows.erase(0);
 
     bool success = CSVHelper::writeCSV(filename, header, rows);
     if (success)
@@ -412,9 +421,9 @@ bool QuanLyNhanVien::luuCSV(const string &filename) const
 
 bool QuanLyNhanVien::docCSV(const string &filename)
 {
-    vector<vector<string>> rows = CSVHelper::readCSV(filename, false);
+    MangDong<MangDong<string>> rows = CSVHelper::readCSV(filename, false);
 
-    if (rows.empty())
+    if (rows.isEmpty())
     {
         cout << "No employee data found in CSV: " << filename << endl;
         maxEmployeeId = 0;
@@ -433,9 +442,9 @@ bool QuanLyNhanVien::docCSV(const string &filename)
     // Skip header row, read employee data starting from row 1
     maxEmployeeId = 0;
 
-    for (size_t i = 1; i < rows.size(); i++)
+    for (int i = 1; i < rows.size(); i++)
     {
-        const auto &row = rows[i];
+        const MangDong<string> &row = rows[i];
 
         // Format: MaNV, HoTen, SoDienThoai, GioiTinh, NgaySinh, TenDangNhap, MatKhau, Luong, CaLam
         if (row.size() < 9)
@@ -532,17 +541,24 @@ void QuanLyNhanVien::xoaTatCa()
 // ========== ADMIN CSV I/O ==========
 bool QuanLyNhanVien::luuAdminCSV(const std::string &filename) const
 {
-    vector<vector<string>> rows;
+    MangDong<MangDong<string>> rows;
 
     // Header row (same format as nhanvien.csv for consistency)
-    rows.push_back({"TenDangNhap", "MatKhau", "HoTen", "SoDienThoai", "GioiTinh", "NgaySinh"});
+    MangDong<string> headerRow;
+    headerRow.push_back("TenDangNhap");
+    headerRow.push_back("MatKhau");
+    headerRow.push_back("HoTen");
+    headerRow.push_back("SoDienThoai");
+    headerRow.push_back("GioiTinh");
+    headerRow.push_back("NgaySinh");
+    rows.push_back(headerRow);
 
     // Data rows
     for (int i = 0; i < danhSachQuanTriVien.size(); i++)
     {
         QuanTriVien *admin = danhSachQuanTriVien[i];
 
-        vector<string> row;
+        MangDong<string> row;
         row.push_back(admin->layTenDangNhap());
         row.push_back(admin->layMatKhau());
         row.push_back(admin->layHoTen());
@@ -554,8 +570,8 @@ bool QuanLyNhanVien::luuAdminCSV(const std::string &filename) const
     }
 
     // Extract header
-    vector<string> header = rows[0];
-    rows.erase(rows.begin());
+    MangDong<string> header = rows[0];
+    rows.erase(0);
 
     bool success = CSVHelper::writeCSV(filename, header, rows);
     if (success)
@@ -572,9 +588,9 @@ bool QuanLyNhanVien::luuAdminCSV(const std::string &filename) const
 
 bool QuanLyNhanVien::docAdminCSV(const std::string &filename)
 {
-    vector<vector<string>> rows = CSVHelper::readCSV(filename, false);
+    MangDong<MangDong<string>> rows = CSVHelper::readCSV(filename, false);
 
-    if (rows.empty())
+    if (rows.isEmpty())
     {
         cout << "No admin data found in CSV: " << filename << endl;
 
@@ -606,9 +622,9 @@ bool QuanLyNhanVien::docAdminCSV(const std::string &filename)
     danhSachQuanTriVien.clear();
 
     // Skip header row, read admin data starting from row 1
-    for (size_t i = 1; i < rows.size(); i++)
+    for (int i = 1; i < rows.size(); i++)
     {
-        const auto &row = rows[i];
+        const MangDong<string> &row = rows[i];
 
         // Format: TenDangNhap, MatKhau, HoTen, SoDienThoai, GioiTinh, NgaySinh
         if (row.size() < 6)

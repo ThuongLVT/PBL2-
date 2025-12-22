@@ -1,12 +1,6 @@
-/**
- * @file DonHangDichVu.h
- * @brief Lớp đại diện cho đơn hàng dịch vụ riêng
- * @details Đơn hàng dịch vụ độc lập - không liên quan đến đặt sân
- *          Khách hàng chỉ mua đồ uống/thiết bị mà không đặt sân
- *
- * @author khninh22 - Service Module
- * @date 2025-11-14
- */
+﻿// DonHangDichVu.h - Lop dai dien cho don hang dich vu rieng
+// Don hang dich vu doc lap - khong lien quan den dat san
+// Khach hang chi mua do uong/thiet bi ma khong dat san
 
 #ifndef DONHANGDICHVU_H
 #define DONHANGDICHVU_H
@@ -22,240 +16,130 @@
 class QuanLyKhachHang;
 class QuanLyDichVu;
 
-/**
- * @enum TrangThaiDonHang
- * @brief Trạng thái đơn hàng dịch vụ
- */
+// Trang thai don hang dich vu
 enum class TrangThaiDonHang
 {
-    CHO_XU_LY,      ///< Đang chờ xử lý
-    DANG_CHUAN_BI,  ///< Đang chuẩn bị
-    HOAN_THANH,     ///< Hoàn thành
-    DA_HUY          ///< Đã hủy
+    CHO_XU_LY,      // Dang cho xu ly
+    DANG_CHUAN_BI,  // Dang chuan bi
+    HOAN_THANH,     // Hoan thanh
+    DA_HUY          // Da huy
 };
 
-/**
- * @class DonHangDichVu
- * @brief Đơn hàng dịch vụ riêng (không liên quan đến đặt sân)
- * 
- * Đại diện cho đơn đặt dịch vụ độc lập - khách hàng chỉ mua
- * đồ uống/thiết bị mà không đặt sân
- */
+// Don hang dich vu rieng (khong lien quan den dat san)
+// Dai dien cho don dat dich vu doc lap - khach hang chi mua do uong/thiet bi ma khong dat san
 class DonHangDichVu
 {
 private:
-    std::string maDonHang;               ///< Mã đơn (tự sinh: DH + timestamp)
-    KhachHang *khachHang;                ///< Khách hàng (có thể NULL - khách vãng lai)
-    MangDong<DichVuDat> danhSachDichVu; ///< Danh sách dịch vụ đặt
-    double tongTien;                     ///< Tổng tiền (chưa giảm giá)
-    double giamGia;                      ///< Giảm giá (theo membership)
-    double thanhTien;                    ///< Thành tiền = tongTien - giamGia
-    TrangThaiDonHang trangThai;          ///< Trạng thái đơn hàng
-    NgayGio ngayTao;                     ///< Ngày tạo đơn
-    std::string ghiChu;                  ///< Ghi chú
+    std::string maDonHang;               // Ma don (tu sinh: DH + timestamp)
+    KhachHang *khachHang;                // Khach hang (co the NULL - khach vang lai)
+    MangDong<DichVuDat> danhSachDichVu;  // Danh sach dich vu dat
+    double tongTien;                     // Tong tien (chua giam gia)
+    double giamGia;                      // Giam gia (theo membership)
+    double thanhTien;                    // Thanh tien = tongTien - giamGia
+    TrangThaiDonHang trangThai;          // Trang thai don hang
+    NgayGio ngayTao;                     // Ngay tao don
+    std::string ghiChu;                  // Ghi chu
 
 public:
     // ========== CONSTRUCTORS ==========
     
-    /**
-     * @brief Constructor mặc định
-     */
+    // Constructor mac dinh
     DonHangDichVu();
     
-    /**
-     * @brief Constructor với tham số
-     * @param ma Mã đơn hàng
-     * @param kh Khách hàng (có thể NULL)
-     */
+    // Constructor voi tham so (ma: Ma don hang, kh: Khach hang - co the NULL)
     DonHangDichVu(const std::string &ma, KhachHang *kh);
     
-    /**
-     * @brief Copy constructor
-     * @param other Đối tượng DonHangDichVu khác
-     */
+    // Copy constructor (other: Doi tuong DonHangDichVu khac)
     DonHangDichVu(const DonHangDichVu &other);
     
-    /**
-     * @brief Destructor
-     */
+    // Destructor
     ~DonHangDichVu();
 
     // ========== OPERATORS ==========
     
-    /**
-     * @brief Toán tử gán
-     * @param other Đối tượng DonHangDichVu khác
-     * @return Tham chiếu đến đối tượng hiện tại
-     */
+    // Toan tu gan (other: Doi tuong DonHangDichVu khac)
     DonHangDichVu &operator=(const DonHangDichVu &other);
     
-    /**
-     * @brief Toán tử so sánh
-     * @param other Đối tượng DonHangDichVu khác
-     * @return true nếu mã đơn hàng giống nhau
-     */
+    // Toan tu so sanh theo ma don hang (other: Doi tuong DonHangDichVu khac)
     bool operator==(const DonHangDichVu &other) const;
 
     // ========== GETTERS ==========
     
-    /**
-     * @brief Lấy mã đơn hàng
-     * @return Mã đơn hàng
-     */
+    // Lay ma don hang
     std::string getMaDonHang() const;
     
-    /**
-     * @brief Lấy khách hàng
-     * @return Pointer tới khách hàng
-     */
+    // Lay khach hang (pointer)
     KhachHang *getKhachHang() const;
     
-    /**
-     * @brief Lấy danh sách dịch vụ
-     * @return Danh sách dịch vụ đã đặt
-     */
+    // Lay danh sach dich vu da dat
     const MangDong<DichVuDat> &getDanhSachDichVu() const;
     
-    /**
-     * @brief Lấy tổng tiền
-     * @return Tổng tiền (chưa giảm giá)
-     */
+    // Lay tong tien (chua giam gia)
     double getTongTien() const;
     
-    /**
-     * @brief Lấy giảm giá
-     * @return Số tiền giảm giá
-     */
+    // Lay so tien giam gia
     double getGiamGia() const;
     
-    /**
-     * @brief Lấy thành tiền
-     * @return Thành tiền (sau giảm giá)
-     */
+    // Lay thanh tien (sau giam gia)
     double getThanhTien() const;
     
-    /**
-     * @brief Lấy trạng thái
-     * @return Trạng thái đơn hàng
-     */
+    // Lay trang thai don hang
     TrangThaiDonHang getTrangThai() const;
     
-    /**
-     * @brief Lấy ngày tạo
-     * @return Ngày giờ tạo đơn
-     */
+    // Lay ngay gio tao don
     NgayGio getNgayTao() const;
     
-    /**
-     * @brief Lấy ghi chú
-     * @return Ghi chú
-     */
+    // Lay ghi chu
     std::string getGhiChu() const;
 
     // ========== SETTERS ==========
     
-    /**
-     * @brief Đặt mã đơn hàng
-     * @param ma Mã đơn hàng mới
-     */
+    // Dat ma don hang (ma: Ma don hang moi)
     void setMaDonHang(const std::string &ma);
     
-    /**
-     * @brief Đặt khách hàng
-     * @param kh Pointer tới khách hàng
-     */
+    // Dat khach hang (kh: Pointer toi khach hang)
     void setKhachHang(KhachHang *kh);
     
-    /**
-     * @brief Đặt trạng thái
-     * @param tt Trạng thái mới
-     */
+    // Dat trang thai (tt: Trang thai moi)
     void setTrangThai(TrangThaiDonHang tt);
     
-    /**
-     * @brief Đặt ghi chú
-     * @param gc Ghi chú mới
-     */
+    // Dat ghi chu (gc: Ghi chu moi)
     void setGhiChu(const std::string &gc);
 
-    /**
-     * @brief Đặt ngày tạo (dùng cho load dữ liệu)
-     * @param nt Ngày tạo mới
-     */
+    // Dat ngay tao - dung cho load du lieu (nt: Ngay tao moi)
     void setNgayTao(const NgayGio &nt);
 
     // ========== METHODS ==========
     
-    /**
-     * @brief Thêm dịch vụ vào đơn hàng
-     * @param dv Dịch vụ đã đặt
-     */
+    // Them dich vu vao don hang (dv: Dich vu da dat)
     void themDichVu(const DichVuDat &dv);
     
-    /**
-     * @brief Xóa dịch vụ khỏi đơn hàng
-     * @param index Vị trí dịch vụ cần xóa
-     */
+    // Xoa dich vu khoi don hang (index: Vi tri dich vu can xoa)
     void xoaDichVu(int index);
     
-    /**
-     * @brief Tính tổng tiền dịch vụ
-     */
+    // Tinh tong tien dich vu
     void tinhTongTien();
     
-    /**
-     * @brief Tính giảm giá theo membership
-     */
+    // Tinh giam gia theo membership
     void tinhGiamGia();
     
-    /**
-     * @brief Tính thành tiền = tổng - giảm giá
-     */
+    // Tinh thanh tien = tong - giam gia
     void tinhThanhTien();
     
-    /**
-     * @brief Hiển thị thông tin đơn hàng
-     */
+    // Hien thi thong tin don hang
     void hienThi() const;
     
-    /**
-     * @brief Lấy tên trạng thái dạng chuỗi
-     * @return Tên trạng thái
-     */
+    // Lay ten trang thai dang chuoi
     std::string getTrangThaiText() const;
-
-    // ========== FILE I/O ==========
-    
-    /**
-     * @brief Ghi thông tin ra file
-     * @param f File pointer
-     */
-    void ghiFile(FILE *f) const;
-    
-    /**
-     * @brief Đọc thông tin từ file
-     * @param f File pointer
-     */
-    void docFile(FILE *f);
-
-    // Stream I/O
-    void ghiFile(std::ofstream &file) const;
-    void docFile(std::ifstream &file, QuanLyKhachHang *qlkh, QuanLyDichVu *qldv);
 
     // ========== HELPER ==========
     
-    /**
-     * @brief Lấy mã khách hàng (hoặc "GUEST")
-     * @return Mã khách hàng hoặc "GUEST"
-     */
+    // Lay ma khach hang hoac "GUEST" neu khach vang lai
     std::string getMaKhachHang() const;
 
     // ========== STATIC ==========
     
-    /**
-     * @brief Tạo mã đơn hàng tự động
-     * @return Mã đơn hàng dạng DH + timestamp
-     */
+    // Tao ma don hang tu dong (DH + timestamp)
     static std::string taoMaDonHang();
 };
 

@@ -68,48 +68,78 @@ Dữ liệu đầu vào từ người dùng được kiểm tra tính hợp lệ
 
 ## 3.3. Phân tích và ứng dụng cấu trúc dữ liệu
 
-Để tối ưu hóa hiệu năng cho các thao tác thêm, xóa, sửa và tìm kiếm, hệ thống sử dụng các cấu trúc dữ liệu tự định nghĩa (Custom Data Structures) thay vì phụ thuộc hoàn toàn vào thư viện chuẩn.
+Để tối ưu hóa hiệu năng và quản lý bộ nhớ hiệu quả, hệ thống sử dụng các cấu trúc dữ liệu tự định nghĩa (Custom Data Structures). Dưới đây là phân tích chi tiết về cách chúng vận hành bên trong hệ thống.
 
 ### a. Mảng động (Dynamic Array - MangDong)
 
 **Phân tích lý thuyết:**
-Mảng động là cấu trúc dữ liệu lưu trữ các phần tử tại các ô nhớ liên tiếp nhau. Khác với mảng tĩnh (Static Array) có kích thước cố định, mảng động có khả năng tự động thay đổi kích thước (resize) khi số lượng phần tử vượt quá dung lượng hiện tại.
+Mảng động khắc phục nhược điểm kích thước cố định của mảng tĩnh bằng cách tự động thay đổi dung lượng bộ nhớ khi cần thiết.
 
-*   **Cơ chế hoạt động:**
-    *   Khởi tạo với một dung lượng (capacity) nhất định.
-    *   Khi thêm phần tử mới mà mảng đầy: Hệ thống cấp phát vùng nhớ mới gấp đôi dung lượng cũ, sao chép dữ liệu sang vùng nhớ mới và giải phóng vùng nhớ cũ.
-*   **Độ phức tạp:**
-    *   Truy cập phần tử (Access): **O(1)**.
-    *   Thêm vào cuối (Push back): Trung bình **O(1)**.
+**Cài đặt (Implementation):**
+Class `MangDong<T>` quản lý một con trỏ `data` trỏ đến vùng nhớ heap và hai biến nguyên để theo dõi kích thước.
 
-**Ứng dụng trong hệ thống:**
-Template class `MangDong<T>` được sử dụng làm cấu trúc lưu trữ chính cho toàn bộ hệ thống (`DanhSachKhachHang`, `DanhSachSan`, `DanhSachDichVu`).
-*   *Lý do:* Việc hiển thị dữ liệu lên bảng (Table Widget) yêu cầu truy xuất ngẫu nhiên theo chỉ số dòng (row index), điều mà Mảng động thực hiện tốt nhất.
+> **[HÌNH ẢNH 3.3a]:** *Bạn mở file `Core/CauTrucDuLieu/MangDong.h` và chụp lại phần khai báo class (khoảng dòng 10-20), bao gồm các thuộc tính `data`, `kichThuoc`, `dungLuong`.*
+>
+> *Chú thích:* Hình 3.3a. Khai báo lớp Mảng động với cơ chế quản lý bộ nhớ tự động.
+
+**Cơ chế hoạt động trong hệ thống:**
+Quá trình thêm một phần tử mới (ví dụ: Thêm một Khách hàng mới) diễn ra theo quy trình sau:
+1.  **Kiểm tra sức chứa:** Hệ thống so sánh số lượng phần tử hiện tại (`size`) với dung lượng tối đa (`capacity`).
+2.  **Mở rộng (Resize):** Nếu mảng đã đầy (`size == capacity`), hệ thống thực hiện:
+    *   Tạo một vùng nhớ mới có kích thước gấp đôi (`new_capacity = capacity * 2`).
+    *   Sao chép toàn bộ dữ liệu từ vùng nhớ cũ sang vùng nhớ mới.
+    *   Giải phóng (delete) vùng nhớ cũ để tránh rò rỉ bộ nhớ.
+3.  **Thêm phần tử:** Chèn phần tử mới vào vị trí `index = size` và tăng biến đếm `size` lên 1.
+
+**Ứng dụng thực tiễn:**
+Template class `MangDong<T>` là cấu trúc lưu trữ chính cho `DanhSachKhachHang`, `DanhSachSan`, `DanhSachDichVu`.
+*   *Tại sao chọn Mảng động?* Giao diện người dùng (UI) sử dụng `QTableWidget` để hiển thị dữ liệu. Widget này truy xuất dữ liệu theo dòng (Row Index). Mảng động cung cấp khả năng truy cập ngẫu nhiên (Random Access) với độ phức tạp **O(1)**, giúp việc render dữ liệu lên bảng cực nhanh, không bị giật lag khi cuộn trang.
 
 ### b. Danh sách liên kết (Linked List - DanhSachLienKet)
 
 **Phân tích lý thuyết:**
-Danh sách liên kết là cấu trúc dữ liệu bao gồm các nút (Node) liên kết với nhau thông qua con trỏ.
-*   **Ưu điểm:** Việc thêm/xóa phần tử diễn ra rất nhanh (O(1)) nếu biết trước vị trí, và không cần cấp phát lại vùng nhớ liên tục như Mảng động.
-*   **Nhược điểm:** Truy cập ngẫu nhiên chậm (O(n)) do phải duyệt tuần tự từ đầu.
+Danh sách liên kết bao gồm các nút (Node) nằm rải rác trong bộ nhớ, liên kết với nhau qua con trỏ `next`.
 
-**Ứng dụng thực tiễn trong hệ thống:**
-Trong dự án này, Danh sách liên kết không được dùng để hiển thị dữ liệu lên giao diện (do hạn chế về truy cập ngẫu nhiên), nhưng nó đóng vai trò **cốt lõi** trong cấu trúc **Bảng băm (Hash Table)**.
-*   *Vai trò:* Nó hoạt động như các "thùng chứa" (buckets) để lưu trữ các phần tử bị trùng mã băm (Collision).
-*   *Cơ chế:* Khi hai khách hàng có cùng mã băm, hệ thống sẽ không ghi đè dữ liệu mà sẽ nối khách hàng mới vào cuối danh sách liên kết tại vị trí đó. Nhờ vậy, hệ thống đảm bảo không bao giờ mất dữ liệu dù không gian khóa bị giới hạn.
+**Cài đặt (Implementation):**
+Class `DanhSachLienKet<T>` được xây dựng từ các `Node` và quản lý bởi con trỏ đầu (`head`) và cuối (`tail`).
+
+> **[HÌNH ẢNH 3.3b]:** *Bạn mở file `Core/CauTrucDuLieu/DanhSachLienKet.h` và chụp lại phần khai báo `struct Node` và các con trỏ `head`, `tail` (khoảng dòng 15-25).*
+>
+> *Chú thích:* Hình 3.3b. Cấu trúc Node và các con trỏ quản lý trong Danh sách liên kết đơn.
+
+**Cơ chế hoạt động trong hệ thống:**
+Cấu trúc này được thiết kế đơn giản hóa để phục vụ riêng cho Bảng băm:
+1.  **Cấu trúc Node:** Mỗi Node chứa dữ liệu `data` (cặp Key-Value) và con trỏ `pNext`.
+2.  **Thêm phần tử:** Luôn thêm vào cuối danh sách (Tail). Hệ thống duy trì con trỏ `pTail` để thao tác thêm diễn ra trong **O(1)** mà không cần duyệt từ đầu.
+3.  **Duyệt:** Sử dụng con trỏ `pHead` để duyệt tuần tự khi cần tìm kiếm một phần tử cụ thể trong danh sách.
+
+**Ứng dụng thực tiễn:**
+Trong dự án này, Danh sách liên kết đóng vai trò là **cấu trúc nền tảng (Underlying Structure)** cho Bảng băm.
+*   *Vai trò:* Nó hoạt động như các "thùng chứa" (buckets) để xử lý va chạm. Khi Bảng băm tính ra cùng một chỉ số cho 2 khóa khác nhau, cả 2 sẽ được lưu chuỗi vào cùng một Danh sách liên kết tại chỉ số đó.
 
 ### c. Bảng băm (Hash Table)
 
 **Phân tích lý thuyết:**
-Bảng băm là cấu trúc dữ liệu ánh xạ các khóa (Key) sang các giá trị (Value) thông qua một hàm băm (Hash Function).
-*   **Cơ chế giải quyết va chạm (Collision Resolution):** Hệ thống sử dụng phương pháp **Kết nối chuỗi (Chaining)** dựa trên **Danh sách liên kết**. Tại mỗi chỉ số của bảng băm là một con trỏ trỏ đến một `DanhSachLienKet`.
-*   **Độ phức tạp:**
-    *   Tìm kiếm (Search): Trung bình **O(1)**.
-    *   Thêm mới (Insert): Trung bình **O(1)**.
+Bảng băm ánh xạ khóa (Key) sang chỉ số mảng (Index) để truy xuất dữ liệu gần như tức thời.
 
-**Ứng dụng trong hệ thống:**
-Class `HashTable<string, KhachHang*>` được tích hợp vào module **Quản Lý Khách Hàng**.
-*   *Bài toán giải quyết:* Khi tạo đơn đặt sân mới, nhân viên cần nhập Số điện thoại hoặc Mã KH. Với số lượng khách hàng lớn, việc duyệt mảng tuần tự (O(n)) sẽ gây độ trễ. Hash Table giúp xác định ngay lập tức khách hàng có tồn tại hay không.
+**Cài đặt (Implementation):**
+Class `HashTable` kết hợp giữa `MangDong` (làm bảng chứa) và `DanhSachLienKet` (làm bucket chứa dữ liệu).
+```cpp
+template <typename K, typename V>
+class HashTable {
+private:
+    // Mảng động chứa các con trỏ đến Danh sách liên kết
+    MangDong<DanhSachLienKet<KeyValuePair<K, V>> *> table;
+    int capacity; // Kích thước bảng băm
+    
+    int hash(const K &key); // Hàm băm chuyển Key -> Index
+public:
+    void insert(const K &key, const V &value); // Thêm mới (O(1))
+
+> **[HÌNH ẢNH 3.3c]:** *Bạn mở file `Core/ThuatToan/HashTable.h` và chụp lại dòng khai báo `MangDong<DanhSachLienKet<KeyValuePair<K, V>> *> table` (khoảng dòng 25).*
+>
+> *Chú thích:* Hình 3.3c. Sự kết hợp giữa Mảng động và Danh sách liên kết để tạo nên Bảng băm. *Bài toán:* Khi nhân viên nhập SĐT khách hàng để đặt sân, hệ thống cần biết ngay khách này đã từng đến chưa để tự động điền tên và tính điểm tích lũy.
+*   *Hiệu quả:* Với hàng nghìn khách hàng, việc tìm kiếm tuần tự mất **O(n)**. Bảng băm giúp trả về kết quả gần như ngay lập tức **O(1)**, tăng tốc độ thao tác của thu ngân.
 
 > **[HÌNH ẢNH 3.3]:** *Bạn chụp đoạn code trong file `HashTable.h` chỗ khai báo `MangDong<DanhSachLienKet...>` để chứng minh việc sử dụng kết hợp này.*
 >

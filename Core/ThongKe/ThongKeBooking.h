@@ -10,39 +10,30 @@ class HeThongQuanLy;
 class San;
 class DatSan;
 
-/**
- * @struct ThongTinSanTop
- * @brief Thông tin thống kê của một sân (dùng cho top sân)
- */
+// Thong tin thong ke cua mot san (dung cho top san)
 struct ThongTinSanTop
 {
     San *san;
     int soLuotDat;
     double doanhThu;
-    double tyLeSuDung; // % sử dụng trong khoảng thời gian
+    double tyLeSuDung; // % su dung trong khoang thoi gian
 
     ThongTinSanTop() : san(nullptr), soLuotDat(0), doanhThu(0.0), tyLeSuDung(0.0) {}
 };
 
-/**
- * @struct ThongKeKhungGio
- * @brief Thống kê booking theo khung giờ
- */
+// Thong ke booking theo khung gio
 struct ThongKeKhungGio
 {
     int gioBatDau;
     int gioKetThuc;
     int soLuotDat;
-    double tyLe; // % so với tổng
+    double tyLe; // % so voi tong
 
     ThongKeKhungGio() : gioBatDau(0), gioKetThuc(0), soLuotDat(0), tyLe(0.0) {}
     ThongKeKhungGio(int bd, int kt) : gioBatDau(bd), gioKetThuc(kt), soLuotDat(0), tyLe(0.0) {}
 };
 
-/**
- * @struct ThongKeTheoNgay
- * @brief Thống kê booking theo ngày trong tuần
- */
+// Thong ke booking theo ngay trong tuan
 struct ThongKeTheoNgay
 {
     int ngayTrongTuan; // 0 = CN, 1 = T2, ..., 6 = T7
@@ -52,48 +43,38 @@ struct ThongKeTheoNgay
     ThongKeTheoNgay() : ngayTrongTuan(0), soLuotDat(0), doanhThu(0.0) {}
 };
 
-/**
- * @class ThongKeBooking
- * @brief Lớp thống kê Booking và Sân
- *
- * Cung cấp các thống kê về:
- * - Tổng số booking, hoàn thành, hủy
- * - Top sân được đặt nhiều nhất
- * - Thống kê theo khung giờ (giờ vàng)
- * - Thống kê theo ngày trong tuần
- * - Tỷ lệ sử dụng sân
- * - Thống kê theo loại sân (5 người vs 7 người)
- */
+// Lop thong ke Booking va San
+// Cung cap: Tong booking, hoan thanh, huy, Top san, TK khung gio, TK ngay trong tuan, Ty le su dung san
 class ThongKeBooking : public ThongKe
 {
 private:
-    // ===== METRICS CƠ BẢN =====
-    int tongSoBooking;      // Tổng số booking
-    int soBookingHoanThanh; // Số booking hoàn thành
-    int soBookingHuy;       // Số booking hủy
-    int soBookingDangCho;   // Số booking đang chờ (DA_DAT)
-    double tyLeHoanThanh;   // % hoàn thành
-    double tyLeHuy;         // % hủy
+    // ===== METRICS CO BAN =====
+    int tongSoBooking;
+    int soBookingHoanThanh;
+    int soBookingHuy;
+    int soBookingDangCho;
+    double tyLeHoanThanh;
+    double tyLeHuy;
 
-    // ===== THỐNG KÊ THEO LOẠI SÂN =====
-    int soBookingSan5;   // Số booking sân 5 người
-    int soBookingSan7;   // Số booking sân 7 người
-    double doanhThuSan5; // Doanh thu từ sân 5
-    double doanhThuSan7; // Doanh thu từ sân 7
+    // ===== THONG KE THEO LOAI SAN =====
+    int soBookingSan5;
+    int soBookingSan7;
+    double doanhThuSan5;
+    double doanhThuSan7;
 
-    // ===== THỐNG KÊ KHUNG GIỜ =====
-    int soBookingGioVang;                      // Booking giờ vàng (18:00-21:00)
-    int soBookingGioThuong;                    // Booking giờ thường
-    MangDong<ThongKeKhungGio> thongKeKhungGio; // Chi tiết từng khung
+    // ===== THONG KE KHUNG GIO =====
+    int soBookingGioVang;   // 18:00-21:00
+    int soBookingGioThuong;
+    MangDong<ThongKeKhungGio> thongKeKhungGio;
 
-    // ===== THỐNG KÊ THEO NGÀY =====
-    MangDong<ThongKeTheoNgay> thongKeTheoNgay; // 7 ngày trong tuần
+    // ===== THONG KE THEO NGAY =====
+    MangDong<ThongKeTheoNgay> thongKeTheoNgay; // 7 ngay trong tuan
 
-    // ===== TOP SÂN =====
-    MangDong<ThongTinSanTop> topSan; // Top sân được đặt nhiều nhất
+    // ===== TOP SAN =====
+    MangDong<ThongTinSanTop> topSan;
 
     // ===== UTILIZATION =====
-    double tyLeSuDungTrungBinh; // Tỷ lệ sử dụng trung bình toàn hệ thống
+    double tyLeSuDungTrungBinh;
 
     // ===== REFERENCE =====
     HeThongQuanLy *heThong;
@@ -108,7 +89,7 @@ public:
     // ========== OPERATORS ==========
     ThongKeBooking &operator=(const ThongKeBooking &other);
 
-    // ========== GETTERS - METRICS CƠ BẢN ==========
+    // ========== GETTERS - METRICS CO BAN ==========
     int getTongSoBooking() const;
     int getSoBookingHoanThanh() const;
     int getSoBookingHuy() const;
@@ -116,21 +97,21 @@ public:
     double getTyLeHoanThanh() const;
     double getTyLeHuy() const;
 
-    // ========== GETTERS - LOẠI SÂN ==========
+    // ========== GETTERS - LOAI SAN ==========
     int getSoBookingSan5() const;
     int getSoBookingSan7() const;
     double getDoanhThuSan5() const;
     double getDoanhThuSan7() const;
 
-    // ========== GETTERS - KHUNG GIỜ ==========
+    // ========== GETTERS - KHUNG GIO ==========
     int getSoBookingGioVang() const;
     int getSoBookingGioThuong() const;
     const MangDong<ThongKeKhungGio> &getThongKeKhungGio() const;
 
-    // ========== GETTERS - NGÀY TRONG TUẦN ==========
+    // ========== GETTERS - NGAY TRONG TUAN ==========
     const MangDong<ThongKeTheoNgay> &getThongKeTheoNgay() const;
 
-    // ========== GETTERS - TOP SÂN ==========
+    // ========== GETTERS - TOP SAN ==========
     const MangDong<ThongTinSanTop> &getTopSan() const;
 
     // ========== GETTERS - UTILIZATION ==========
@@ -142,54 +123,14 @@ public:
     void xuatFile(const std::string &tenFile) const override;
 
     // ========== SPECIFIC METHODS ==========
-
-    /**
-     * @brief Tính top sân được đặt nhiều nhất
-     * @param soLuong Số lượng top (mặc định 5)
-     */
-    void tinhTopSan(int soLuong = 5);
-
-    /**
-     * @brief Tính thống kê theo khung giờ
-     */
-    void tinhThongKeKhungGio();
-
-    /**
-     * @brief Tính thống kê theo ngày trong tuần
-     */
-    void tinhThongKeTheoNgay();
-
-    /**
-     * @brief Tính tỷ lệ sử dụng sân
-     */
-    void tinhTyLeSuDung();
-
-    /**
-     * @brief Lấy số booking của một sân cụ thể
-     * @param san Con trỏ tới sân
-     * @return Số lượt booking
-     */
-    int demSoBookingCuaSan(San *san);
-
-    /**
-     * @brief Tính doanh thu từ một sân cụ thể
-     * @param san Con trỏ tới sân
-     * @return Doanh thu
-     */
-    double tinhDoanhThuSan(San *san);
-
-    /**
-     * @brief Kiểm tra booking có trong giờ vàng không
-     * @param ds Con trỏ tới đặt sân
-     * @return true nếu trong giờ vàng (18:00-21:00)
-     */
-    bool laGioVang(DatSan *ds);
-
-    /**
-     * @brief Lấy thống kê heatmap (ngày x khung giờ)
-     * @return Mảng 2D [7 ngày][24 giờ] chứa số booking
-     */
-    MangDong<MangDong<int>> getHeatmapData();
+    void tinhTopSan(int soLuong = 5);        // Tinh top san duoc dat nhieu (soLuong: so top)
+    void tinhThongKeKhungGio();              // Tinh TK theo khung gio
+    void tinhThongKeTheoNgay();              // Tinh TK theo ngay trong tuan
+    void tinhTyLeSuDung();                   // Tinh ty le su dung san
+    int demSoBookingCuaSan(San *san);        // Lay so booking cua san cu the
+    double tinhDoanhThuSan(San *san);        // Tinh doanh thu tu san
+    bool laGioVang(DatSan *ds);              // Kiem tra booking co trong gio vang (18:00-21:00)
+    MangDong<MangDong<int>> getHeatmapData(); // Lay TK heatmap [7 ngay][24 gio]
 };
 
 #endif // THONGKEBOOKING_H

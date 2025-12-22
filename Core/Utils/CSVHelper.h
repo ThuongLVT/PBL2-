@@ -1,93 +1,46 @@
-/**
- * @file CSVHelper.h
- * @brief Centralized CSV Helper for all data persistence
- * @details Handles all CSV I/O operations with auto-save functionality
- *
- * @author Football Field Management System
- * @date 2025-11-26
- */
+// CSVHelper.h - Centralized CSV Helper for all data persistence
+// Handles all CSV I/O operations with auto-save functionality
+// Uses MangDong instead of std::vector for custom DSA implementation
 
 #ifndef CSVHELPER_H
 #define CSVHELPER_H
 
 #include <string>
-#include <vector>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include "../CauTrucDuLieu/MangDong.h"
 
-/**
- * @class CSVHelper
- * @brief Centralized helper for CSV file operations
- *
- * Features:
- * - Read/Write CSV files
- * - Automatic path handling
- * - Safe file operations
- * - UTF-8 support
- */
+// Centralized helper for CSV file operations
+// Features: Read/Write CSV files, Automatic path handling, Safe file operations
 class CSVHelper
 {
 public:
-    /**
-     * @brief Get the Data directory path
-     * @return Path to Data directory
-     */
+    // Lay duong dan thu muc Data
     static std::string getDataPath();
 
-    /**
-     * @brief Read CSV file and return all rows
-     * @param filename Filename (e.g., "khachhang.csv")
-     * @param skipHeader Skip first row (header)
-     * @return Vector of rows, each row is a vector of fields
-     */
-    static std::vector<std::vector<std::string>> readCSV(const std::string &filename, bool skipHeader = true);
+    // Doc file CSV va tra ve tat ca cac dong (filename: ten file, skipHeader: bo qua dong dau)
+    static MangDong<MangDong<std::string>> readCSV(const std::string &filename, bool skipHeader = true);
 
-    /**
-     * @brief Write data to CSV file
-     * @param filename Filename (e.g., "khachhang.csv")
-     * @param headers Column headers
-     * @param rows Data rows
-     * @return true if successful
-     */
+    // Ghi du lieu ra file CSV (filename: ten file, headers: tieu de cot, rows: du lieu)
     static bool writeCSV(const std::string &filename,
-                         const std::vector<std::string> &headers,
-                         const std::vector<std::vector<std::string>> &rows);
+                         const MangDong<std::string> &headers,
+                         const MangDong<MangDong<std::string>> &rows);
 
-    /**
-     * @brief Escape special characters in CSV field
-     * @param field String to escape
-     * @return Escaped string (with quotes if needed)
-     */
+    // Escape ky tu dac biet trong truong CSV (field: chuoi can escape)
     static std::string escapeField(const std::string &field);
 
-    /**
-     * @brief Parse a CSV line into fields
-     * @param line CSV line
-     * @return Vector of fields
-     */
-    static std::vector<std::string> parseLine(const std::string &line);
+    // Parse mot dong CSV thanh cac truong (line: dong CSV)
+    static MangDong<std::string> parseLine(const std::string &line);
 
-    /**
-     * @brief Check if file exists
-     * @param filename Filename to check
-     * @return true if file exists
-     */
+    // Kiem tra file ton tai (filename: ten file can kiem tra)
     static bool fileExists(const std::string &filename);
 
-    /**
-     * @brief Create empty CSV file with headers
-     * @param filename Filename
-     * @param headers Column headers
-     * @return true if successful
-     */
+    // Tao file CSV rong voi header (filename: ten file, headers: tieu de cot)
     static bool createEmptyCSV(const std::string &filename,
-                               const std::vector<std::string> &headers);
+                               const MangDong<std::string> &headers);
 
-    /**
-     * @brief Ensure Data directory exists
-     * @return true if directory exists or was created
-     */
+    // Dam bao thu muc Data ton tai
     static bool ensureDataDirectory();
 
 private:

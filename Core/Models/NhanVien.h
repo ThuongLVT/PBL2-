@@ -1,11 +1,5 @@
-/**
- * @file NhanVien.h
- * @brief Lớp đại diện cho Nhân viên hệ thống
- * @details Kế thừa từ NguoiDung, quản lý công việc hàng ngày
- *
- * @author Football Field Management System
- * @date 2025-11-03
- */
+﻿// NhanVien.h - Lop dai dien cho Nhan vien he thong
+// Ke thua tu NguoiDung, quan ly cong viec hang ngay
 
 #ifndef NHANVIEN_H
 #define NHANVIEN_H
@@ -14,169 +8,87 @@
 #include "NguoiDung.h"
 #include "../CauTrucDuLieu/NgayGio.h"
 
-/**
- * @enum CaLamViec
- * @brief Các ca làm việc
- */
+// Cac ca lam viec
 enum class CaLamViec
 {
-    SANG,  ///< Ca sáng (6h-14h)
-    CHIEU, ///< Ca chiều (14h-22h)
-    TOI    ///< Ca tối (18h-02h)
+    SANG,  // Ca sang (6h-14h)
+    CHIEU, // Ca chieu (14h-22h)
+    TOI    // Ca toi (18h-02h)
 };
 
-/**
- * @class NhanVien
- * @brief Lớp đại diện cho Nhân viên
- *
- * Nhân viên có quyền:
- * - Quản lý đặt sân
- * - Quản lý khách hàng
- * - Quản lý dịch vụ
- * - Xử lý thanh toán
- */
+// Lop dai dien cho Nhan vien
+// Nhan vien co quyen: Quan ly dat san, Quan ly khach hang, Quan ly dich vu, Xu ly thanh toan
 class NhanVien : public NguoiDung
 {
 private:
-    std::string maNhanVien; ///< Mã nhân viên
-    NgayThang ngayVaoLam;   ///< Ngày vào làm
-    double luongCoBan;      ///< Lương cơ bản
-    CaLamViec caLamViec;    ///< Ca làm việc chính
-    int soNgayLam;          ///< Tổng số ngày đã làm
+    std::string maNhanVien; // Ma nhan vien
+    NgayThang ngayVaoLam;   // Ngay vao lam
+    double luongCoBan;      // Luong co ban
+    CaLamViec caLamViec;    // Ca lam viec chinh
+    int soNgayLam;          // Tong so ngay da lam
 
 public:
     // ========== CONSTRUCTORS ==========
 
-    /**
-     * @brief Constructor mặc định
-     */
+    // Constructor mac dinh
     NhanVien();
 
-    /**
-     * @brief Constructor có tham số
-     * @param ht Họ tên
-     * @param sdt Số điện thoại
-     * @param dc Địa chỉ
-     * @param tdn Tên đăng nhập
-     * @param mk Mật khẩu
-     * @param maNV Mã nhân viên
-     * @param luong Lương cơ bản
-     * @param ca Ca làm việc
-     */
+    // Constructor co tham so (ht: Ho ten, sdt: So dien thoai, dc: Dia chi, tdn: Ten dang nhap, mk: Mat khau, maNV: Ma nhan vien, luong: Luong co ban, ca: Ca lam viec)
     NhanVien(const std::string &ht, const std::string &sdt, const std::string &dc,
              const std::string &tdn, const std::string &mk, const std::string &maNV,
              double luong, CaLamViec ca);
 
-    /**
-     * @brief Copy constructor
-     * @param other Đối tượng NhanVien khác
-     */
+    // Copy constructor (other: Doi tuong NhanVien khac)
     NhanVien(const NhanVien &other);
 
-    /**
-     * @brief Destructor
-     */
+    // Destructor
     virtual ~NhanVien();
 
-    /**
-     * @brief Assignment operator
-     * @param other Đối tượng NhanVien khác
-     * @return Reference to this
-     */
+    // Assignment operator (other: Doi tuong NhanVien khac)
     NhanVien &operator=(const NhanVien &other);
 
     // ========== GETTERS ==========
 
-    /**
-     * @brief Lấy mã nhân viên
-     * @return Mã nhân viên
-     */
+    // Lay ma nhan vien
     std::string layMaNhanVien() const;
 
-    /**
-     * @brief Lấy ngày vào làm
-     * @return Ngày vào làm
-     */
+    // Lay ngay vao lam
     NgayThang layNgayVaoLam() const;
 
-    /**
-     * @brief Lấy lương cơ bản
-     * @return Lương cơ bản
-     */
+    // Lay luong co ban
     double layLuongCoBan() const;
 
-    /**
-     * @brief Lấy ca làm việc
-     * @return Ca làm việc
-     */
+    // Lay ca lam viec
     CaLamViec layCaLamViec() const;
 
-    /**
-     * @brief Lấy số ngày đã làm
-     * @return Số ngày làm việc
-     */
+    // Lay so ngay da lam
     int laySoNgayLam() const;
 
-    /**
-     * @brief Lấy tên ca làm việc
-     * @return Tên ca dạng chuỗi
-     */
+    // Lay ten ca lam viec (dang chuoi)
     std::string layTenCaLamViec() const;
 
     // ========== SETTERS ==========
 
-    /**
-     * @brief Đặt lương cơ bản
-     * @param luong Lương mới
-     */
+    // Dat luong co ban (luong: Luong moi)
     void datLuongCoBan(double luong);
 
-    /**
-     * @brief Đặt ca làm việc
-     * @param ca Ca làm việc mới
-     */
+    // Dat ca lam viec (ca: Ca lam viec moi)
     void datCaLamViec(CaLamViec ca);
 
     // ========== METHODS ==========
 
-    /**
-     * @brief Tăng số ngày làm việc
-     */
+    // Tang so ngay lam viec
     void tangSoNgayLam();
 
-    /**
-     * @brief Tính lương theo số ngày làm
-     * @return Tổng lương
-     */
+    // Tinh luong theo so ngay lam
     double tinhLuong() const;
 
-    /**
-     * @brief Hiển thị thông tin nhân viên (override)
-     */
+    // Hien thi thong tin nhan vien (override)
     virtual void hienThiThongTin() const override;
-
-    /**
-     * @brief Ghi thông tin ra file nhị phân (override)
-     * @param file File stream để ghi
-     * @return true nếu ghi thành công
-     */
-    virtual bool ghiFile(std::ofstream &file) const override;
-
-    /**
-     * @brief Đọc thông tin từ file nhị phân (override)
-     * @param file File stream để đọc
-     * @return true nếu đọc thành công
-     */
-    virtual bool docFile(std::ifstream &file) override;
 
     // ========== OPERATORS ==========
 
-    /**
-     * @brief Toán tử xuất ra stream
-     * @param os Output stream
-     * @param nv Đối tượng NhanVien
-     * @return Tham chiếu đến output stream
-     */
+    // Toan tu xuat ra stream (os: Output stream, nv: Doi tuong NhanVien)
     friend std::ostream &operator<<(std::ostream &os, const NhanVien &nv);
 };
 

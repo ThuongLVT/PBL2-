@@ -5,7 +5,6 @@
 
 #include "NhanVien.h"
 
-#include "../Utils/FileHelper.h"
 // ========== CONSTRUCTORS ==========
 
 NhanVien::NhanVien()
@@ -133,53 +132,6 @@ void NhanVien::hienThiThongTin() const
     std::cout << "Luong co ban: " << luongCoBan << " VND" << std::endl;
     std::cout << "Ca lam viec: " << layTenCaLamViec() << std::endl;
     std::cout << "So ngay lam: " << soNgayLam << std::endl;
-}
-
-bool NhanVien::ghiFile(std::ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    // Ghi thông tin lớp cha
-    if (!NguoiDung::ghiFile(file))
-        return false;
-
-    // Ghi thông tin lớp con
-    if (!FileHelper::ghiString(file, maNhanVien))
-        return false;
-    ngayVaoLam.ghiFile(file);
-    file.write(reinterpret_cast<const char *>(&luongCoBan), sizeof(luongCoBan));
-
-    int caLamViecInt = static_cast<int>(caLamViec);
-    file.write(reinterpret_cast<const char *>(&caLamViecInt), sizeof(caLamViecInt));
-
-    file.write(reinterpret_cast<const char *>(&soNgayLam), sizeof(soNgayLam));
-
-    return file.good();
-}
-
-bool NhanVien::docFile(std::ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    // Đọc thông tin lớp cha
-    if (!NguoiDung::docFile(file))
-        return false;
-
-    // Đọc thông tin lớp con
-    if (!FileHelper::docString(file, maNhanVien))
-        return false;
-    ngayVaoLam.docFile(file);
-    file.read(reinterpret_cast<char *>(&luongCoBan), sizeof(luongCoBan));
-
-    int caLamViecInt;
-    file.read(reinterpret_cast<char *>(&caLamViecInt), sizeof(caLamViecInt));
-    caLamViec = static_cast<CaLamViec>(caLamViecInt);
-
-    file.read(reinterpret_cast<char *>(&soNgayLam), sizeof(soNgayLam));
-
-    return file.good();
 }
 
 // ========== OPERATORS ==========

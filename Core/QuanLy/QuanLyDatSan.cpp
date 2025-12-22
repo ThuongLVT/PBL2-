@@ -228,35 +228,7 @@ int QuanLyDatSan::tongSoDatSan() const
     return danhSachDatSan.size();
 }
 
-bool QuanLyDatSan::ghiFile(ofstream &file) const
-{
-    if (!file.is_open())
-        return false;
-
-    int soLuong = danhSachDatSan.size();
-    file.write(reinterpret_cast<const char *>(&soLuong), sizeof(soLuong));
-
-    // Skip FILE* writing for now - DatSan uses FILE* not ofstream
-    // TODO: Fix serialization
-
-    return file.good();
-}
-
-bool QuanLyDatSan::docFile(ifstream &file)
-{
-    if (!file.is_open())
-        return false;
-
-    xoaTatCa();
-
-    int soLuong;
-    file.read(reinterpret_cast<char *>(&soLuong), sizeof(soLuong));
-
-    // Skip FILE* reading for now - DatSan uses FILE* not ifstream
-    // TODO: Fix deserialization
-
-    return file.good();
-}
+// ========== DATA MANAGEMENT ==========
 
 void QuanLyDatSan::xoaTatCa()
 {
@@ -277,17 +249,17 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
         return false;
     }
 
-    vector<vector<string>> rows = CSVHelper::readCSV(filename, true);
+    MangDong<MangDong<string>> rows = CSVHelper::readCSV(filename, true);
 
-    if (rows.empty())
+    if (rows.isEmpty())
     {
         cout << "No booking data found in CSV: " << filename << endl;
         return true; // Not an error, just empty file
     }
 
-    for (size_t i = 0; i < rows.size(); i++)
+    for (int i = 0; i < rows.size(); i++)
     {
-        const auto &row = rows[i];
+        const MangDong<string> &row = rows[i];
 
         // CSV Format: MaDatSan,MaKhachHang,MaSan,NgayDat,GioBatDau,GioKetThuc,TongTien,TienCoc,TrangThai,TrangThaiCoc,GhiChu
         if (row.size() < 11)
@@ -414,12 +386,13 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
                 serviceFilename += "_dichvu.csv";
         }
 
-        vector<vector<string>> serviceRows = CSVHelper::readCSV(serviceFilename);
-        if (!serviceRows.empty())
+        MangDong<MangDong<string>> serviceRows = CSVHelper::readCSV(serviceFilename);
+        if (!serviceRows.isEmpty())
         {
             int count = 0;
-            for (const auto &row : serviceRows)
+            for (int idx = 0; idx < serviceRows.size(); idx++)
             {
+                const MangDong<string> &row = serviceRows[idx];
                 if (row.size() < 3)
                     continue;
                 string maDatSan = row[0];
@@ -453,13 +426,26 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
 
 bool QuanLyDatSan::saveToCSV(const std::string &filename)
 {
-    vector<string> headers = {"MaDatSan", "MaKhachHang", "MaSan", "NgayDat", "GioBatDau", "GioKetThuc", "TongTien", "TienCoc", "TrangThai", "TrangThaiCoc", "GhiChu", "NgayThanhToan"};
-    vector<vector<string>> rows;
+    MangDong<string> headers;
+    headers.push_back("MaDatSan");
+    headers.push_back("MaKhachHang");
+    headers.push_back("MaSan");
+    headers.push_back("NgayDat");
+    headers.push_back("GioBatDau");
+    headers.push_back("GioKetThuc");
+    headers.push_back("TongTien");
+    headers.push_back("TienCoc");
+    headers.push_back("TrangThai");
+    headers.push_back("TrangThaiCoc");
+    headers.push_back("GhiChu");
+    headers.push_back("NgayThanhToan");
+
+    MangDong<MangDong<string>> rows;
 
     for (int i = 0; i < danhSachDatSan.size(); i++)
     {
         DatSan *ds = danhSachDatSan[i];
-        vector<string> row;
+        MangDong<string> row;
 
         row.push_back(ds->getMaDatSan());
         row.push_back(ds->getMaKhachHang());
@@ -564,8 +550,14 @@ bool QuanLyDatSan::saveToCSV(const std::string &filename)
                 serviceFilename += "_dichvu.csv";
         }
 
-        vector<string> serviceHeaders = {"MaDatSan", "MaDichVu", "SoLuong", "DonGia", "ThanhTien"};
-        vector<vector<string>> serviceRows;
+        MangDong<string> serviceHeaders;
+        serviceHeaders.push_back("MaDatSan");
+        serviceHeaders.push_back("MaDichVu");
+        serviceHeaders.push_back("SoLuong");
+        serviceHeaders.push_back("DonGia");
+        serviceHeaders.push_back("ThanhTien");
+
+        MangDong<MangDong<string>> serviceRows;
 
         for (int i = 0; i < danhSachDatSan.size(); i++)
         {
@@ -576,7 +568,7 @@ bool QuanLyDatSan::saveToCSV(const std::string &filename)
                 DichVuDat dv = services[j];
                 if (dv.getDichVu())
                 {
-                    vector<string> row;
+                    MangDong<string> row;
                     row.push_back(ds->getMaDatSan());
                     row.push_back(dv.getDichVu()->layMaDichVu());
                     row.push_back(to_string(dv.getSoLuong()));

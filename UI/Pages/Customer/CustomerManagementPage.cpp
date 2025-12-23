@@ -589,12 +589,9 @@ void CustomerManagementPage::onSaveCustomerClicked()
     else
     {
         // Add new customer
-        qDebug() << "=== Adding new customer ===";
-
         // Check phone uniqueness
         if (system->layQuanLyKhachHang()->kiemTraSDTTonTai(phone.toStdString()))
         {
-            qDebug() << "Phone number already exists:" << phone;
             QMessageBox::warning(this, "Lỗi",
                                  "Số điện thoại đã được sử dụng!");
             return;
@@ -602,7 +599,6 @@ void CustomerManagementPage::onSaveCustomerClicked()
 
         // Generate unique customer ID
         std::string maKH = system->layQuanLyKhachHang()->taoMaKhachHangMoi();
-        qDebug() << "Generated customer ID:" << QString::fromStdString(maKH);
 
         KhachHang *newCustomer = new KhachHang(
             name.toStdString(),
@@ -611,12 +607,10 @@ void CustomerManagementPage::onSaveCustomerClicked()
             maKH);
 
         bool added = system->themKhachHang(newCustomer);
-        qDebug() << "Customer added to system:" << added;
 
         if (added)
         {
-            bool saved = system->luuHeThong("D:/PBL2-/Data/data.bin");
-            qDebug() << "Data saved to CSV:" << saved;
+            system->luuHeThong("D:/PBL2-/Data/data.bin");
 
             QMessageBox::information(this, "Thành công",
                                      QString("Thêm khách hàng mới thành công!\nMã KH: %1")
@@ -626,7 +620,6 @@ void CustomerManagementPage::onSaveCustomerClicked()
         else
         {
             delete newCustomer;
-            qDebug() << "Failed to add customer to system";
             QMessageBox::warning(this, "Lỗi",
                                  "Không thể thêm khách hàng!");
         }

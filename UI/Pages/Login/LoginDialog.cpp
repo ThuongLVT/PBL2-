@@ -233,26 +233,11 @@ void LoginDialog::paintEvent(QPaintEvent *event)
         int x = (width() - scaledBg.width()) / 2;
         int y = (height() - scaledBg.height()) / 2;
 
-        // Debug info (only print once)
-        static bool printed = false;
-        if (!printed)
-        {
-            qDebug() << "================================";
-            qDebug() << "Window size:" << width() << "x" << height();
-            qDebug() << "Original image:" << bgImage.width() << "x" << bgImage.height();
-            qDebug() << "Cropped image:" << croppedImage.width() << "x" << croppedImage.height();
-            qDebug() << "Scaled image:" << scaledBg.width() << "x" << scaledBg.height();
-            qDebug() << "Image position: (" << x << "," << y << ")";
-            qDebug() << "================================";
-            printed = true;
-        }
-
         // Draw scaled image
         painter.drawPixmap(x, y, scaledBg);
     }
     else
     {
-        qDebug() << "ERROR: Background image not found!";
         // Fallback: gradient background
         QLinearGradient gradient(0, 0, width(), height());
         gradient.setColorAt(0, QColor(22, 163, 74)); // #16a34a

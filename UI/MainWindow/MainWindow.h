@@ -4,8 +4,8 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QSplitter>
+#include <QLabel>
 #include "UI/Components/Sidebar.h"
-#include "UI/Components/Header.h"
 #include "UI/Pages/Booking/BookingPage.h"
 #include "UI/Pages/Payment/InvoicePage.h"
 #include "UI/Pages/Field/FieldManagementPage.h"
@@ -45,7 +45,8 @@ private:
     QSplitter *m_mainSplitter;
     Sidebar *m_sidebar;
     QWidget *m_rightPanel;
-    Header *m_header;
+    QWidget *m_headerWidget;
+    QLabel *m_headerTitle;
     QStackedWidget *m_contentStack;
 
     // Pages

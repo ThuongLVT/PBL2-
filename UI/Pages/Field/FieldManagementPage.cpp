@@ -4,7 +4,6 @@
  */
 
 #include "FieldManagementPage.h"
-#include "../../Dialogs/FieldDialog.h"
 #include "../../Dialogs/MaintenanceDialog.h"
 #include "../../Core/Models/San.h"
 #include "../../Core/Models/DatSan.h"
@@ -405,9 +404,6 @@ void FieldManagementPage::setupConnections()
             this, &FieldManagementPage::onFilterChanged);
     connect(dataTable, &QTableWidget::cellClicked, this, &FieldManagementPage::onTableRowClicked);
 
-    // Stats cards - chỉ hiển thị số liệu, không filter nữa
-    // (Bỏ eventFilter cho cards)
-
     // Right panel
     connect(addNewBtn, &QPushButton::clicked, this, &FieldManagementPage::onAddNewFieldClicked);
     connect(saveBtn, &QPushButton::clicked, this, &FieldManagementPage::onSaveFieldClicked);
@@ -420,14 +416,6 @@ void FieldManagementPage::setupConnections()
             this, &FieldManagementPage::generateFieldName);
     connect(khuVucDetailCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &FieldManagementPage::generateFieldName);
-}
-
-bool FieldManagementPage::eventFilter(QObject *watched, QEvent *event)
-{
-    // Bỏ filter khi click vào card - chỉ cần hiển thị tooltip/info nếu cần
-    Q_UNUSED(watched);
-    Q_UNUSED(event);
-    return QWidget::eventFilter(watched, event);
 }
 
 void FieldManagementPage::applyStyles()
@@ -452,12 +440,6 @@ void FieldManagementPage::applyStyles()
     activeCard->setStyleSheet(cardStyle);
     maintenanceCard->setStyleSheet(cardStyle);
     suspendedCard->setStyleSheet(cardStyle);
-
-    // Remove focus policy from cards
-    totalCard->setFocusPolicy(Qt::NoFocus);
-    activeCard->setFocusPolicy(Qt::NoFocus);
-    maintenanceCard->setFocusPolicy(Qt::NoFocus);
-    suspendedCard->setFocusPolicy(Qt::NoFocus);
 
     // Right panel - white background with rounded corners
     rightPanel->setStyleSheet(R"(
@@ -811,11 +793,6 @@ void FieldManagementPage::onTableRowClicked(int row, int column)
 
         deleteBtn->setEnabled(true);
     }
-}
-
-void FieldManagementPage::onStatsCardClicked()
-{
-    // This is handled by eventFilter now
 }
 
 void FieldManagementPage::onAddNewFieldClicked()

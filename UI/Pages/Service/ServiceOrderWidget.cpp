@@ -8,7 +8,6 @@
 #include <QGroupBox>
 #include <QHeaderView>
 #include <QMessageBox>
-#include <QDebug>
 #include <QDate>
 #include <QStringListModel>
 #include <QCompleter>
@@ -457,7 +456,7 @@ void ServiceOrderWidget::onPhoneSearch()
         txtCustomerName->setText(QString::fromStdString(kh->layHoTen()));
         txtCustomerRank->setText(QString::fromStdString(kh->layTenHang()));
 
-        // Simple discount logic based on rank (Example)
+        // Simple discount logic based on rank
         std::string rank = kh->layTenHang();
         if (rank == "VIP" || rank == "Kim Cương")
             currentDiscountRate = 0.1; // 10%
@@ -467,9 +466,6 @@ void ServiceOrderWidget::onPhoneSearch()
             currentDiscountRate = 0.02; // 2%
         else
             currentDiscountRate = 0.0;
-
-        // Don't show popup on every search, just fill data
-        // QMessageBox::information(this, "Tìm thấy", "Đã tìm thấy khách hàng: " + QString::fromStdString(kh->layHoTen()));
     }
     else
     {

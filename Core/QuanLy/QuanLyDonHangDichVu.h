@@ -24,12 +24,12 @@ public:
     ~QuanLyDonHangDichVu();
 
     // ========== CRUD OPERATIONS ==========
-    std::string taoMaDonHangMoi();                                           // Tao ma don hang moi (DHD001, DHD002...)
-    DonHangDichVu *taoDonHang(KhachHang *kh);                                 // Tao don hang moi (kh co the NULL)
-    bool huyDonHang(const std::string &maDH);                                // Huy don hang theo ma
-    bool capNhatTrangThai(const std::string &maDH, TrangThaiDonHang tt);     // Cap nhat trang thai
-    DonHangDichVu *timDonHang(const std::string &maDH);                      // Tim don hang theo ma
-    const MangDong<DonHangDichVu *> &layDanhSachDonHang() const;             // Lay toan bo danh sach
+    std::string taoMaDonHangMoi();                                       // Tao ma don hang moi (SV001, SV002...)
+    DonHangDichVu *taoDonHang(KhachHang *kh);                            // Tao don hang moi (kh co the NULL)
+    bool huyDonHang(const std::string &maDH);                            // Huy don hang theo ma
+    bool capNhatTrangThai(const std::string &maDH, TrangThaiDonHang tt); // Cap nhat trang thai
+    DonHangDichVu *timDonHang(const std::string &maDH);                  // Tim don hang theo ma
+    const MangDong<DonHangDichVu *> &layDanhSachDonHang() const;         // Lay toan bo danh sach
 
     // ========== SEARCH ==========
     MangDong<DonHangDichVu *> timDonHangTheoKhachHang(const std::string &maKH);

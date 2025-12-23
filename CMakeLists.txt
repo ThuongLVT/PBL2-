@@ -145,11 +145,9 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Pages/Login/LoginDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/MainWindow/MainWindow.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/Sidebar.cpp
-    ${CMAKE_SOURCE_DIR}/UI/Components/Header.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/TimelineGridWidget.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/SummaryCard.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/RankingTable.cpp
-    ${CMAKE_SOURCE_DIR}/UI/Components/DateRangePicker.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/ChartContainer.cpp
     ${CMAKE_SOURCE_DIR}/UI/Components/MonthYearFilter.cpp
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.cpp
@@ -173,9 +171,7 @@ set(UI_SOURCES
     ${CMAKE_SOURCE_DIR}/UI/Pages/Account/AccountPage.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/EditPersonalInfoDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/ChangePasswordDialog.cpp
-    ${CMAKE_SOURCE_DIR}/UI/Dialogs/FieldDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/MaintenanceDialog.cpp
-    ${CMAKE_SOURCE_DIR}/UI/Dialogs/AddCustomerDialog.cpp
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/ServiceSelectionDialog.cpp
 )
 
@@ -183,11 +179,9 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Pages/Login/LoginDialog.h
     ${CMAKE_SOURCE_DIR}/UI/MainWindow/MainWindow.h
     ${CMAKE_SOURCE_DIR}/UI/Components/Sidebar.h
-    ${CMAKE_SOURCE_DIR}/UI/Components/Header.h
     ${CMAKE_SOURCE_DIR}/UI/Components/TimelineGridWidget.h
     ${CMAKE_SOURCE_DIR}/UI/Components/SummaryCard.h
     ${CMAKE_SOURCE_DIR}/UI/Components/RankingTable.h
-    ${CMAKE_SOURCE_DIR}/UI/Components/DateRangePicker.h
     ${CMAKE_SOURCE_DIR}/UI/Components/ChartContainer.h
     ${CMAKE_SOURCE_DIR}/UI/Components/MonthYearFilter.h
     ${CMAKE_SOURCE_DIR}/UI/Pages/Booking/BookingPage.h
@@ -211,9 +205,7 @@ set(UI_HEADERS
     ${CMAKE_SOURCE_DIR}/UI/Pages/Account/AccountPage.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/EditPersonalInfoDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/ChangePasswordDialog.h
-    ${CMAKE_SOURCE_DIR}/UI/Dialogs/FieldDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/MaintenanceDialog.h
-    ${CMAKE_SOURCE_DIR}/UI/Dialogs/AddCustomerDialog.h
     ${CMAKE_SOURCE_DIR}/UI/Dialogs/ServiceSelectionDialog.h
 )
 

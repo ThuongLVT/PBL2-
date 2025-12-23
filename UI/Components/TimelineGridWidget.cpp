@@ -7,7 +7,6 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QScrollBar>
-#include <QDebug>
 #include <QMenu>
 #include <QMessageBox>
 #include <QContextMenuEvent>

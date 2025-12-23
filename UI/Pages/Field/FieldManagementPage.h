@@ -44,15 +44,11 @@ public:
      */
     void loadData();
 
-protected:
-    bool eventFilter(QObject *watched, QEvent *event) override;
-
 private slots:
     // Left panel: Filters & Table
     void onSearchTextChanged();
     void onFilterChanged();
     void onTableRowClicked(int row, int column);
-    void onStatsCardClicked(); // 4 stats cards filter
 
     // Right panel: Actions
     void onAddNewFieldClicked();

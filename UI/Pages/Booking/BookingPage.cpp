@@ -72,7 +72,7 @@ void BookingPage::setupConnections()
                     {
                         timelineTab->refreshData();
                     } });
-        
+
         // Connect reschedule request from table to timeline
         connect(bookingTableTab, &BookingTableTab::rescheduleRequested, this, [this](DatSan *booking)
                 {
@@ -89,7 +89,6 @@ void BookingPage::setupConnections()
 
 void BookingPage::refreshData()
 {
-    qDebug() << "BookingPage::refreshData() called";
     // Refresh both tabs when page becomes visible
     if (timelineTab)
     {

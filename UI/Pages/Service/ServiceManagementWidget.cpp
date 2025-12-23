@@ -343,12 +343,11 @@ void ServiceManagementWidget::setupUI()
 
 void ServiceManagementWidget::setupConnections()
 {
-    // Filters
-    // connect(searchEdit, &QLineEdit::textChanged, this, &ServiceManagementWidget::onSearchTextChanged); // Removed auto-search
+    // Filters - Search on Enter or Button Click
     connect(searchEdit, &QLineEdit::returnPressed, this, [this]()
-            { filterServices(); }); // Search on Enter
+            { filterServices(); });
     connect(searchBtn, &QPushButton::clicked, this, [this]()
-            { filterServices(); }); // Search on Button Click
+            { filterServices(); });
 
     connect(sortByCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ServiceManagementWidget::onSortByChanged);
     connect(sortOrderCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ServiceManagementWidget::onSortOrderChanged);
@@ -459,24 +458,30 @@ void ServiceManagementWidget::filterServices()
 }
 
 // Comparison functions for MergeSort
-static bool comparePriceAsc(DichVu* const &a, DichVu* const &b) {
+static bool comparePriceAsc(DichVu *const &a, DichVu *const &b)
+{
     return a->layDonGia() < b->layDonGia();
 }
-static bool comparePriceDesc(DichVu* const &a, DichVu* const &b) {
+static bool comparePriceDesc(DichVu *const &a, DichVu *const &b)
+{
     return a->layDonGia() > b->layDonGia();
 }
 
-static bool compareStockAsc(DichVu* const &a, DichVu* const &b) {
+static bool compareStockAsc(DichVu *const &a, DichVu *const &b)
+{
     return a->laySoLuongTon() < b->laySoLuongTon();
 }
-static bool compareStockDesc(DichVu* const &a, DichVu* const &b) {
+static bool compareStockDesc(DichVu *const &a, DichVu *const &b)
+{
     return a->laySoLuongTon() > b->laySoLuongTon();
 }
 
-static bool compareSoldAsc(DichVu* const &a, DichVu* const &b) {
+static bool compareSoldAsc(DichVu *const &a, DichVu *const &b)
+{
     return a->laySoLuongBan() < b->laySoLuongBan();
 }
-static bool compareSoldDesc(DichVu* const &a, DichVu* const &b) {
+static bool compareSoldDesc(DichVu *const &a, DichVu *const &b)
+{
     return a->laySoLuongBan() > b->laySoLuongBan();
 }
 
@@ -488,30 +493,38 @@ void ServiceManagementWidget::sortServices()
     if (sortBy != -1)
     {
         // Convert QList to MangDong for MergeSort
-        MangDong<DichVu*> tempArray;
-        for(DichVu* dv : displayedServices) {
+        MangDong<DichVu *> tempArray;
+        for (DichVu *dv : displayedServices)
+        {
             tempArray.push_back(dv);
         }
 
         // Select Comparator
-        bool (*comparator)(DichVu* const &, DichVu* const &) = nullptr;
+        bool (*comparator)(DichVu *const &, DichVu *const &) = nullptr;
 
-        if (sortBy == 0) { // Price
+        if (sortBy == 0)
+        { // Price
             comparator = (sortOrder == 0) ? comparePriceAsc : comparePriceDesc;
-        } else if (sortBy == 1) { // Stock
+        }
+        else if (sortBy == 1)
+        { // Stock
             comparator = (sortOrder == 0) ? compareStockAsc : compareStockDesc;
-        } else if (sortBy == 2) { // Sold
+        }
+        else if (sortBy == 2)
+        { // Sold
             comparator = (sortOrder == 0) ? compareSoldAsc : compareSoldDesc;
         }
 
         // Apply MergeSort
-        if (comparator) {
-            MergeSort<DichVu*>::sort(tempArray, comparator);
+        if (comparator)
+        {
+            MergeSort<DichVu *>::sort(tempArray, comparator);
         }
 
         // Convert back to QList
         displayedServices.clear();
-        for(int i = 0; i < tempArray.size(); i++) {
+        for (int i = 0; i < tempArray.size(); i++)
+        {
             displayedServices.append(tempArray[i]);
         }
     }

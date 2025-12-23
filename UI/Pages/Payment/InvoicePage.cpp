@@ -4,7 +4,6 @@
 #include "Core/QuanLy/HeThongQuanLy.h"
 #include <QDateTime>
 #include <QHeaderView>
-#include <QDebug>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>

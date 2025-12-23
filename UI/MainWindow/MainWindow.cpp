@@ -8,12 +8,10 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QTimer>
-#include <iostream>
-
-using namespace std;
+#include <QFont>
 
 MainWindow::MainWindow(NguoiDung *currentUser, QWidget *parent)
-    : QMainWindow(parent), m_currentUser(currentUser), m_mainSplitter(nullptr), m_sidebar(nullptr), m_rightPanel(nullptr), m_header(nullptr), m_contentStack(nullptr), m_bookingPage(nullptr), m_paymentPage(nullptr), m_fieldPage(nullptr), m_customerPage(nullptr), m_servicePage(nullptr), m_staffPage(nullptr), m_statisticsPage(nullptr), m_accountPage(nullptr)
+    : QMainWindow(parent), m_currentUser(currentUser), m_mainSplitter(nullptr), m_sidebar(nullptr), m_rightPanel(nullptr), m_headerWidget(nullptr), m_headerTitle(nullptr), m_contentStack(nullptr), m_bookingPage(nullptr), m_paymentPage(nullptr), m_fieldPage(nullptr), m_customerPage(nullptr), m_servicePage(nullptr), m_staffPage(nullptr), m_statisticsPage(nullptr), m_accountPage(nullptr)
 {
     // Setup page titles
     m_pageTitles << "Quản Lý Đặt Sân"
@@ -48,26 +46,11 @@ MainWindow::~MainWindow()
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     // Save data before closing
-    cout << "\n=== SAVING DATA BEFORE EXIT ===" << endl;
     HeThongQuanLy *system = HeThongQuanLy::getInstance();
     if (system)
     {
-        bool saved = system->luuHeThong("D:/PBL2-/Data/data.bin");
-        if (saved)
-        {
-            cout << "✅ Data saved successfully!" << endl;
-            cout << "  - Customers: " << system->tongSoKhachHang() << endl;
-            cout << "  - Fields: " << system->tongSoSan() << endl;
-            cout << "  - Services: " << system->layDanhSachDichVu().size() << endl;
-            cout << "  - Bookings: " << system->tongSoDatSan() << endl;
-        }
-        else
-        {
-            cout << "❌ Failed to save data!" << endl;
-        }
+        system->luuHeThong("D:/PBL2-/Data/data.bin");
     }
-    cout << "===============================\n"
-         << endl;
 
     // Accept the close event
     event->accept();
@@ -99,9 +82,23 @@ void MainWindow::setupUI()
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(0);
 
-    // Create header
-    m_header = new Header(this);
-    m_header->setTitle(m_pageTitles[0]); // Default: Đặt Sân
+    // Create header widget (inline, replacing separate Header class)
+    m_headerWidget = new QWidget(this);
+    m_headerWidget->setObjectName("Header");
+    m_headerWidget->setFixedHeight(80);
+
+    QHBoxLayout *headerLayout = new QHBoxLayout(m_headerWidget);
+    headerLayout->setContentsMargins(24, 0, 24, 0);
+    headerLayout->setSpacing(0);
+
+    m_headerTitle = new QLabel(m_pageTitles[0], m_headerWidget);
+    m_headerTitle->setObjectName("HeaderTitle");
+    QFont titleFont("Segoe UI", 16);
+    titleFont.setBold(true);
+    m_headerTitle->setFont(titleFont);
+
+    headerLayout->addWidget(m_headerTitle, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    headerLayout->addStretch();
 
     // Create content stack
     m_contentStack = new QStackedWidget(this);
@@ -151,7 +148,7 @@ void MainWindow::setupUI()
     m_contentStack->setCurrentIndex(0);
 
     // Assemble right panel
-    rightLayout->addWidget(m_header);
+    rightLayout->addWidget(m_headerWidget);
     rightLayout->addWidget(m_contentStack, 1); // Stretch factor 1
 
     // Add to main layout
@@ -215,7 +212,7 @@ void MainWindow::updateHeaderTitle(int pageIndex)
 {
     if (pageIndex >= 0 && pageIndex < m_pageTitles.size())
     {
-        m_header->setTitle(m_pageTitles[pageIndex]);
+        m_headerTitle->setText(m_pageTitles[pageIndex]);
     }
 }
 
@@ -223,7 +220,7 @@ void MainWindow::onAdminClicked()
 {
     // Show account page (Index 7)
     m_contentStack->setCurrentIndex(7);
-    m_header->setTitle("Quản Lý Tài Khoản");
+    m_headerTitle->setText("Quản Lý Tài Khoản");
     m_sidebar->setAccountActive(true); // Activate account button
 }
 
@@ -242,7 +239,6 @@ void MainWindow::onLogoutClicked()
         HeThongQuanLy *heThong = HeThongQuanLy::getInstance();
         if (heThong)
         {
-            cout << "\n=== SAVING DATA ON LOGOUT ===" << endl;
             heThong->luuHeThong("D:/PBL2-/Data/data.bin");
 
             // Save admin and staff CSV
@@ -252,10 +248,6 @@ void MainWindow::onLogoutClicked()
                 staffMgr->luuAdminCSV("admin.csv");
                 heThong->luuNhanVienCSV("nhanvien.csv");
             }
-
-            cout << "✅ Data saved successfully on logout!" << endl;
-            cout << "==============================\n"
-                 << endl;
         }
 
         // Close application with logout code (888)

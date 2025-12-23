@@ -5,7 +5,6 @@
 
 #include "TimelineTab.h"
 #include "TimelineGridWidget.h"
-#include "../../../UI/Dialogs/AddCustomerDialog.h"
 #include <QGroupBox>
 #include <QGridLayout>
 #include <QFormLayout>
@@ -15,7 +14,6 @@
 #include <QScrollBar>
 #include <QDialog>
 #include <QListWidget>
-#include <QDebug>
 #include <QSet>
 #include <QTextCharFormat>
 #include <QTimer>
@@ -492,9 +490,6 @@ void TimelineTab::setupFormPanel()
     duration120Btn = new QPushButton(formPanel);
     duration120Btn->setVisible(false);
 
-    // Connect phone edit to auto-lookup customer - REMOVED LAMBDA, using onPhoneSearchClicked
-    // ...
-
     // === RIGHT COLUMN: Note + Buttons ===
     QVBoxLayout *rightColumnLayout = new QVBoxLayout();
     rightColumnLayout->setSpacing(10);
@@ -714,10 +709,8 @@ void TimelineTab::setupConnections()
     // Calendar
     connect(calendar, &QCalendarWidget::clicked, this, &TimelineTab::onDateSelected);
 
-    // Form - auto-search on phone text changed
-    // connect(phoneEdit, &QLineEdit::textChanged, this, &TimelineTab::onPhoneSearchClicked); // Removed to avoid double trigger with completer
+    // Form - search on Enter key press
     connect(phoneEdit, &QLineEdit::returnPressed, this, &TimelineTab::onPhoneSearchClicked);
-    // Allow searching by pressing Enter in name field
     connect(nameEdit, &QLineEdit::returnPressed, this, &TimelineTab::onPhoneSearchClicked);
 
     // Completer connection
@@ -1335,8 +1328,6 @@ void TimelineTab::loadBookingForReschedule(DatSan *booking)
 
 void TimelineTab::onSaveClicked()
 {
-    qDebug() << "=== SAVE BOOKING DEBUG ===";
-
     // 1. Validate Slot Selection First
     QTime from = fromTimeEdit->time();
     QTime to = toTimeEdit->time();
@@ -1367,9 +1358,6 @@ void TimelineTab::onSaveClicked()
         phone = text.split(" - ").first().trimmed();
     }
     QString name = nameEdit->text().trimmed();
-
-    qDebug() << "Phone from phoneEdit:" << phone;
-    qDebug() << "Has customer property:" << phoneEdit->property("hasCustomer").toBool();
 
     if (phone.isEmpty())
     {
@@ -1558,7 +1546,7 @@ void TimelineTab::onSaveClicked()
             }
             catch (...)
             {
-                qDebug() << "Warning: Could not save to data.bin";
+                // Silent fail - data will be saved on exit
             }
 
             // Refresh timeline
@@ -1614,7 +1602,7 @@ void TimelineTab::onSaveClicked()
                 }
                 catch (...)
                 {
-                    qDebug() << "Warning: Could not save to data.bin";
+                    // Silent fail - data will be saved on exit
                 }
 
                 // ===== REFRESH TIMELINE TRƯỚC =====
@@ -1719,8 +1707,6 @@ void TimelineTab::onCancelSelectionClicked()
 
     // Clear form
     clearForm();
-
-    // QMessageBox::information(this, "✓ Đã hủy", "Đã xóa vùng chọn. Bạn có thể chọn lại."); // Removed popup for smoother UX
 }
 
 void TimelineTab::onDeleteClicked()
@@ -1777,7 +1763,7 @@ void TimelineTab::onDeleteClicked()
                 }
                 catch (...)
                 {
-                    qDebug() << "Warning: Could not save to data.bin";
+                    // Silent fail - data will be saved on exit
                 }
 
                 QString msg = isPenalty ? "Đã hủy đặt sân và ghi nhận PHẠT CỌC!" : "Đã hủy đặt sân và ghi nhận HOÀN CỌC!";

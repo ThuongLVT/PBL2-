@@ -13,7 +13,6 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QMessageBox>
-#include <QDebug>
 #include <QDialogButtonBox>
 #include <QMouseEvent>
 

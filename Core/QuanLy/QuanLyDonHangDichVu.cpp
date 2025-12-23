@@ -31,7 +31,7 @@ string QuanLyDonHangDichVu::taoMaDonHangMoi()
 {
     maxOrderId++;
     ostringstream oss;
-    oss << "DHD" << setw(3) << setfill('0') << maxOrderId;
+    oss << "SV" << setw(3) << setfill('0') << maxOrderId;
     return oss.str();
 }
 

@@ -299,9 +299,9 @@ void BookingTableTab::setupTable()
 {
     bookingTable = new QTableWidget();
     bookingTable->setObjectName("customerTable");
-    bookingTable->setColumnCount(12);
+    bookingTable->setColumnCount(11);
     bookingTable->setHorizontalHeaderLabels({"Mã đặt sân", "Khách hàng", "SĐT", "Sân",
-                                             "Ngày đặt", "Giờ", "Tổng tiền", "Tiền cọc", "Trạng thái", "Thanh toán", "Ghi chú", "Chi tiết"});
+                                             "Ngày đặt", "Giờ", "Thành tiền", "Tiền cọc", "Trạng thái", "Ghi chú", "Chi tiết"});
     QFont headerFont;
     headerFont.setBold(true);
     headerFont.setPointSize(11);
@@ -320,18 +320,17 @@ void BookingTableTab::setupTable()
 
     bookingTable->horizontalHeader()->setStretchLastSection(true);
     bookingTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
-    bookingTable->setColumnWidth(0, 110);  // Mã đặt sân (-10px)
-    bookingTable->setColumnWidth(1, 150);  // Khách hàng (-30px)
-    bookingTable->setColumnWidth(2, 120);  // SĐT
-    bookingTable->setColumnWidth(3, 100);  // Sân
-    bookingTable->setColumnWidth(4, 100);  // Ngày đặt
-    bookingTable->setColumnWidth(5, 140);  // Giờ (+40px)
-    bookingTable->setColumnWidth(6, 100);  // Tổng tiền
-    bookingTable->setColumnWidth(7, 100);  // Tiền cọc
-    bookingTable->setColumnWidth(8, 120);  // Trạng thái
-    bookingTable->setColumnWidth(9, 130);  // Thanh toán
-    bookingTable->setColumnWidth(10, 160); // Ghi chú (-160px)
-    bookingTable->setColumnWidth(11, 80);  // Chi tiết (+160px)
+    bookingTable->setColumnWidth(0, 110); // Mã đặt sân (-10px)
+    bookingTable->setColumnWidth(1, 150); // Khách hàng (-30px)
+    bookingTable->setColumnWidth(2, 120); // SĐT
+    bookingTable->setColumnWidth(3, 100); // Sân
+    bookingTable->setColumnWidth(4, 100); // Ngày đặt
+    bookingTable->setColumnWidth(5, 140); // Giờ (+40px)
+    bookingTable->setColumnWidth(6, 100); // Tổng tiền
+    bookingTable->setColumnWidth(7, 100); // Tiền cọc
+    bookingTable->setColumnWidth(8, 160); // Trạng thái (tăng để hiện "Đã hủy (Hoàn cọc)")
+    bookingTable->setColumnWidth(9, 180); // Ghi chú
+    bookingTable->setColumnWidth(10, 80); // Chi tiết
 
     bookingTable->verticalHeader()->setVisible(false);
     bookingTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -562,8 +561,17 @@ void BookingTableTab::loadTableData()
         timeItem->setTextAlignment(Qt::AlignCenter);
         bookingTable->setItem(row, 5, timeItem);
 
-        // Column 6: Tổng tiền
-        QTableWidgetItem *priceItem = new QTableWidgetItem(formatCurrency(booking->getTongTien()));
+        // Column 6: Thành tiền (sau giảm giá)
+        double tongTien = booking->getTongTien();
+        double thanhTien = tongTien;
+        KhachHang *khachHang = booking->getKhachHang();
+        if (khachHang)
+        {
+            int phanTramGiam = khachHang->layPhanTramGiamGia();
+            double giamGia = tongTien * phanTramGiam / 100.0;
+            thanhTien = tongTien - giamGia;
+        }
+        QTableWidgetItem *priceItem = new QTableWidgetItem(formatCurrency(thanhTien));
         priceItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         priceItem->setForeground(QBrush(QColor(22, 163, 74)));
         priceItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
@@ -576,60 +584,36 @@ void BookingTableTab::loadTableData()
         depositItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
         bookingTable->setItem(row, 7, depositItem);
 
-        // Column 8: Trạng thái đặt sân
-        QTableWidgetItem *statusItem = new QTableWidgetItem(getStatusText(status));
+        // Column 8: Trạng thái đặt sân (kết hợp với thông tin hoàn cọc)
+        QString statusText;
+        QColor statusColor;
+
+        if (status == TrangThaiDatSan::DA_HUY)
+        {
+            // Đã hủy - hiển thị kèm thông tin hoàn cọc
+            statusText = "❌ Đã hủy (Hoàn cọc)";
+            statusColor = QColor(220, 38, 38); // Red
+        }
+        else // DA_DAT
+        {
+            statusText = "🟢 Đã đặt";
+            statusColor = QColor(22, 163, 74); // Green
+        }
+
+        QTableWidgetItem *statusItem = new QTableWidgetItem(statusText);
         statusItem->setTextAlignment(Qt::AlignCenter);
-        QColor statusColor = getStatusColor(status);
         statusItem->setForeground(QBrush(statusColor));
         statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
         bookingTable->setItem(row, 8, statusItem);
 
-        // Column 9: Thanh toán (deposit status)
-        QString paymentText;
-        QColor paymentColor;
-
-        // Logic hiển thị trạng thái thanh toán dựa trên trạng thái đặt sân và cọc
-        if (status == TrangThaiDatSan::DA_HUY)
-        {
-            if (depositStatus == HOAN_COC)
-            {
-                paymentText = "Hoàn cọc";
-                paymentColor = QColor(59, 130, 246); // Blue
-            }
-            else
-            {
-                paymentText = "Đã hủy";
-                paymentColor = QColor(107, 114, 128); // Gray
-            }
-        }
-        else // DA_DAT
-        {
-            if (depositStatus == DA_COC)
-            {
-                paymentText = "Chỉ cọc";             // Hoặc "Đã cọc"
-                paymentColor = QColor(245, 158, 11); // Orange
-            }
-            else
-            {
-                paymentText = "Chưa cọc";
-                paymentColor = QColor(107, 114, 128); // Gray
-            }
-        }
-
-        QTableWidgetItem *paymentItem = new QTableWidgetItem(paymentText);
-        paymentItem->setTextAlignment(Qt::AlignCenter);
-        paymentItem->setForeground(QBrush(paymentColor));
-        paymentItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
-        bookingTable->setItem(row, 9, paymentItem);
-
-        // Column 10: Ghi chú
+        // Column 9: Ghi chú
         QString note = QString::fromStdString(booking->getGhiChu());
         QTableWidgetItem *noteItem = new QTableWidgetItem(note);
         noteItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         noteItem->setForeground(QBrush(QColor(107, 114, 128))); // Gray
-        bookingTable->setItem(row, 10, noteItem);
+        bookingTable->setItem(row, 9, noteItem);
 
-        // Column 11: Chi tiết button
+        // Column 10: Chi tiết button
         QPushButton *detailBtn = new QPushButton();
         detailBtn->setIcon(QIcon("d:/PBL2-/UI/Resources/icons/eye.svg"));
         detailBtn->setIconSize(QSize(20, 20));
@@ -662,7 +646,7 @@ void BookingTableTab::loadTableData()
         vLayout->setContentsMargins(0, 0, 0, 0);
         vLayout->setSpacing(0);
         widget->setLayout(vLayout);
-        bookingTable->setCellWidget(row, 11, widget);
+        bookingTable->setCellWidget(row, 10, widget);
     }
 
     // Update stats cards

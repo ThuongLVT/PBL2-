@@ -230,26 +230,25 @@ bool QuanLyDonHangDichVu::luuCSV(const string &filePath) const
 {
     MangDong<string> headers;
     headers.push_back("MaDonHang");
-    headers.push_back("MaDichVu");
-    headers.push_back("TenDichVu");
-    headers.push_back("SoLuong");
-    headers.push_back("DonGia");
-    headers.push_back("ThanhTien");
-    headers.push_back("NgayTao");
     headers.push_back("MaKhachHang");
-    headers.push_back("TrangThai");
+    headers.push_back("NgayTao");
+    headers.push_back("TongTien");
+    headers.push_back("GiamGia");
+    headers.push_back("ThanhTien");
+    headers.push_back("DichVu:SL"); // Format: MaDV:SoLuong;MaDV:SoLuong
 
     MangDong<MangDong<string>> rows;
 
-    // Data - mỗi dịch vụ trong đơn hàng là 1 dòng
+    // Data - mỗi đơn hàng là 1 dòng
     for (int i = 0; i < danhSachDonHang.size(); i++)
     {
         DonHangDichVu *dh = danhSachDonHang[i];
         if (!dh)
             continue;
 
+        // Build DichVu string: MaDV:SoLuong;MaDV:SoLuong
+        string dichVuStr = "";
         const MangDong<DichVuDat> &dsDichVu = dh->getDanhSachDichVu();
-
         for (int j = 0; j < dsDichVu.size(); j++)
         {
             const DichVuDat &dvDat = dsDichVu[j];
@@ -257,19 +256,21 @@ bool QuanLyDonHangDichVu::luuCSV(const string &filePath) const
             if (!dv)
                 continue;
 
-            MangDong<string> row;
-            row.push_back(dh->getMaDonHang());
-            row.push_back(dv->layMaDichVu());
-            row.push_back(dv->layTenDichVu());
-            row.push_back(to_string(dvDat.getSoLuong()));
-            row.push_back(to_string(dv->layDonGia()));
-            row.push_back(to_string(dvDat.getThanhTien()));
-            row.push_back(dh->getNgayTao().toString());
-            row.push_back(dh->getMaKhachHang());
-            row.push_back(dh->getTrangThaiText());
-
-            rows.push_back(row);
+            if (!dichVuStr.empty())
+                dichVuStr += ";";
+            dichVuStr += dv->layMaDichVu() + ":" + to_string(dvDat.getSoLuong());
         }
+
+        MangDong<string> row;
+        row.push_back(dh->getMaDonHang());
+        row.push_back(dh->getMaKhachHang());
+        row.push_back(dh->getNgayTao().toString());
+        row.push_back(to_string(static_cast<long long>(dh->getTongTien())));
+        row.push_back(to_string(static_cast<long long>(dh->getGiamGia())));
+        row.push_back(to_string(static_cast<long long>(dh->getThanhTien())));
+        row.push_back(dichVuStr);
+
+        rows.push_back(row);
     }
 
     return CSVHelper::writeCSV(filePath, headers, rows);
@@ -294,105 +295,92 @@ bool QuanLyDonHangDichVu::docCSV(const string &filePath)
     for (int idx = 0; idx < rows.size(); idx++)
     {
         const MangDong<string> &row = rows[idx];
-        if (row.size() < 9)
+        if (row.size() < 7)
             continue;
 
         string maDH = row[0];
-        string maDV = row[1];
-        // string tenDV = row[2]; // Unused
-        int soLuong = 0;
+        string maKH = row[1];
+        string ngayTaoStr = row[2];
+        // TongTien, GiamGia, ThanhTien will be recalculated
+        string dichVuStr = row[6]; // DichVu:SL column
+
+        // Create new order
+        KhachHang *kh = nullptr;
+        if (qlkh && maKH != "GUEST")
+        {
+            kh = qlkh->timKhachHang(maKH);
+        }
+
+        DonHangDichVu *currentOrder = new DonHangDichVu(maDH, kh);
+
+        // Parse date "DD/MM/YYYY HH:MM:SS"
+        int d = 1, m = 1, y = 2000, h = 0, min = 0, s = 0;
+        char sep;
+        stringstream ss(ngayTaoStr);
+        ss >> d >> sep >> m >> sep >> y >> h >> sep >> min >> sep >> s;
+
+        NgayGio ng;
+        ng.setNgayGio(d, m, y, h, min, s);
+        currentOrder->setNgayTao(ng);
+
+        // Đơn dịch vụ riêng luôn là hoàn thành (thanh toán ngay)
+        currentOrder->setTrangThai(TrangThaiDonHang::HOAN_THANH);
+
+        // Parse DichVu string: MaDV:SoLuong;MaDV:SoLuong
+        if (!dichVuStr.empty() && qldv)
+        {
+            stringstream ssDV(dichVuStr);
+            string item;
+            while (getline(ssDV, item, ';'))
+            {
+                size_t colonPos = item.find(':');
+                if (colonPos != string::npos)
+                {
+                    string maDV = item.substr(0, colonPos);
+                    int soLuong = 0;
+                    try
+                    {
+                        soLuong = stoi(item.substr(colonPos + 1));
+                    }
+                    catch (...)
+                    {
+                        soLuong = 1;
+                    }
+
+                    DichVu *dv = qldv->timDichVu(maDV);
+                    if (dv)
+                    {
+                        DichVuDat dvDat(dv, soLuong);
+                        currentOrder->themDichVu(dvDat);
+                    }
+                    else
+                    {
+                        cout << "[DEBUG] Service not found: " << maDV << endl;
+                    }
+                }
+            }
+        }
+
+        // Recalculate totals
+        currentOrder->tinhTongTien();
+        currentOrder->tinhGiamGia();
+        currentOrder->tinhThanhTien();
+
+        danhSachDonHang.push_back(currentOrder);
+
+        // Update maxOrderId
         try
         {
-            soLuong = stoi(row[3]);
+            if (maDH.length() > 2)
+            {
+                string numPart = maDH.substr(2); // SV -> 2 chars
+                int id = stoi(numPart);
+                if (id > maxOrderId)
+                    maxOrderId = id;
+            }
         }
         catch (...)
         {
-        }
-
-        // double donGia = stod(row[4]); // Unused
-        // double thanhTien = stod(row[5]); // Unused
-        string ngayTaoStr = row[6];
-        string maKH = row[7];
-        string trangThaiStr = row[8];
-
-        // Find if order already exists
-        DonHangDichVu *currentOrder = nullptr;
-        for (int i = 0; i < danhSachDonHang.size(); i++)
-        {
-            DonHangDichVu *dh = danhSachDonHang[i];
-            if (dh->getMaDonHang() == maDH)
-            {
-                currentOrder = dh;
-                break;
-            }
-        }
-
-        if (!currentOrder)
-        {
-            // Create new order
-            KhachHang *kh = nullptr;
-            if (qlkh && maKH != "GUEST")
-            {
-                kh = qlkh->timKhachHang(maKH);
-            }
-
-            currentOrder = new DonHangDichVu(maDH, kh);
-
-            // Parse date "DD/MM/YYYY HH:MM:SS"
-            int d = 1, m = 1, y = 2000, h = 0, min = 0, s = 0;
-            char sep;
-            stringstream ss(ngayTaoStr);
-            // Format: 21/11/2025 18:10:05
-            // ss >> d >> sep >> m >> sep >> y; // Reads date part
-            // ss >> h >> sep >> min >> sep >> s; // Reads time part (skipping space automatically)
-
-            ss >> d >> sep >> m >> sep >> y >> h >> sep >> min >> sep >> s;
-
-            NgayGio ng;
-            ng.setNgayGio(d, m, y, h, min, s);
-            currentOrder->setNgayTao(ng);
-
-            // Parse status
-            TrangThaiDonHang tt = TrangThaiDonHang::CHO_XU_LY;
-            if (trangThaiStr == "Dang chuan bi")
-                tt = TrangThaiDonHang::DANG_CHUAN_BI;
-            else if (trangThaiStr == "Hoan thanh")
-                tt = TrangThaiDonHang::HOAN_THANH;
-            else if (trangThaiStr == "Da huy")
-                tt = TrangThaiDonHang::DA_HUY;
-            currentOrder->setTrangThai(tt);
-
-            danhSachDonHang.push_back(currentOrder);
-
-            // Update maxOrderId
-            try
-            {
-                if (maDH.length() > 3)
-                {
-                    string numPart = maDH.substr(3);
-                    int id = stoi(numPart);
-                    if (id > maxOrderId)
-                        maxOrderId = id;
-                }
-            }
-            catch (...)
-            {
-            }
-        }
-
-        // Add service
-        if (qldv)
-        {
-            DichVu *dv = qldv->timDichVu(maDV);
-            if (dv)
-            {
-                DichVuDat dvDat(dv, soLuong);
-                currentOrder->themDichVu(dvDat);
-            }
-            else
-            {
-                cout << "[DEBUG] Service not found: " << maDV << endl;
-            }
         }
     }
 

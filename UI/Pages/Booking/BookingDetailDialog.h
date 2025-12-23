@@ -94,6 +94,7 @@ private:
     // Payment section
     QLabel *fieldPriceLabel;
     QLabel *servicePriceLabel;
+    QLabel *discountLabelTitle; // "Giảm giá (-X%):"
     QLabel *discountLabel;
     QLabel *depositLabel;
     QLabel *totalLabel;

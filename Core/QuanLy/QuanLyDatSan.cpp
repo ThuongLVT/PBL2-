@@ -261,8 +261,8 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
     {
         const MangDong<string> &row = rows[i];
 
-        // CSV Format: MaDatSan,MaKhachHang,MaSan,NgayDat,GioBatDau,GioKetThuc,TongTien,TienCoc,TrangThai,TrangThaiCoc,GhiChu
-        if (row.size() < 11)
+        // CSV Format: MaDatSan,MaKhachHang,MaSan,NgayDat,GioBatDau,GioKetThuc,TongTien,TienCoc,TrangThai,GhiChu,NgayThanhToan,DichVu:SL
+        if (row.size() < 10)
         {
             cerr << "Invalid CSV row at line " << (i + 2) << ": insufficient columns" << endl;
             continue;
@@ -279,8 +279,7 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
             // double tongTien = stod(row[6]);
             // double tienCoc = stod(row[7]);
             string trangThaiStr = row[8];
-            string trangThaiCocStr = row[9];
-            string ghiChu = row[10];
+            string ghiChu = row[9];
 
             // Find customer and field
             KhachHang *kh = qlKH->timKhachHang(maKH);
@@ -322,37 +321,46 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
             else if (trangThaiStr == "DA_HUY")
                 datSan->setTrangThai(TrangThaiDatSan::DA_HUY);
 
-            // Set trang thai coc
-            if (trangThaiCocStr == "DA_COC")
-                datSan->setTrangThaiCoc(TrangThaiCoc::DA_COC);
-            else if (trangThaiCocStr == "HOAN_COC")
-                datSan->setTrangThaiCoc(TrangThaiCoc::HOAN_COC);
-            else if (trangThaiCocStr == "MAT_COC")
-                datSan->setTrangThaiCoc(TrangThaiCoc::MAT_COC);
-
-            // Parse NgayThanhToan if available (Column 11)
-            if (row.size() > 11)
+            // Parse NgayThanhToan if available (Column 10) - Format: DD/MM/YYYY HH:MM
+            if (row.size() > 10 && !row[10].empty())
             {
-                string ngayThanhToanStr = row[11];
-                if (!ngayThanhToanStr.empty())
+                string ngayTTStr = row[10];
+                int ttDay, ttMonth, ttYear, ttHour = 0, ttMin = 0;
+                char sep1, sep2;
+                stringstream ssTT(ngayTTStr);
+                ssTT >> ttDay >> sep1 >> ttMonth >> sep1 >> ttYear;
+                // Check if time is included
+                if (ssTT.peek() == ' ')
                 {
-                    // Format: DD/MM/YYYY HH:MM:SS
-                    int d, m, y, h = 0, min = 0, sec = 0;
-                    char s;
-                    stringstream ssNTT(ngayThanhToanStr);
-                    ssNTT >> d >> s >> m >> s >> y;
+                    ssTT >> ttHour >> sep2 >> ttMin;
+                }
+                NgayGio ngayThanhToan(ttDay, ttMonth, ttYear, ttHour, ttMin);
+                datSan->setNgayThanhToan(ngayThanhToan);
+            }
 
-                    // Try to read time if available
-                    if (ssNTT >> h >> s >> min >> s >> sec)
+            // Parse DichVu if available (Column 11) - Format: MaDV:SoLuong;MaDV:SoLuong;...
+            if (row.size() > 11 && qlDV != nullptr)
+            {
+                string dichVuStr = row[11];
+                if (!dichVuStr.empty())
+                {
+                    stringstream ssDV(dichVuStr);
+                    string item;
+                    while (getline(ssDV, item, ';'))
                     {
-                        // Successfully read time
+                        size_t colonPos = item.find(':');
+                        if (colonPos != string::npos)
+                        {
+                            string maDV = item.substr(0, colonPos);
+                            int soLuong = stoi(item.substr(colonPos + 1));
+                            DichVu *dv = qlDV->timDichVu(maDV);
+                            if (dv)
+                            {
+                                DichVuDat dvd(dv, soLuong);
+                                datSan->themDichVu(dvd);
+                            }
+                        }
                     }
-                    else
-                    {
-                        // Reset stream or just use default 00:00:00
-                    }
-
-                    datSan->setNgayThanhToan(NgayGio(d, m, y, h, min, sec));
                 }
             }
 
@@ -367,59 +375,6 @@ bool QuanLyDatSan::loadFromCSV(const std::string &filename, QuanLyKhachHang *qlK
     }
 
     cout << "Loaded " << danhSachDatSan.size() << " bookings from CSV: " << filename << endl;
-
-    // Load services for bookings
-    if (qlDV != nullptr)
-    {
-        string serviceFilename = filename;
-        size_t pos = serviceFilename.find("datsan.csv");
-        if (pos != string::npos)
-        {
-            serviceFilename.replace(pos, 10, "datsan_dichvu.csv");
-        }
-        else
-        {
-            // Try to append _dichvu if not standard name
-            if (serviceFilename.length() > 4 && serviceFilename.substr(serviceFilename.length() - 4) == ".csv")
-                serviceFilename.insert(serviceFilename.length() - 4, "_dichvu");
-            else
-                serviceFilename += "_dichvu.csv";
-        }
-
-        MangDong<MangDong<string>> serviceRows = CSVHelper::readCSV(serviceFilename);
-        if (!serviceRows.isEmpty())
-        {
-            int count = 0;
-            for (int idx = 0; idx < serviceRows.size(); idx++)
-            {
-                const MangDong<string> &row = serviceRows[idx];
-                if (row.size() < 3)
-                    continue;
-                string maDatSan = row[0];
-                string maDichVu = row[1];
-                int soLuong = 0;
-                try
-                {
-                    soLuong = stoi(row[2]);
-                }
-                catch (...)
-                {
-                    continue;
-                }
-
-                DatSan *ds = timDatSan(maDatSan);
-                DichVu *dv = qlDV->timDichVu(maDichVu);
-
-                if (ds && dv)
-                {
-                    DichVuDat dvd(dv, soLuong);
-                    ds->themDichVu(dvd);
-                    count++;
-                }
-            }
-            cout << "Loaded " << count << " service items for bookings from " << serviceFilename << endl;
-        }
-    }
 
     return true;
 }
@@ -436,9 +391,9 @@ bool QuanLyDatSan::saveToCSV(const std::string &filename)
     headers.push_back("TongTien");
     headers.push_back("TienCoc");
     headers.push_back("TrangThai");
-    headers.push_back("TrangThaiCoc");
     headers.push_back("GhiChu");
     headers.push_back("NgayThanhToan");
+    headers.push_back("DichVu:SL");
 
     MangDong<MangDong<string>> rows;
 
@@ -496,36 +451,40 @@ bool QuanLyDatSan::saveToCSV(const std::string &filename)
         }
         row.push_back(trangThai);
 
-        // TrangThaiCoc
-        string trangThaiCoc;
-        switch (ds->getTrangThaiCoc())
-        {
-        case TrangThaiCoc::DA_COC:
-            trangThaiCoc = "DA_COC";
-            break;
-        case TrangThaiCoc::HOAN_COC:
-            trangThaiCoc = "HOAN_COC";
-            break;
-        case TrangThaiCoc::MAT_COC:
-            trangThaiCoc = "MAT_COC";
-            break;
-        }
-        row.push_back(trangThaiCoc);
-
         // GhiChu
         row.push_back(ds->getGhiChu());
 
-        // NgayThanhToan
-        NgayGio ntt = ds->getNgayThanhToan();
-        if (ntt.getNam() > 0)
-        { // Valid date
-            // Use toString() which returns "DD/MM/YYYY HH:MM:SS"
-            row.push_back(ntt.toString());
+        // NgayThanhToan: DD/MM/YYYY HH:MM (empty if not paid)
+        NgayGio ngayTT = ds->getNgayThanhToan();
+        if (ngayTT.getNam() > 0) // Valid date
+        {
+            stringstream ssTT;
+            ssTT << setfill('0') << setw(2) << ngayTT.getNgay() << "/"
+                 << setfill('0') << setw(2) << ngayTT.getThang() << "/"
+                 << ngayTT.getNam() << " "
+                 << setfill('0') << setw(2) << ngayTT.getGio() << ":"
+                 << setfill('0') << setw(2) << ngayTT.getPhut();
+            row.push_back(ssTT.str());
         }
         else
         {
             row.push_back("");
         }
+
+        // DichVu:SL - Format: MaDV:SoLuong;MaDV:SoLuong;...
+        const MangDong<DichVuDat> &services = ds->getDanhSachDichVu();
+        stringstream ssDV;
+        for (int j = 0; j < services.size(); ++j)
+        {
+            DichVuDat dv = services[j];
+            if (dv.getDichVu())
+            {
+                if (j > 0)
+                    ssDV << ";";
+                ssDV << dv.getDichVu()->layMaDichVu() << ":" << dv.getSoLuong();
+            }
+        }
+        row.push_back(ssDV.str());
 
         rows.push_back(row);
     }
@@ -534,51 +493,6 @@ bool QuanLyDatSan::saveToCSV(const std::string &filename)
     if (success)
     {
         cout << "Saved " << danhSachDatSan.size() << " bookings to CSV: " << filename << endl;
-
-        // Save services
-        string serviceFilename = filename;
-        size_t pos = serviceFilename.find("datsan.csv");
-        if (pos != string::npos)
-        {
-            serviceFilename.replace(pos, 10, "datsan_dichvu.csv");
-        }
-        else
-        {
-            if (serviceFilename.length() > 4 && serviceFilename.substr(serviceFilename.length() - 4) == ".csv")
-                serviceFilename.insert(serviceFilename.length() - 4, "_dichvu");
-            else
-                serviceFilename += "_dichvu.csv";
-        }
-
-        MangDong<string> serviceHeaders;
-        serviceHeaders.push_back("MaDatSan");
-        serviceHeaders.push_back("MaDichVu");
-        serviceHeaders.push_back("SoLuong");
-        serviceHeaders.push_back("DonGia");
-        serviceHeaders.push_back("ThanhTien");
-
-        MangDong<MangDong<string>> serviceRows;
-
-        for (int i = 0; i < danhSachDatSan.size(); i++)
-        {
-            DatSan *ds = danhSachDatSan[i];
-            const MangDong<DichVuDat> &services = ds->getDanhSachDichVu();
-            for (int j = 0; j < services.size(); ++j)
-            {
-                DichVuDat dv = services[j];
-                if (dv.getDichVu())
-                {
-                    MangDong<string> row;
-                    row.push_back(ds->getMaDatSan());
-                    row.push_back(dv.getDichVu()->layMaDichVu());
-                    row.push_back(to_string(dv.getSoLuong()));
-                    row.push_back(to_string(static_cast<long long>(dv.getDichVu()->layDonGia())));
-                    row.push_back(to_string(static_cast<long long>(dv.getThanhTien())));
-                    serviceRows.push_back(row);
-                }
-            }
-        }
-        CSVHelper::writeCSV(serviceFilename, serviceHeaders, serviceRows);
     }
     return success;
 }

@@ -262,6 +262,8 @@ void CustomerManagementPage::setupRightPanel()
 
     historyList = new QListWidget(this);
     historyList->setObjectName("historyList");
+    historyList->setSelectionMode(QAbstractItemView::NoSelection);
+    historyList->setFocusPolicy(Qt::NoFocus);
     rightBottomLayout->addWidget(historyList);
 
     rightLayout->addWidget(historyContainer, 1); // 50%

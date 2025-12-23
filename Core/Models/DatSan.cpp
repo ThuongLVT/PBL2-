@@ -284,6 +284,9 @@ void DatSan::huyBooking(bool hoan, const std::string &lyDo)
     lyDoHuy = lyDo;
     hoanCoc = hoan;
 
+    // Cập nhật ngày thanh toán là thời điểm hủy cho cả hai trường hợp
+    ngayThanhToan = NgayGio::layThoiGianHienTai();
+
     if (hoan)
     {
         // Hoàn cọc
@@ -291,9 +294,7 @@ void DatSan::huyBooking(bool hoan, const std::string &lyDo)
     }
     else
     {
-        // Mất cọc
+        // Mất cọc (ghi nhận doanh thu phạt cọc)
         trangThaiCoc = MAT_COC;
-        // Cập nhật ngày thanh toán là thời điểm hủy (ghi nhận doanh thu phạt cọc)
-        ngayThanhToan = NgayGio::layThoiGianHienTai();
     }
 }

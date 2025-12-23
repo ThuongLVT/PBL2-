@@ -384,7 +384,19 @@ void InvoicePage::loadData()
         if (isCompleted)
         {
             type = "Booking";
-            amount = ds->getTongTien();
+            // Tính thành tiền sau giảm giá theo hạng khách hàng
+            double tongTien = ds->getTongTien();
+            KhachHang *kh = ds->getKhachHang();
+            if (kh)
+            {
+                int phanTramGiam = kh->layPhanTramGiamGia();
+                double giamGia = tongTien * phanTramGiam / 100.0;
+                amount = tongTien - giamGia;
+            }
+            else
+            {
+                amount = tongTien;
+            }
         }
         else if (isCancelled)
         {

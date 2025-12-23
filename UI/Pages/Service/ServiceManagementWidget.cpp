@@ -541,10 +541,19 @@ void ServiceManagementWidget::sortServices()
         QLabel *imgLabel = new QLabel();
         imgLabel->setAlignment(Qt::AlignCenter);
         QString imgPath = QString::fromStdString(dv->layHinhAnh());
+        // Convert relative path to absolute
+        if (!imgPath.isEmpty() && !imgPath.startsWith("D:/"))
+            imgPath = "D:/PBL2-/" + imgPath;
         if (!imgPath.isEmpty() && QFile::exists(imgPath))
         {
             QPixmap pix(imgPath);
-            imgLabel->setPixmap(pix.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            if (!pix.isNull())
+                imgLabel->setPixmap(pix.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            else
+            {
+                imgLabel->setText("📦");
+                imgLabel->setStyleSheet("font-size: 24px; color: #ccc;");
+            }
         }
         else
         {
@@ -670,11 +679,22 @@ void ServiceManagementWidget::loadServiceToForm(DichVu *service)
 
     // Load Image Preview
     currentImagePath = QString::fromStdString(service->layHinhAnh());
+    // Convert relative path to absolute
+    if (!currentImagePath.isEmpty() && !currentImagePath.startsWith("D:/"))
+        currentImagePath = "D:/PBL2-/" + currentImagePath;
     if (!currentImagePath.isEmpty() && QFile::exists(currentImagePath))
     {
         QPixmap pix(currentImagePath);
-        imagePreviewLabel->setPixmap(pix.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        imagePreviewLabel->setText("");
+        if (!pix.isNull())
+        {
+            imagePreviewLabel->setPixmap(pix.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            imagePreviewLabel->setText("");
+        }
+        else
+        {
+            imagePreviewLabel->clear();
+            imagePreviewLabel->setText("Chưa có ảnh");
+        }
     }
     else
     {
@@ -745,7 +765,7 @@ void ServiceManagementWidget::onSaveClicked()
         if (fileInfo.exists())
         {
             // Create Data/images directory if not exists
-            QString dataDir = "Data/images";
+            QString dataDir = "D:/PBL2-/Data/images";
             QDir dir;
             if (!dir.exists(dataDir))
                 dir.mkpath(dataDir);
@@ -807,8 +827,8 @@ void ServiceManagementWidget::onSaveClicked()
     }
 
     // Save System
-    system->luuHeThong("Data/data.bin");
-    system->luuDichVuCSV("Data/dichvu.csv");
+    system->luuHeThong("D:/PBL2-/Data/data.bin");
+    system->luuDichVuCSV("D:/PBL2-/Data/dichvu.csv");
 
     loadServices();
     clearForm();
@@ -827,8 +847,8 @@ void ServiceManagementWidget::onDeleteClicked()
         std::string id = currentService->layMaDichVu();
         if (system->layQuanLyDichVu()->xoaDichVu(id))
         {
-            system->luuHeThong("Data/data.bin");
-            system->luuDichVuCSV("Data/dichvu.csv");
+            system->luuHeThong("D:/PBL2-/Data/data.bin");
+            system->luuDichVuCSV("D:/PBL2-/Data/dichvu.csv");
             QMessageBox::information(this, "Thành công", "Đã xóa dịch vụ!");
             loadServices();
             clearForm();

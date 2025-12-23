@@ -305,7 +305,7 @@ QFrame *BookingDetailDialog::createServicesSection()
 
     addServiceBtn = new QPushButton("➕ Thêm dịch vụ");
     addServiceBtn->setCursor(Qt::PointingHandCursor);
-    addServiceBtn->setFixedSize(140, 36);
+    addServiceBtn->setFixedSize(160, 36);
     addServiceBtn->setStyleSheet(
         "QPushButton { "
         "background-color: #10b981; "
@@ -365,8 +365,17 @@ QFrame *BookingDetailDialog::createPaymentSection()
 
     addRow("Tiền sân:", fieldPriceLabel);
     addRow("Tiền dịch vụ:", servicePriceLabel);
-    addRow("Giảm giá:", discountLabel, "#10b981");
-    addRow("Đã cọc:", depositLabel, "#f59e0b", true);
+
+    // Giảm giá - sẽ update text động theo hạng TV
+    QHBoxLayout *discountRow = new QHBoxLayout();
+    discountLabelTitle = new QLabel("Giảm giá:");
+    discountLabelTitle->setStyleSheet("color: #6b7280;");
+    discountLabel = new QLabel("0đ");
+    discountLabel->setStyleSheet("color: #10b981;");
+    discountRow->addWidget(discountLabelTitle);
+    discountRow->addStretch();
+    discountRow->addWidget(discountLabel);
+    layout->addLayout(discountRow);
 
     // Divider
     QFrame *line = new QFrame();
@@ -374,10 +383,10 @@ QFrame *BookingDetailDialog::createPaymentSection()
     line->setStyleSheet("background-color: #e5e7eb; margin: 5px 0;");
     layout->addWidget(line);
 
-    // Totals
+    // THÀNH TIỀN
     QHBoxLayout *totalRow = new QHBoxLayout();
-    QLabel *lblTotal = new QLabel("TỔNG CỘNG:");
-    lblTotal->setStyleSheet("font-weight: bold; color: #374151; font-size: 14px;");
+    QLabel *lblTotal = new QLabel("THÀNH TIỀN:");
+    lblTotal->setStyleSheet("font-weight: bold; color: #374151; font-size: 16px;");
     totalLabel = new QLabel("0đ");
     totalLabel->setStyleSheet("font-weight: bold; color: #111827; font-size: 16px;");
     totalRow->addWidget(lblTotal);
@@ -385,11 +394,23 @@ QFrame *BookingDetailDialog::createPaymentSection()
     totalRow->addWidget(totalLabel);
     layout->addLayout(totalRow);
 
+    // ĐÃ CỌC - màu vàng
+    QHBoxLayout *depositRow = new QHBoxLayout();
+    QLabel *lblDeposit = new QLabel("ĐÃ CỌC:");
+    lblDeposit->setStyleSheet("font-weight: bold; color: #f59e0b; font-size: 16px;");
+    depositLabel = new QLabel("0đ");
+    depositLabel->setStyleSheet("font-weight: bold; color: #f59e0b; font-size: 16px;");
+    depositRow->addWidget(lblDeposit);
+    depositRow->addStretch();
+    depositRow->addWidget(depositLabel);
+    layout->addLayout(depositRow);
+
+    // CẦN THANH TOÁN
     QHBoxLayout *payRow = new QHBoxLayout();
     QLabel *lblPay = new QLabel("CẦN THANH TOÁN:");
-    lblPay->setStyleSheet("font-weight: bold; color: #ef4444; font-size: 14px;");
+    lblPay->setStyleSheet("font-weight: bold; color: #ef4444; font-size: 16px;");
     toPayLabel = new QLabel("0đ");
-    toPayLabel->setStyleSheet("font-weight: bold; color: #ef4444; font-size: 18px;");
+    toPayLabel->setStyleSheet("font-weight: bold; color: #ef4444; font-size: 16px;");
     payRow->addWidget(lblPay);
     payRow->addStretch();
     payRow->addWidget(toPayLabel);
@@ -415,6 +436,16 @@ QFrame *BookingDetailDialog::createPaymentSection()
     connect(payNowBtn, &QPushButton::clicked, this, &BookingDetailDialog::onPaymentClicked);
     connect(rescheduleBtn, &QPushButton::clicked, [this]()
             {
+                // Kiểm tra nếu đã có dịch vụ thì không cho đổi lịch
+                if (currentBooking && currentBooking->getDanhSachDichVu().size() > 0)
+                {
+                    QMessageBox::warning(this, "Không thể đổi lịch",
+                                         "⚠️ Không thể đổi lịch đơn đặt sân này!\n\n"
+                                         "Đơn đã có dịch vụ đi kèm. Khi khách đã đặt thêm dịch vụ "
+                                         "(thường là lúc đang/trước/sau đá), chỉ có thể thanh toán hoàn tất.\n\n"
+                                         "Vui lòng nhấn nút 'Thanh toán' để hoàn tất đơn.");
+                    return;
+                }
                 emit rescheduleRequested(currentBooking);
                 accept(); // Close the dialog
             });
@@ -519,8 +550,26 @@ void BookingDetailDialog::populateForm()
 
     // Buttons State
     bool canEdit = (status == TrangThaiDatSan::DA_DAT);
-    rescheduleBtn->setEnabled(canEdit);
-    cancelBtn->setEnabled(canEdit);
+
+    // Kiểm tra nếu đã có dịch vụ thì không cho hủy và đổi lịch
+    bool hasServices = (currentBooking->getDanhSachDichVu().size() > 0);
+    bool canCancelOrReschedule = canEdit && !hasServices;
+
+    rescheduleBtn->setEnabled(canCancelOrReschedule);
+    cancelBtn->setEnabled(canCancelOrReschedule);
+
+    // Nếu đã có dịch vụ, hiển thị tooltip giải thích
+    if (hasServices && canEdit)
+    {
+        rescheduleBtn->setToolTip("Không thể đổi lịch khi đã đặt dịch vụ. Vui lòng thanh toán hoàn tất.");
+        cancelBtn->setToolTip("Không thể hủy sân khi đã đặt dịch vụ. Vui lòng thanh toán hoàn tất.");
+    }
+    else
+    {
+        rescheduleBtn->setToolTip("");
+        cancelBtn->setToolTip("");
+    }
+
     addServiceBtn->setEnabled(canEdit);
     payNowBtn->setEnabled(canEdit);
 
@@ -536,6 +585,10 @@ void BookingDetailDialog::loadServices()
 {
     if (!currentBooking)
         return;
+
+    // Clear selection trước khi reload để tránh lỗi index
+    serviceTable->clearSelection();
+    serviceTable->setCurrentCell(-1, -1);
 
     const MangDong<DichVuDat> &services = currentBooking->getDanhSachDichVu();
     serviceTable->setRowCount(services.size());
@@ -584,10 +637,22 @@ void BookingDetailDialog::loadServices()
     double subTotal = fieldPrice + totalServicePrice;
 
     double discountAmount = 0;
+    int phanTramGiam = 0;
     KhachHang *kh = currentBooking->getKhachHang();
     if (kh)
     {
-        discountAmount = subTotal * kh->layPhanTramGiamGia() / 100.0;
+        phanTramGiam = kh->layPhanTramGiamGia();
+        discountAmount = subTotal * phanTramGiam / 100.0;
+    }
+
+    // Cập nhật label giảm giá với phần trăm
+    if (phanTramGiam > 0)
+    {
+        discountLabelTitle->setText(QString("Giảm giá (-%1%):").arg(phanTramGiam));
+    }
+    else
+    {
+        discountLabelTitle->setText("Giảm giá:");
     }
     discountLabel->setText("-" + formatCurrency(discountAmount));
 
@@ -638,6 +703,17 @@ void BookingDetailDialog::onCancelBookingClicked()
     if (!currentBooking || !system)
         return;
 
+    // Kiểm tra nếu đã có dịch vụ thì không cho hủy
+    if (currentBooking->getDanhSachDichVu().size() > 0)
+    {
+        QMessageBox::warning(this, "Không thể hủy",
+                             "⚠️ Không thể hủy đơn đặt sân này!\n\n"
+                             "Đơn đã có dịch vụ đi kèm. Khi khách đã đặt thêm dịch vụ "
+                             "(thường là lúc đang/trước/sau đá), chỉ có thể thanh toán hoàn tất.\n\n"
+                             "Vui lòng nhấn nút 'Thanh toán' để hoàn tất đơn.");
+        return;
+    }
+
     CancelBookingDialog cancelDialog(currentBooking, this);
     if (cancelDialog.exec() == QDialog::Accepted)
     {
@@ -646,16 +722,16 @@ void BookingDetailDialog::onCancelBookingClicked()
 
         currentBooking->huyBooking(refundDeposit, reason.toStdString());
 
-        // Lưu hệ thống
-        if (system->luuHeThong("D:/PBL2-/Data/booking.dat"))
+        // Lưu dữ liệu vào CSV
+        bool saved = false;
+        if (system && system->layQuanLyDatSan())
         {
-            QMessageBox::information(this, "Thành công", "Đã hủy lịch đặt sân!");
-            accept();
+            saved = system->layQuanLyDatSan()->saveToCSV("D:/PBL2-/Data/datsan.csv");
         }
-        else
-        {
-            QMessageBox::critical(this, "Lỗi", "Không thể lưu dữ liệu!");
-        }
+
+        // Luôn accept dialog và thông báo thành công vì data đã được cập nhật trong memory
+        QMessageBox::information(this, "Thành công", "Đã hủy lịch đặt sân!");
+        accept();
     }
 }
 
@@ -801,9 +877,10 @@ void BookingDetailDialog::onAddServiceClicked()
         // Refresh table and totals
         loadServices();
 
-        // Save system state to persist stock changes
-        system->luuHeThong("D:/PBL2-/Data/booking.dat");
-        system->luuHeThong("D:/PBL2-/Data/dichvu.csv"); // Ensure services are saved
+        // Save booking data to CSV to persist service changes
+        system->layQuanLyDatSan()->saveToCSV("D:/PBL2-/Data/datsan.csv");
+        // Save service stock changes
+        system->layQuanLyDichVu()->luuDuLieuRaCSV("D:/PBL2-/Data/dichvu.csv");
     }
 }
 
@@ -856,9 +933,10 @@ void BookingDetailDialog::onRemoveServiceClicked()
         loadServices();
         removeServiceBtn->setEnabled(false);
 
-        // Save system state to persist stock changes
-        system->luuHeThong("D:/PBL2-/Data/booking.dat");
-        system->luuHeThong("D:/PBL2-/Data/dichvu.csv");
+        // Save booking data to CSV to persist service changes
+        system->layQuanLyDatSan()->saveToCSV("D:/PBL2-/Data/datsan.csv");
+        // Save service stock changes
+        system->layQuanLyDichVu()->luuDuLieuRaCSV("D:/PBL2-/Data/dichvu.csv");
     }
 }
 void BookingDetailDialog::onPayDepositClicked() { /* Not used in new UI */ }

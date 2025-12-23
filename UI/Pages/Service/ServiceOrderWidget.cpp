@@ -523,38 +523,10 @@ void ServiceOrderWidget::onPayClicked()
             return;
     }
 
-    // Create Temp Order for Invoice
+    // Get customer
     KhachHang *kh = isCustomerFound ? qlKhachHang->timKhachHang(currentCustomerId) : nullptr;
 
-    // We create a temp order on stack to generate invoice
-    DonHangDichVu tempOrder("MỚI", kh);
-
-    // Add items to temp order
-    for (auto it = currentCart.begin(); it != currentCart.end(); ++it)
-    {
-        std::string id = it.key();
-        int qty = it.value();
-        DichVu *dv = qlDichVu->timDichVu(id);
-        if (dv)
-        {
-            DichVuDat dvd(dv, qty);
-            tempOrder.themDichVu(dvd);
-        }
-    }
-    tempOrder.tinhTongTien();
-    tempOrder.tinhGiamGia();
-    tempOrder.tinhThanhTien();
-
-    // Show Invoice
-    std::string invoiceText = InvoiceGenerator::generateServiceInvoice(tempOrder);
-    InvoiceDialog dialog(invoiceText, this);
-
-    if (dialog.exec() != QDialog::Accepted)
-    {
-        return; // Cancelled
-    }
-
-    // Create Order
+    // Create Order FIRST to get real order ID
     DonHangDichVu *donHang = HeThongQuanLy::getInstance()->taoDonHangDichVu(kh);
 
     if (!donHang)
@@ -563,7 +535,7 @@ void ServiceOrderWidget::onPayClicked()
         return;
     }
 
-    // Add items
+    // Add items to order
     for (auto it = currentCart.begin(); it != currentCart.end(); ++it)
     {
         std::string id = it.key();
@@ -573,18 +545,38 @@ void ServiceOrderWidget::onPayClicked()
         {
             DichVuDat dvd(dv, qty);
             donHang->themDichVu(dvd);
+        }
+    }
+    donHang->tinhTongTien();
+    donHang->tinhGiamGia();
+    donHang->tinhThanhTien();
 
-            // Update stock
+    // Show Invoice with REAL order ID
+    std::string invoiceText = InvoiceGenerator::generateServiceInvoice(*donHang);
+    InvoiceDialog dialog(invoiceText, this);
+
+    if (dialog.exec() != QDialog::Accepted)
+    {
+        // User cancelled - mark order as cancelled
+        donHang->setTrangThai(TrangThaiDonHang::DA_HUY);
+        return;
+    }
+
+    // Update stock for each item
+    for (auto it = currentCart.begin(); it != currentCart.end(); ++it)
+    {
+        std::string id = it.key();
+        int qty = it.value();
+        DichVu *dv = qlDichVu->timDichVu(id);
+        if (dv)
+        {
             dv->datSoLuongTon(dv->laySoLuongTon() - qty);
             dv->datSoLuongBan(dv->laySoLuongBan() + qty);
         }
     }
 
-    // Calculate totals
-    donHang->tinhTongTien();
-    donHang->tinhGiamGia();
-    donHang->tinhThanhTien();
-    donHang->setTrangThai(TrangThaiDonHang::HOAN_THANH); // Auto complete for now
+    // Set order as completed
+    donHang->setTrangThai(TrangThaiDonHang::HOAN_THANH);
 
     // Cập nhật chi tiêu cho khách hàng
     if (kh)

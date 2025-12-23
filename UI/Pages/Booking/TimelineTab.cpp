@@ -932,6 +932,12 @@ void TimelineTab::clearForm()
     if (calendar)
         calendar->setEnabled(true);
 
+    // Re-enable filter combos when clearing form
+    if (filterTypeCombo)
+        filterTypeCombo->setEnabled(true);
+    if (filterAreaCombo)
+        filterAreaCombo->setEnabled(true);
+
     currentBooking = nullptr;
     isEditMode = false;
 
@@ -1266,6 +1272,17 @@ void TimelineTab::loadBookingForReschedule(DatSan *booking)
     if (!booking)
         return;
 
+    // Kiểm tra nếu đã có dịch vụ thì không cho đổi lịch
+    if (booking->getDanhSachDichVu().size() > 0)
+    {
+        QMessageBox::warning(this, "Không thể đổi lịch",
+                             "⚠️ Không thể đổi lịch đơn đặt sân này!\n\n"
+                             "Đơn đã có dịch vụ đi kèm. Khi khách đã đặt thêm dịch vụ "
+                             "(thường là lúc đang/trước/sau đá), chỉ có thể thanh toán hoàn tất.\n\n"
+                             "Vui lòng mở chi tiết đơn và nhấn 'Thanh toán' để hoàn tất.");
+        return;
+    }
+
     // Set reschedule mode
     isRescheduleMode = true;
     reschedulingBooking = booking;
@@ -1284,36 +1301,16 @@ void TimelineTab::loadBookingForReschedule(DatSan *booking)
 
     // Update button text
     saveBtn->setText("💾 Lưu Đổi Lịch");
-    saveBtn->setStyleSheet(
-        "QPushButton {"
-        "   background-color: #f59e0b;" // Orange for reschedule
-        "   color: white;"
-        "   font-weight: bold;"
-        "   font-size: 14px;"
-        "   padding: 8px 16px;"
-        "   border: none;"
-        "   border-radius: 6px;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #d97706;"
-        "}");
+    saveBtn->setStyleSheet("QPushButton { background-color: #f59e0b; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #d97706; }");
 
     // Enable Cancel button as "Hủy đổi lịch"
     deleteBtn->setText("Hủy đổi lịch");
     deleteBtn->setEnabled(true);
-    deleteBtn->setStyleSheet(
-        "QPushButton {"
-        "   background-color: #ef4444;"
-        "   color: white;"
-        "   font-weight: bold;"
-        "   font-size: 14px;"
-        "   padding: 8px 16px;"
-        "   border: none;"
-        "   border-radius: 6px;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #dc2626;"
-        "}");
+    deleteBtn->setStyleSheet("QPushButton { background-color: #ef4444; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #dc2626; }");
+
+    // Disable "Thêm KH mới" button trong reschedule mode
+    addCustomerBtn->setEnabled(false);
+    addCustomerBtn->setStyleSheet("QPushButton { background-color: #9ca3af; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; }");
 
     // Show message
     QMessageBox::information(this, "Đổi Lịch",
@@ -1716,6 +1713,17 @@ void TimelineTab::onDeleteClicked()
         return;
     }
 
+    // Kiểm tra nếu đã có dịch vụ thì không cho hủy
+    if (currentBooking->getDanhSachDichVu().size() > 0)
+    {
+        QMessageBox::warning(this, "Không thể hủy",
+                             "⚠️ Không thể hủy đơn đặt sân này!\n\n"
+                             "Đơn đã có dịch vụ đi kèm. Khi khách đã đặt thêm dịch vụ "
+                             "(thường là lúc đang/trước/sau đá), chỉ có thể thanh toán hoàn tất.\n\n"
+                             "Vui lòng mở chi tiết đơn và nhấn 'Thanh toán' để hoàn tất.");
+        return;
+    }
+
     // 1. Ask for confirmation and penalty option
     QMessageBox msgBox;
     msgBox.setWindowTitle("Xác nhận hủy");
@@ -1736,46 +1744,24 @@ void TimelineTab::onDeleteClicked()
 
     try
     {
-        QuanLyDatSan *quanLyDS = system->layQuanLyDatSan();
-        if (quanLyDS)
+        // Sử dụng huyBooking với lý do mặc định (hủy từ Timeline)
+        std::string lyDoHuy = isPenalty ? "Hủy từ Timeline - Phạt cọc" : "Hủy từ Timeline - Hoàn cọc";
+        currentBooking->huyBooking(!isPenalty, lyDoHuy);
+
+        // Save to CSV
+        if (system && system->layQuanLyDatSan())
         {
-            // Update deposit status based on user choice
-            if (isPenalty)
-            {
-                currentBooking->setTrangThaiCoc(TrangThaiCoc::MAT_COC);
-                std::string currentNote = currentBooking->getGhiChu();
-                currentBooking->setGhiChu(currentNote + " [MAT_COC]");
-            }
-            else
-            {
-                currentBooking->setTrangThaiCoc(TrangThaiCoc::HOAN_COC);
-                std::string currentNote = currentBooking->getGhiChu();
-                currentBooking->setGhiChu(currentNote + " [HOAN_COC]");
-            }
-
-            bool success = quanLyDS->huyDatSan(currentBooking->getMaDatSan());
-            if (success)
-            {
-                // ===== SAVE DATA TO FILE =====
-                try
-                {
-                    system->luuHeThong("D:/PBL2-/Data/data.bin");
-                }
-                catch (...)
-                {
-                    // Silent fail - data will be saved on exit
-                }
-
-                QString msg = isPenalty ? "Đã hủy đặt sân và ghi nhận PHẠT CỌC!" : "Đã hủy đặt sân và ghi nhận HOÀN CỌC!";
-                QMessageBox::information(this, "✅ Thành công", msg);
-
-                // Emit signal to refresh table view
-                emit bookingDataChanged();
-
-                clearForm();
-                refreshData();
-            }
+            system->layQuanLyDatSan()->saveToCSV("D:/PBL2-/Data/datsan.csv");
         }
+
+        QString msg = isPenalty ? "Đã hủy đặt sân và ghi nhận PHẠT CỌC!" : "Đã hủy đặt sân và ghi nhận HOÀN CỌC!";
+        QMessageBox::information(this, "✅ Thành công", msg);
+
+        // Emit signal to refresh table view
+        emit bookingDataChanged();
+
+        clearForm();
+        refreshData();
     }
     catch (const std::exception &e)
     {
@@ -1880,25 +1866,51 @@ void TimelineTab::onTimelineSlotSelected(int fieldIndex, int startHour, int star
     if (calendar)
         calendar->setEnabled(false);
 
+    // Disable filter combos when selecting field
+    if (filterTypeCombo)
+        filterTypeCombo->setEnabled(false);
+    if (filterAreaCombo)
+        filterAreaCombo->setEnabled(false);
+
     // Update Cancel button state
     deleteBtn->setText("✗ Hủy chọn");
     deleteBtn->setEnabled(true);
     deleteBtn->setStyleSheet("QPushButton { background-color: #ef4444; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #dc2626; }");
 
-    // Enable Save button
+    // Enable Save button - màu khác nhau tùy mode
     saveBtn->setEnabled(true);
-    saveBtn->setStyleSheet("QPushButton { background-color: #16a34a; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #15803d; }");
+    if (isRescheduleMode)
+    {
+        // Reschedule mode: màu vàng/cam
+        saveBtn->setStyleSheet("QPushButton { background-color: #f59e0b; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #d97706; }");
+    }
+    else
+    {
+        // Normal mode: màu xanh lá
+        saveBtn->setStyleSheet("QPushButton { background-color: #16a34a; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #15803d; }");
+    }
 
-    // Enable Add Customer button
-    addCustomerBtn->setEnabled(true);
-    addCustomerBtn->setStyleSheet("QPushButton { background-color: #3b82f6; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #2563eb; }");
+    // Add Customer button - disable trong reschedule mode
+    if (isRescheduleMode)
+    {
+        addCustomerBtn->setEnabled(false);
+        addCustomerBtn->setStyleSheet("QPushButton { background-color: #9ca3af; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; }");
+    }
+    else
+    {
+        addCustomerBtn->setEnabled(true);
+        addCustomerBtn->setStyleSheet("QPushButton { background-color: #3b82f6; color: white; border: none; border-radius: 4px; padding: 8px 10px; font-weight: bold; font-size: 13px; min-width: 200px; max-width: 200px; min-height: 36px; max-height: 36px; } QPushButton:hover { background-color: #2563eb; }");
+    }
 
-    // Enable inputs
-    phoneEdit->setReadOnly(false);
-    phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
+    // Enable inputs - nhưng trong reschedule mode vẫn readonly
+    if (!isRescheduleMode)
+    {
+        phoneEdit->setReadOnly(false);
+        phoneEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
 
-    nameEdit->setReadOnly(false);
-    nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
+        nameEdit->setReadOnly(false);
+        nameEdit->setStyleSheet("padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; background-color: white; font-size: 13px; min-height: 36px;");
+    }
 
     noteEdit->setReadOnly(false);
     noteEdit->setStyleSheet("QTextEdit { padding: 6px 10px; border: 1px solid #4b5563; border-radius: 4px; background-color: white; font-size: 13px; } QTextEdit:focus { border: 2px solid #16a34a; }");

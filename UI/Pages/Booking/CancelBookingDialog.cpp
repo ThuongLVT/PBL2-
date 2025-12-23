@@ -58,6 +58,22 @@ void CancelBookingDialog::setupUI()
     QVBoxLayout *infoLayout = new QVBoxLayout(infoGroup);
     infoLayout->setSpacing(8);
 
+    // Lấy thông tin ngày tháng (chỉ ngày, không có giờ)
+    NgayGio tgDat = currentBooking->getThoiGianDat();
+    QString ngayStr = QString("%1/%2/%3")
+                          .arg(tgDat.getNgay(), 2, 10, QChar('0'))
+                          .arg(tgDat.getThang(), 2, 10, QChar('0'))
+                          .arg(tgDat.getNam());
+
+    // Lấy giờ bắt đầu và kết thúc (HH:MM)
+    KhungGio kg = currentBooking->getKhungGio();
+    QString gioBatDauStr = QString("%1:%2")
+                               .arg(kg.getGioBatDau().getGio(), 2, 10, QChar('0'))
+                               .arg(kg.getGioBatDau().getPhut(), 2, 10, QChar('0'));
+    QString gioKetThucStr = QString("%1:%2")
+                                .arg(kg.getGioKetThuc().getGio(), 2, 10, QChar('0'))
+                                .arg(kg.getGioKetThuc().getPhut(), 2, 10, QChar('0'));
+
     QString bookingInfo = QString(
                               "Mã đơn: <b>%1</b><br>"
                               "Khách hàng: <b>%2</b><br>"
@@ -67,9 +83,9 @@ void CancelBookingDialog::setupUI()
                               .arg(QString::fromStdString(currentBooking->getMaDatSan()))
                               .arg(currentBooking->getKhachHang() ? QString::fromStdString(currentBooking->getKhachHang()->getHoTen()) : "N/A")
                               .arg(currentBooking->getSan() ? QString::fromStdString(currentBooking->getSan()->getTenSan()) : "N/A")
-                              .arg(QString::fromStdString(currentBooking->getThoiGianDat().toString()))
-                              .arg(QString::fromStdString(currentBooking->getKhungGio().getGioBatDau().toString()))
-                              .arg(QString::fromStdString(currentBooking->getKhungGio().getGioKetThuc().toString()));
+                              .arg(ngayStr)
+                              .arg(gioBatDauStr)
+                              .arg(gioKetThucStr);
 
     bookingInfoLabel = new QLabel(bookingInfo);
     bookingInfoLabel->setWordWrap(true);

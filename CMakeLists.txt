@@ -38,8 +38,6 @@ set(CORE_CAUTRUCDULIEU_SOURCES
 set(CORE_CAUTRUCDULIEU_HEADERS
     Core/CauTrucDuLieu/MangDong.h
     Core/CauTrucDuLieu/DanhSachLienKet.h
-    Core/CauTrucDuLieu/Ngan.h
-    Core/CauTrucDuLieu/HangDoi.h
     Core/CauTrucDuLieu/NgayGio.h
 )
 
@@ -118,7 +116,6 @@ set(CORE_THONGKE_HEADERS
 set(CORE_THUATTOAN_HEADERS
     Core/ThuatToan/QuickSort.h
     Core/ThuatToan/MergeSort.h
-    Core/ThuatToan/BinarySearchTree.h
     Core/ThuatToan/HashTable.h
 )
 

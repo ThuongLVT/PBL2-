@@ -132,23 +132,6 @@ void InvoicePage::setupToolbar(QVBoxLayout *mainLayout)
     m_totalRevenueLabel->setStyleSheet("font-size: 16px; font-weight: bold; color: #16a34a; margin-right: 15px;");
     toolbarLayout->addWidget(m_totalRevenueLabel);
 
-    // 5. Export Button
-    QPushButton *exportBtn = new QPushButton("📥 Xuất Excel", this);
-    exportBtn->setCursor(Qt::PointingHandCursor);
-    exportBtn->setMinimumHeight(36);
-    exportBtn->setStyleSheet(
-        "QPushButton { "
-        "background-color: #10b981; "
-        "color: white; "
-        "border: none; "
-        "border-radius: 6px; "
-        "padding: 0 15px; "
-        "font-weight: 600; "
-        "} "
-        "QPushButton:hover { background-color: #059669; }");
-    connect(exportBtn, &QPushButton::clicked, this, &InvoicePage::onExportClicked);
-    toolbarLayout->addWidget(exportBtn);
-
     mainLayout->addLayout(toolbarLayout);
 }
 
@@ -723,45 +706,6 @@ void InvoicePage::onViewDetailsClicked(int row)
                 QMessageBox::information(this, "Thành công", "Đã xuất hóa đơn thành công!");
             }
         }
-    }
-}
-
-void InvoicePage::onExportClicked()
-{
-    QString fileName = QFileDialog::getSaveFileName(this, "Xuất danh sách hóa đơn", "", "Excel Files (*.csv)");
-    if (fileName.isEmpty())
-        return;
-
-    QFile file(fileName);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        QTextStream out(&file);
-        // Write BOM for Excel UTF-8
-        out << "\xEF\xBB\xBF";
-
-        // Header
-        out << "STT,Mã HĐ,Thời gian,Khách hàng,SĐT,Nội dung,Loại,Tổng tiền\n";
-
-        // Data
-        for (int i = 0; i < m_invoiceTable->rowCount(); ++i)
-        {
-            out << m_invoiceTable->item(i, 0)->text() << ",";
-            out << m_invoiceTable->item(i, 1)->text() << ",";
-            out << m_invoiceTable->item(i, 2)->text() << ",";
-            out << m_invoiceTable->item(i, 3)->text() << ",";
-            out << m_invoiceTable->item(i, 4)->text() << ",";
-            out << m_invoiceTable->item(i, 5)->text().replace(",", " ") << ",";
-
-            // Get type from badge widget? Harder. Re-infer or store in hidden column.
-            // For simplicity, just export what we can see or re-fetch.
-            // Let's just put "Hóa đơn" for now or improve later.
-            out << "Hóa đơn" << ",";
-
-            out << m_invoiceTable->item(i, 7)->text().replace(",", "").replace(" VND", "").replace("đ", "") << "\n";
-        }
-
-        file.close();
-        QMessageBox::information(this, "Thành công", "Đã xuất file thành công!");
     }
 }
 

@@ -30,7 +30,6 @@ private slots:
     void onTodayClicked();
     void onYesterdayClicked();
     void onViewDetailsClicked(int row);
-    void onExportClicked();
     void onSortFilterChanged(int index);
 
 private:

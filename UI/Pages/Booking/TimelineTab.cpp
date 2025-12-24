@@ -243,10 +243,10 @@ void TimelineTab::setupFormPanel()
     phoneEdit->setPlaceholderText("Nhập SĐT...");
     phoneEdit->setMinimumWidth(200);
     phoneEdit->setMaximumWidth(200);
-    phoneEdit->setMaxLength(10); // Limit to 10 digits
+    phoneEdit->setMaxLength(11); // Limit to 11 digits
 
-    // Validator: Only allow digits
-    QRegularExpression rx("^[0-9]*$");
+    // Validator: Only allow digits starting with 0
+    QRegularExpression rx("^0[0-9]*$");
     QValidator *validator = new QRegularExpressionValidator(rx, this);
     phoneEdit->setValidator(validator);
 
@@ -1941,10 +1941,19 @@ void TimelineTab::onAddCustomerClicked()
     QLabel *nameLabel = new QLabel("Họ tên:", dialog);
     QLineEdit *nameNewEdit = new QLineEdit(dialog);
     nameNewEdit->setPlaceholderText("Nhập họ tên");
+    // Validator: Only allow letters and spaces (Vietnamese included)
+    QRegularExpression nameDialogRx("^[\\p{L}\\s]*$");
+    QValidator *nameDialogValidator = new QRegularExpressionValidator(nameDialogRx, dialog);
+    nameNewEdit->setValidator(nameDialogValidator);
 
     QLabel *phoneLabel = new QLabel("Số điện thoại:", dialog);
     QLineEdit *phoneNewEdit = new QLineEdit(dialog);
     phoneNewEdit->setPlaceholderText("Nhập số điện thoại");
+    phoneNewEdit->setMaxLength(11); // Limit to 11 digits max
+    // Validator: Only allow digits starting with 0
+    QRegularExpression phoneDialogRx("^0[0-9]*$");
+    QValidator *phoneDialogValidator = new QRegularExpressionValidator(phoneDialogRx, dialog);
+    phoneNewEdit->setValidator(phoneDialogValidator);
 
     // If there's text in the main phone edit, pre-fill it
     QString currentPhone = phoneEdit->text().trimmed();
@@ -1978,6 +1987,25 @@ void TimelineTab::onAddCustomerClicked()
         
         if (name.isEmpty() || phone.isEmpty()) {
             QMessageBox::warning(dialog, "Lỗi", "Vui lòng nhập đầy đủ thông tin!");
+            return;
+        }
+        
+        // Check name contains only letters and spaces
+        QRegularExpression nameCheck("^[\\p{L}\\s]+$");
+        if (!nameCheck.match(name).hasMatch()) {
+            QMessageBox::warning(dialog, "Lỗi", "Họ tên chỉ được chứa chữ cái và khoảng trắng!");
+            return;
+        }
+        
+        // Check phone starts with 0 and contains only digits
+        if (!phone.startsWith("0")) {
+            QMessageBox::warning(dialog, "Lỗi", "Số điện thoại phải bắt đầu bằng số 0!");
+            return;
+        }
+        
+        QRegularExpression phoneCheck("^[0-9]+$");
+        if (!phoneCheck.match(phone).hasMatch()) {
+            QMessageBox::warning(dialog, "Lỗi", "Số điện thoại chỉ được chứa chữ số!");
             return;
         }
         

@@ -3,7 +3,6 @@
 
 #include <iostream>
 
-// Template class MangDong - Thay the std::vector
 // Dynamic array voi auto-resize
 template <typename T>
 class MangDong
